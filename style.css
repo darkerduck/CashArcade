@@ -1,0 +1,432 @@
+:root {
+    color-scheme: dark;
+    --bg: #06100c;
+    --surface: #0c1d16;
+    --surface-raised: #12271e;
+    --ink: #e6fff3;
+    --muted: #8cb5a2;
+    --line: #28513e;
+    --grid: rgba(122, 255, 180, 0.065);
+    --accent: #65ff9a;
+    --accent-strong: #19d864;
+    --accent-ink: #03200d;
+    --food: #ffcc4d;
+    --danger: #ff6d71;
+    --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+}
+
+:root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #edf5e9;
+    --surface: #fbfff8;
+    --surface-raised: #e5f3e7;
+    --ink: #102d1e;
+    --muted: #557462;
+    --line: #aacbb5;
+    --grid: rgba(16, 76, 43, 0.075);
+    --accent: #0cc05b;
+    --accent-strong: #069847;
+    --accent-ink: #f7fff9;
+    --food: #e49c00;
+    --danger: #d83b48;
+    --shadow: 0 24px 70px rgba(26, 75, 45, 0.14);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    min-width: 320px;
+    background: var(--bg);
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    color: var(--ink);
+    background:
+        radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 30rem),
+        linear-gradient(var(--bg), var(--bg));
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    transition: color 180ms ease, background 180ms ease;
+}
+
+button,
+a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button {
+    font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible {
+    outline: 3px solid var(--food);
+    outline-offset: 3px;
+}
+
+.arcade-shell {
+    width: min(100% - 32px, 760px);
+    margin: 0 auto;
+    padding: 24px 0 32px;
+}
+
+.site-header,
+.game-heading,
+.score-strip,
+.game-actions,
+footer {
+    display: flex;
+    align-items: center;
+}
+
+.site-header {
+    justify-content: space-between;
+    margin-bottom: 22px;
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.brand-mark {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    color: var(--accent);
+    font-weight: 900;
+    box-shadow: inset 0 0 18px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.brand strong,
+.brand small {
+    display: block;
+}
+
+.brand strong {
+    font-size: 1rem;
+    letter-spacing: 0.06em;
+}
+
+.brand small {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 0.64rem;
+    letter-spacing: 0.13em;
+}
+
+.icon-button {
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: var(--ink);
+    background: var(--surface);
+    cursor: pointer;
+}
+
+.game-card {
+    padding: clamp(18px, 4vw, 34px);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: var(--shadow);
+}
+
+.game-heading {
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.eyebrow {
+    margin: 0 0 7px;
+    color: var(--accent);
+    font-size: 0.69rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+}
+
+h1 {
+    margin: 0;
+    font-size: clamp(1.65rem, 5vw, 2.65rem);
+    letter-spacing: -0.055em;
+}
+
+.status-light {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
+.status-light span {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+}
+
+.score-strip {
+    margin-bottom: 14px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-raised);
+}
+
+.score-strip div {
+    flex: 1;
+    padding: 11px 14px;
+    text-align: center;
+}
+
+.score-strip div + div {
+    border-left: 1px solid var(--line);
+}
+
+.score-strip span,
+.score-strip strong {
+    display: block;
+}
+
+.score-strip span {
+    margin-bottom: 3px;
+    color: var(--muted);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+}
+
+.score-strip strong {
+    color: var(--accent);
+    font-size: clamp(1rem, 4vw, 1.28rem);
+}
+
+.canvas-frame {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--bg);
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.22);
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    touch-action: none;
+}
+
+.game-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    padding: 26px;
+    text-align: center;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(4px);
+    transition: opacity 150ms ease;
+}
+
+.game-overlay[hidden] {
+    display: none;
+}
+
+.overlay-kicker {
+    margin: 0 0 8px;
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+}
+
+.game-overlay h2 {
+    margin: 0;
+    font-size: clamp(1.55rem, 5vw, 2.4rem);
+}
+
+.game-overlay p:not(.overlay-kicker) {
+    max-width: 34ch;
+    margin: 12px 0 20px;
+    color: var(--muted);
+    font-family: system-ui, sans-serif;
+    line-height: 1.55;
+}
+
+.primary-button,
+.secondary-button,
+.touch-controls button {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 90ms ease, background 120ms ease;
+}
+
+.primary-button:active,
+.secondary-button:active,
+.touch-controls button:active {
+    transform: translateY(2px);
+}
+
+.primary-button {
+    padding: 12px 22px;
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    background: var(--accent);
+    font-weight: 900;
+}
+
+.game-actions {
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.secondary-button {
+    flex: 1;
+    padding: 11px 14px;
+    color: var(--ink);
+    background: var(--surface-raised);
+}
+
+.secondary-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.touch-controls {
+    display: none;
+    grid-template-columns: repeat(3, 58px);
+    grid-template-areas:
+        ". up ."
+        "left down right";
+    justify-content: center;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.touch-controls button {
+    width: 58px;
+    height: 48px;
+    color: var(--ink);
+    background: var(--surface-raised);
+    font-size: 1.35rem;
+    font-weight: 900;
+}
+
+.touch-controls [data-direction="up"] { grid-area: up; }
+.touch-controls [data-direction="left"] { grid-area: left; }
+.touch-controls [data-direction="down"] { grid-area: down; }
+.touch-controls [data-direction="right"] { grid-area: right; }
+
+.instructions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 18px;
+    margin: 18px 0 0;
+    color: var(--muted);
+    font-size: 0.68rem;
+}
+
+kbd {
+    padding: 2px 5px;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    color: var(--ink);
+    background: var(--surface-raised);
+    font: inherit;
+}
+
+footer {
+    justify-content: space-between;
+    gap: 14px;
+    padding: 20px 4px 0;
+    color: var(--muted);
+    font-size: 0.64rem;
+    letter-spacing: 0.08em;
+}
+
+footer a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (hover: hover) {
+    .icon-button:hover,
+    .secondary-button:hover,
+    .touch-controls button:hover {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--surface-raised) 80%, var(--accent));
+    }
+
+    .primary-button:hover {
+        background: color-mix(in srgb, var(--accent) 86%, white);
+    }
+}
+
+@media (max-width: 680px), (pointer: coarse) {
+    .touch-controls {
+        display: grid;
+    }
+
+    .instructions {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .arcade-shell {
+        width: min(100% - 20px, 760px);
+        padding-top: 14px;
+    }
+
+    .brand small,
+    footer span {
+        display: none;
+    }
+
+    .game-card {
+        border-radius: 18px;
+    }
+
+    .score-strip div {
+        padding-inline: 7px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}

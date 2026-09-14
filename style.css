@@ -60,11 +60,12 @@ h1 span { color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--
 .hero-status { gap: 9px; margin-top: 28px; color: var(--muted); font-size: .67rem; letter-spacing: .14em; }
 .hero-status span { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
 
-.game-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.game-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
 .game-card { overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: var(--shadow); }
 .card-screen { position: relative; display: grid; height: 245px; place-items: center; overflow: hidden; border-bottom: 1px solid var(--line); background-color: color-mix(in srgb, var(--bg) 88%, var(--surface)); background-image: linear-gradient(color-mix(in srgb, currentColor 4%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, currentColor 4%, transparent) 1px, transparent 1px); background-size: 24px 24px; }
 .snake-card .card-screen { color: var(--green); }
 .breakout-card .card-screen { color: var(--cyan); }
+.flappy-card .card-screen { color: var(--green); }
 .screen-label { position: absolute; top: 17px; left: 19px; color: currentColor; font-size: .62rem; font-weight: 900; letter-spacing: .16em; }
 
 .pixel-snake { position: relative; width: 210px; height: 110px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--green) 50%, transparent)); }
@@ -82,6 +83,15 @@ h1 span { color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--
 .pixel-bricks b { position: absolute; bottom: 21px; left: 54px; width: 110px; height: 12px; border-radius: 8px; background: var(--cyan); }
 .pixel-bricks em { position: absolute; bottom: 47px; left: 99px; width: 14px; height: 14px; border-radius: 50%; background: #ffdf68; box-shadow: 0 0 14px #ffdf68; }
 
+.pixel-flight { position: relative; width: 220px; height: 142px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--green) 42%, transparent)); }
+.pixel-flight i, .pixel-flight b { position: absolute; right: 8px; width: 48px; border: 8px solid var(--green); }
+.pixel-flight i { top: 0; height: 50px; border-top: 0; }
+.pixel-flight b { bottom: 0; height: 50px; border-bottom: 0; }
+.pixel-flight em { position: absolute; top: 59px; left: 45px; width: 54px; height: 29px; border-radius: 50% 60% 55% 45%; background: var(--cyan); box-shadow: 0 0 14px color-mix(in srgb, var(--cyan) 70%, transparent); }
+.pixel-flight em::before { content: ""; position: absolute; left: -18px; top: 12px; width: 25px; height: 12px; border-radius: 70% 20% 60% 30%; background: var(--violet); transform: rotate(-18deg); }
+.pixel-flight em::after { content: ""; position: absolute; right: -15px; top: 9px; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 17px solid #ffdf68; }
+.pixel-flight span { position: absolute; top: 67px; left: 61px; width: 6px; height: 6px; border-radius: 50%; background: var(--bg); box-shadow: 0 0 0 2px white; }
+
 .card-body { padding: 28px; }
 .card-number { margin: 0 0 10px; color: var(--muted); font-size: .64rem; letter-spacing: .14em; }
 .game-card h2 { margin: 0; font-size: clamp(1.55rem, 4vw, 2.25rem); letter-spacing: -.045em; }
@@ -90,6 +100,7 @@ h1 span { color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--
 .tags span { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: .62rem; }
 .play-link { justify-content: space-between; margin-top: 25px; padding: 13px 15px; border: 1px solid currentColor; border-radius: 10px; color: var(--green); text-decoration: none; font-size: .78rem; font-weight: 900; }
 .breakout-card .play-link { color: var(--cyan); }
+.flappy-card .play-link { color: var(--green); }
 .play-link span { font-size: 1.25rem; transition: transform 130ms ease; }
 footer { justify-content: space-between; gap: 16px; padding: 28px 4px 0; color: var(--muted); font-size: .63rem; letter-spacing: .08em; }
 footer a { color: var(--cyan); text-decoration: none; }
@@ -99,6 +110,10 @@ footer a { color: var(--cyan); text-decoration: none; }
     .play-link:hover span { transform: translateX(4px); }
     .game-card { transition: transform 160ms ease, border-color 160ms ease; }
     .game-card:hover { transform: translateY(-4px); border-color: color-mix(in srgb, currentColor 55%, var(--line)); }
+}
+
+@media (max-width: 900px) {
+    .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 720px) {

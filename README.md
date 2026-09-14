@@ -8,8 +8,9 @@
 
 - [霓虹貪吃蛇](https://darkerduck.github.io/CashArcade/snake/)：使用方向鍵、`WASD` 或觸控操作，穿越邊界並追逐光點。
 - [霓虹打磚塊](https://darkerduck.github.io/CashArcade/breakout/)：使用方向鍵、A/D、滑鼠或觸控控制擋板，突破矩形、雙翼與堡壘三道防線。第二、三關的金色磚塊需擊中兩次，第一次命中會留下裂痕。
+- [霓虹飛行](https://darkerduck.github.io/CashArcade/flappy/)：使用 `Space`、方向鍵、W、滑鼠或觸控拍翼，穿越逐步加速並縮小間隙的無盡能源閘門。
 
-兩款遊戲都支援亮暗主題、暫停、重新開始與瀏覽器本機最高分。
+三款遊戲都支援亮暗主題、暫停、重新開始與瀏覽器本機最高分。
 
 ## 技術
 

@@ -8,9 +8,40 @@
     const BALL_RADIUS = 8;
     const TOTAL_LEVELS = 3;
     const LEVELS = [
-        { rows: 4, speed: 310, pattern: 'full' },
-        { rows: 5, speed: 355, pattern: 'gates' },
-        { rows: 6, speed: 405, pattern: 'fortress' },
+        {
+            speed: 310,
+            layout: [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+            ],
+        },
+        {
+            speed: 355,
+            intro: '雙翼陣型展開。金色磚塊需擊中兩次，第一次會留下裂痕。',
+            layout: [
+                [0, 0, 2, 1, 0, 1, 2, 0, 0],
+                [0, 2, 1, 1, 0, 1, 1, 2, 0],
+                [2, 1, 1, 2, 0, 2, 1, 1, 2],
+                [1, 1, 2, 1, 2, 1, 2, 1, 1],
+                [0, 1, 1, 2, 2, 2, 1, 1, 0],
+                [0, 0, 1, 1, 2, 1, 1, 0, 0],
+            ],
+        },
+        {
+            speed: 405,
+            intro: '堡壘防線啟動。外牆與核心多為金色雙擊磚塊。',
+            layout: [
+                [2, 2, 2, 2, 2, 2, 2, 2, 2],
+                [2, 1, 1, 2, 1, 2, 1, 1, 2],
+                [2, 1, 2, 2, 2, 2, 2, 1, 2],
+                [2, 1, 2, 0, 1, 0, 2, 1, 2],
+                [2, 1, 2, 2, 2, 2, 2, 1, 2],
+                [2, 1, 1, 1, 2, 1, 1, 1, 2],
+                [2, 2, 2, 2, 2, 2, 2, 2, 2],
+            ],
+        },
     ];
 
     const canvas = document.querySelector('#game-canvas');
@@ -78,25 +109,24 @@
 
     function buildLevel() {
         const config = LEVELS[levelIndex];
-        const columns = 9;
+        const columns = config.layout[0].length;
         const brickWidth = 64;
         const brickHeight = 22;
         const gap = 8;
         const startX = (WIDTH - (columns * brickWidth + (columns - 1) * gap)) / 2;
         bricks = [];
 
-        for (let row = 0; row < config.rows; row += 1) {
+        for (let row = 0; row < config.layout.length; row += 1) {
             for (let column = 0; column < columns; column += 1) {
-                if (config.pattern === 'gates' && row > 0 && (column + row) % 4 === 0) continue;
-                if (config.pattern === 'fortress' && row === 2 && column > 1 && column < 7 && column % 2 === 1) continue;
-                const reinforced = config.pattern === 'fortress' && (row === 0 || column === 0 || column === columns - 1);
+                const durability = config.layout[row][column];
+                if (durability === 0) continue;
                 bricks.push({
                     x: startX + column * (brickWidth + gap),
                     y: 74 + row * (brickHeight + gap),
                     width: brickWidth,
                     height: brickHeight,
-                    hp: reinforced ? 2 : 1,
-                    maxHp: reinforced ? 2 : 1,
+                    hp: durability,
+                    maxHp: durability,
                     row,
                 });
             }
@@ -248,7 +278,7 @@
 
         gameState = 'level-clear';
         pauseButton.disabled = true;
-        showOverlay(`STAGE 0${levelIndex + 1} CLEAR`, '防線突破', `下一關速度提升，剩餘 ${lives} 條生命。`, '進入下一關');
+        showOverlay(`STAGE 0${levelIndex + 1} CLEAR`, '防線突破', LEVELS[levelIndex + 1].intro, '進入下一關');
         updateStatus('關卡完成');
         liveRegion.textContent = `第 ${levelIndex + 1} 關完成`;
     }
@@ -291,6 +321,9 @@
         const accent = styles.getPropertyValue('--accent').trim();
         const violet = styles.getPropertyValue('--violet').trim();
         const gold = styles.getPropertyValue('--gold').trim();
+        const damaged = styles.getPropertyValue('--damaged').trim();
+        const reinforcedEdge = styles.getPropertyValue('--reinforced-edge').trim();
+        const crack = styles.getPropertyValue('--crack').trim();
 
         context.fillStyle = background;
         context.fillRect(0, 0, WIDTH, HEIGHT);
@@ -305,17 +338,22 @@
 
         bricks.forEach((brick) => {
             context.save();
-            const color = brick.hp > 1 ? gold : brick.row % 2 === 0 ? accent : violet;
+            const reinforced = brick.maxHp === 2;
+            const cracked = reinforced && brick.hp === 1;
+            const color = reinforced ? (cracked ? damaged : gold) : brick.row % 2 === 0 ? accent : violet;
             context.fillStyle = color;
             context.shadowColor = color;
             context.shadowBlur = 10;
             roundedRect(brick.x, brick.y, brick.width, brick.height, 5);
             context.fill();
-            if (brick.maxHp > 1 && brick.hp === 1) {
-                context.fillStyle = background;
-                roundedRect(brick.x + 5, brick.y + 5, brick.width - 10, brick.height - 10, 3);
-                context.fill();
+            if (reinforced) {
+                context.shadowBlur = 0;
+                context.strokeStyle = reinforcedEdge;
+                context.lineWidth = 2;
+                roundedRect(brick.x + 1, brick.y + 1, brick.width - 2, brick.height - 2, 4);
+                context.stroke();
             }
+            if (cracked) drawCracks(brick, crack);
             context.restore();
         });
 
@@ -332,6 +370,34 @@
         context.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
         context.fill();
         context.restore();
+    }
+
+    function drawCracks(brick, color) {
+        const centerX = brick.x + brick.width / 2;
+        const centerY = brick.y + brick.height / 2;
+        context.strokeStyle = color;
+        context.lineWidth = 2.4;
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+
+        context.beginPath();
+        context.moveTo(centerX - 19, brick.y + 2);
+        context.lineTo(centerX - 9, centerY - 2);
+        context.lineTo(centerX - 13, centerY + 4);
+        context.lineTo(centerX, brick.y + brick.height - 2);
+        context.stroke();
+
+        context.beginPath();
+        context.moveTo(centerX - 9, centerY - 2);
+        context.lineTo(centerX + 1, centerY - 5);
+        context.lineTo(centerX + 10, brick.y + 3);
+        context.stroke();
+
+        context.beginPath();
+        context.moveTo(centerX - 1, centerY + 7);
+        context.lineTo(centerX + 9, centerY + 2);
+        context.lineTo(centerX + 20, brick.y + brick.height - 3);
+        context.stroke();
     }
 
     function roundedRect(x, y, width, height, radius) {

@@ -11,6 +11,9 @@
     --accent-ink: #04191f;
     --violet: #a77dff;
     --gold: #ffdb67;
+    --damaged: #a66f2d;
+    --reinforced-edge: #fff0a8;
+    --crack: #2b1608;
     --danger: #ff7080;
     --grid: rgba(92, 234, 255, .055);
     --shadow: 0 24px 70px rgba(0, 0, 0, .4);
@@ -29,6 +32,9 @@
     --accent-ink: #f6feff;
     --violet: #7045d1;
     --gold: #bd7800;
+    --damaged: #d09a3e;
+    --reinforced-edge: #704100;
+    --crack: #3b2400;
     --danger: #d23d50;
     --grid: rgba(11, 91, 110, .06);
     --shadow: 0 24px 70px rgba(34, 72, 101, .14);

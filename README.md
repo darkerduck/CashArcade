@@ -2,7 +2,7 @@
 
 一款零依賴、純前端的復古貪吃蛇遊戲。
 
-🎮 **開始遊玩：** <https://darkerduck.github.io/CashArcade/>
+🎮 **開始遊玩：** <https://darkerduck.github.io/CashArcade/snake/>
 
 ## 操作方式
 

@@ -3,89 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#081711">
-    <meta name="description" content="CashArcade：一款可以直接在瀏覽器遊玩的復古貪吃蛇遊戲。">
-    <title>CashArcade — 貪吃蛇</title>
-    <link rel="stylesheet" href="./style.css">
+    <meta http-equiv="refresh" content="0; url=./snake/">
+    <link rel="canonical" href="https://darkerduck.github.io/CashArcade/snake/">
+    <title>前往 CashArcade 貪吃蛇</title>
 </head>
 <body>
-    <main class="arcade-shell">
-        <header class="site-header">
-            <a class="brand" href="./" aria-label="CashArcade 首頁">
-                <span class="brand-mark" aria-hidden="true">CA</span>
-                <span>
-                    <strong>CashArcade</strong>
-                    <small>INSERT FOCUS TO PLAY</small>
-                </span>
-            </a>
-            <button class="icon-button" id="theme-toggle" type="button" aria-label="切換亮暗主題" title="切換亮暗主題">
-                <span aria-hidden="true">◐</span>
-            </button>
-        </header>
-
-        <section class="game-card" aria-labelledby="game-title">
-            <div class="game-heading">
-                <div>
-                    <p class="eyebrow">ARCADE 001</p>
-                    <h1 id="game-title">霓虹貪吃蛇</h1>
-                </div>
-                <div class="status-light">
-                    <span aria-hidden="true"></span>
-                    <strong id="status-text">準備</strong>
-                </div>
-            </div>
-
-            <div class="score-strip" aria-label="遊戲資訊">
-                <div>
-                    <span>分數</span>
-                    <strong id="score">0000</strong>
-                </div>
-                <div>
-                    <span>最高分</span>
-                    <strong id="high-score">0000</strong>
-                </div>
-                <div>
-                    <span>速度</span>
-                    <strong id="speed">×1.0</strong>
-                </div>
-            </div>
-
-            <div class="canvas-frame">
-                <canvas id="game-canvas" width="600" height="600" aria-label="貪吃蛇遊戲區域"></canvas>
-                <div class="game-overlay" id="game-overlay">
-                    <p class="overlay-kicker" id="overlay-kicker">READY?</p>
-                    <h2 id="overlay-title">準備開玩</h2>
-                    <p id="overlay-message">使用方向鍵、WASD 或下方按鈕控制。</p>
-                    <button class="primary-button" id="start-button" type="button">開始遊戲</button>
-                </div>
-            </div>
-
-            <div class="game-actions">
-                <button class="secondary-button" id="pause-button" type="button" disabled>暫停</button>
-                <button class="secondary-button" id="restart-button" type="button">重新開始</button>
-            </div>
-
-            <div class="touch-controls" aria-label="方向控制">
-                <button type="button" data-direction="up" aria-label="向上">↑</button>
-                <button type="button" data-direction="left" aria-label="向左">←</button>
-                <button type="button" data-direction="down" aria-label="向下">↓</button>
-                <button type="button" data-direction="right" aria-label="向右">→</button>
-            </div>
-
-            <p class="instructions">
-                <span><kbd>方向鍵</kbd> / <kbd>WASD</kbd> 移動</span>
-                <span><kbd>Space</kbd> 暫停</span>
-                <span><kbd>R</kbd> 重開</span>
-            </p>
-            <p class="sr-only" id="live-region" aria-live="polite"></p>
-        </section>
-
-        <footer>
-            <span>NO DOWNLOADS · NO TRACKING · JUST PLAY</span>
-            <a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a>
-        </footer>
-    </main>
-
-    <script src="./game.js" defer></script>
+    <p>正在前往 <a href="./snake/">CashArcade 貪吃蛇</a>⋯</p>
+    <script>
+        const destination = new URL('./snake/', window.location.href);
+        destination.search = window.location.search;
+        destination.hash = window.location.hash;
+        window.location.replace(destination);
+    </script>
 </body>
 </html>

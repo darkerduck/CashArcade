@@ -122,13 +122,15 @@
 
         direction = queuedDirection;
         const head = snake[0];
-        const next = { x: head.x + direction.x, y: head.y + direction.y };
+        const next = {
+            x: wrapCoordinate(head.x + direction.x),
+            y: wrapCoordinate(head.y + direction.y),
+        };
         const ateFood = next.x === food.x && next.y === food.y;
         const collisionBody = ateFood ? snake : snake.slice(0, -1);
-        const hitWall = next.x < 0 || next.y < 0 || next.x >= GRID_SIZE || next.y >= GRID_SIZE;
         const hitSelf = collisionBody.some((segment) => segment.x === next.x && segment.y === next.y);
 
-        if (hitWall || hitSelf) {
+        if (hitSelf) {
             finishGame(false);
             return;
         }
@@ -155,6 +157,10 @@
         updateHud();
         draw();
         scheduleTick();
+    }
+
+    function wrapCoordinate(value) {
+        return (value + GRID_SIZE) % GRID_SIZE;
     }
 
     function finishGame(won) {

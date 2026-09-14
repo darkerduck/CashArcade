@@ -1,17 +1,15 @@
 # CashArcade
 
-一款零依賴、純前端的復古貪吃蛇遊戲。
+一座零依賴、純前端的瀏覽器街機。
 
-🎮 **開始遊玩：** <https://darkerduck.github.io/CashArcade/snake/>
+🎮 **選擇遊戲：** <https://darkerduck.github.io/CashArcade/>
 
-## 操作方式
+## 遊戲
 
-- 使用方向鍵或 `WASD` 移動。
-- 按 `Space` 暫停或繼續。
-- 按 `R` 立即重新開始。
-- 手機和平板可以使用畫面下方的方向鍵，或直接在遊戲區滑動。
+- [霓虹貪吃蛇](https://darkerduck.github.io/CashArcade/snake/)：使用方向鍵、`WASD` 或觸控操作，穿越邊界並追逐光點。
+- [霓虹打磚塊](https://darkerduck.github.io/CashArcade/breakout/)：使用方向鍵、A/D、滑鼠或觸控控制擋板，突破三道防線。
 
-穿越棋盤邊界時，蛇會從相反方向重新出現；撞到自己的身體才會結束遊戲。吃到光點會獲得 10 分，每吃到五個光點，遊戲速度就會提高。最高分只會儲存在目前瀏覽器的 `localStorage`。
+兩款遊戲都支援亮暗主題、暫停、重新開始與瀏覽器本機最高分。
 
 ## 技術
 

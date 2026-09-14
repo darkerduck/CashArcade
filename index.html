@@ -3,17 +3,67 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="refresh" content="0; url=./snake/">
-    <link rel="canonical" href="https://darkerduck.github.io/CashArcade/snake/">
-    <title>前往 CashArcade 貪吃蛇</title>
+    <meta name="theme-color" content="#070d18">
+    <meta name="description" content="CashArcade：免下載、零追蹤，打開瀏覽器就能玩的純前端街機遊戲。">
+    <title>CashArcade — 選擇你的遊戲</title>
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <p>正在前往 <a href="./snake/">CashArcade 貪吃蛇</a>⋯</p>
-    <script>
-        const destination = new URL('./snake/', window.location.href);
-        destination.search = window.location.search;
-        destination.hash = window.location.hash;
-        window.location.replace(destination);
-    </script>
+    <main class="site-shell">
+        <header class="site-header">
+            <a class="brand" href="./" aria-label="CashArcade 首頁">
+                <span class="brand-mark" aria-hidden="true">CA</span>
+                <span><strong>CashArcade</strong><small>POCKET-SIZED ARCADE</small></span>
+            </a>
+            <button class="theme-button" id="theme-toggle" type="button" aria-label="切換亮暗主題" title="切換亮暗主題">◐</button>
+        </header>
+
+        <section class="hero" aria-labelledby="page-title">
+            <p class="eyebrow">WELCOME, PLAYER ONE</p>
+            <h1 id="page-title">選一台機器，<br><span>刷新你的紀錄。</span></h1>
+            <p class="intro">不必登入、不必下載。兩款零依賴的經典遊戲，現在就能在瀏覽器裡開玩。</p>
+            <div class="hero-status"><span aria-hidden="true"></span> 2 MACHINES ONLINE</div>
+        </section>
+
+        <section class="game-grid" aria-label="遊戲列表">
+            <article class="game-card snake-card">
+                <div class="card-screen" aria-hidden="true">
+                    <div class="pixel-snake"><i></i><i></i><i></i><i></i><i></i><b></b></div>
+                    <span class="screen-label">ARCADE 001</span>
+                </div>
+                <div class="card-body">
+                    <p class="card-number">01 / CLASSIC</p>
+                    <h2>霓虹貪吃蛇</h2>
+                    <p>追逐光點、持續加速，從棋盤另一側穿牆歸來。</p>
+                    <div class="tags"><span>鍵盤</span><span>觸控</span><span>最高分</span></div>
+                    <a class="play-link" href="./snake/">開始遊戲 <span aria-hidden="true">→</span></a>
+                </div>
+            </article>
+
+            <article class="game-card breakout-card">
+                <div class="card-screen" aria-hidden="true">
+                    <div class="pixel-bricks">
+                        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                        <b></b><em></em>
+                    </div>
+                    <span class="screen-label">ARCADE 002</span>
+                </div>
+                <div class="card-body">
+                    <p class="card-number">02 / THREE STAGES</p>
+                    <h2>霓虹打磚塊</h2>
+                    <p>守住能量球，突破三種陣型，擊碎最後一道防線。</p>
+                    <div class="tags"><span>鍵盤</span><span>拖曳</span><span>三關</span></div>
+                    <a class="play-link" href="./breakout/">開始遊戲 <span aria-hidden="true">→</span></a>
+                </div>
+            </article>
+        </section>
+
+        <footer>
+            <span>NO DOWNLOADS · NO TRACKING · JUST PLAY</span>
+            <a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a>
+        </footer>
+    </main>
+
+    <script src="./app.js" defer></script>
 </body>
 </html>

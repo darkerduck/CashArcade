@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080d19">
+    <meta name="description" content="CashArcade 霓虹打磚塊：突破三道防線的純前端街機遊戲。">
+    <title>CashArcade — 霓虹打磚塊</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <main class="arcade-shell">
+        <header class="site-header">
+            <a class="brand" href="../" aria-label="CashArcade 首頁">
+                <span class="brand-mark" aria-hidden="true">CA</span>
+                <span><strong>CashArcade</strong><small>INSERT FOCUS TO PLAY</small></span>
+            </a>
+            <button class="icon-button" id="theme-toggle" type="button" aria-label="切換亮暗主題" title="切換亮暗主題">◐</button>
+        </header>
+
+        <section class="game-card" aria-labelledby="game-title">
+            <div class="game-heading">
+                <div><p class="eyebrow">ARCADE 002</p><h1 id="game-title">霓虹打磚塊</h1></div>
+                <div class="status-light"><span aria-hidden="true"></span><strong id="status-text">準備</strong></div>
+            </div>
+
+            <div class="score-strip" aria-label="遊戲資訊">
+                <div><span>分數</span><strong id="score">0000</strong></div>
+                <div><span>最高分</span><strong id="high-score">0000</strong></div>
+                <div><span>關卡</span><strong id="level">1 / 3</strong></div>
+                <div><span>生命</span><strong id="lives">● ● ●</strong></div>
+            </div>
+
+            <div class="canvas-frame">
+                <canvas id="game-canvas" width="720" height="540" aria-label="打磚塊遊戲區域"></canvas>
+                <div class="game-overlay" id="game-overlay">
+                    <p class="overlay-kicker" id="overlay-kicker">STAGE 01</p>
+                    <h2 id="overlay-title">準備發球</h2>
+                    <p id="overlay-message">移動擋板，別讓能量球掉出畫面。</p>
+                    <button class="primary-button" id="start-button" type="button">開始遊戲</button>
+                </div>
+            </div>
+
+            <div class="game-actions">
+                <button class="secondary-button" id="pause-button" type="button" disabled>暫停</button>
+                <button class="secondary-button" id="restart-button" type="button">重新開始</button>
+            </div>
+
+            <p class="instructions">
+                <span><kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> 移動</span>
+                <span>滑鼠或觸控拖曳擋板</span>
+                <span><kbd>Space</kbd> 發球／暫停</span>
+                <span><kbd>R</kbd> 重開</span>
+            </p>
+            <p class="sr-only" id="live-region" aria-live="polite"></p>
+        </section>
+
+        <footer><a href="../">← ALL GAMES</a><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
+    </main>
+
+    <script src="./game.js" defer></script>
+</body>
+</html>

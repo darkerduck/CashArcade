@@ -6,6 +6,7 @@
     const MIN_DELAY = 70;
     const SPEED_STEP = 8;
     const SCORE_STEP = 10;
+    const CASHLINK_PUBLISHABLE_KEY = 'clgame_Z8DkWrGouzFoSO4z1uC0SrKkQWpoSx8GJGWrHmN6MDm9Rx4L';
     const DIRECTIONS = Object.freeze({
         up: { x: 0, y: -1 },
         down: { x: 0, y: 1 },
@@ -20,6 +21,8 @@
     const overlayTitle = document.querySelector('#overlay-title');
     const overlayMessage = document.querySelector('#overlay-message');
     const startButton = document.querySelector('#start-button');
+    const paymentFallback = document.querySelector('#payment-fallback');
+    const paymentNote = document.querySelector('#payment-note');
     const pauseButton = document.querySelector('#pause-button');
     const restartButton = document.querySelector('#restart-button');
     const scoreElement = document.querySelector('#score');
@@ -38,6 +41,10 @@
     let timer;
     let gameState;
     let touchStart;
+    let cashLinkArcade;
+    let paymentPending = false;
+    let paymentRetryRequired = false;
+    let roundStarted = false;
     let highScore = readNumber('casharcade-high-score');
 
     function readNumber(key) {
@@ -79,10 +86,6 @@
     function startGame() {
         if (gameState === 'running') return;
 
-        if (gameState === 'over' || gameState === 'won') {
-            resetGame();
-        }
-
         gameState = 'running';
         overlay.hidden = true;
         pauseButton.disabled = false;
@@ -104,6 +107,7 @@
         }
 
         if (gameState === 'paused') {
+            paymentRetryRequired = false;
             startGame();
         }
     }
@@ -203,8 +207,109 @@
         }
 
         if (gameState === 'ready') {
-            startGame();
+            void requestRoundStart();
         }
+    }
+
+    async function requestRoundStart(forceRestart = false) {
+        if (paymentPending) return;
+
+        if (gameState === 'paused' && !forceRestart && !paymentRetryRequired) {
+            togglePause();
+            return;
+        }
+
+        const needsPayment = roundStarted && (paymentRetryRequired || forceRestart || gameState === 'over' || gameState === 'won');
+        if (needsPayment) {
+            if (gameState === 'running') {
+                window.clearTimeout(timer);
+                gameState = 'paused';
+                pauseButton.textContent = '繼續';
+            }
+            paymentRetryRequired = true;
+            if (!cashLinkArcade) {
+                showPaymentFailure('CashLink 付款服務目前無法載入，請稍後重試。');
+                return;
+            }
+
+            setPaymentPending(true);
+            paymentFallback.hidden = true;
+            showOverlay('PAYMENT', '等待 1,000 sat 付款', '付款完成並消耗解鎖額度後，下一局才會開始。', '付款處理中…');
+            try {
+                await cashLinkArcade.unlock();
+                resetGame();
+                paymentRetryRequired = false;
+                roundStarted = true;
+                startGame();
+            } catch (error) {
+                if (error && error.code === 'popup_blocked' && error.checkoutUrl) {
+                    showPaymentFallback(error.checkoutUrl);
+                }
+                const message = error && error.code === 'cancelled'
+                    ? '付款已取消或視窗已關閉；本局尚未開始，您可以重試。'
+                    : error && error.code === 'popup_blocked'
+                        ? '瀏覽器阻擋付款視窗，請使用下方完整付款頁。'
+                        : '付款服務暫時無法完成；本局尚未開始，請稍後重試。';
+                showPaymentFailure(message);
+            } finally {
+                setPaymentPending(false);
+            }
+            return;
+        }
+
+        if (forceRestart || gameState === 'over' || gameState === 'won') {
+            resetGame();
+        }
+        startGame();
+        roundStarted = true;
+    }
+
+    function setPaymentPending(pending) {
+        paymentPending = pending;
+        startButton.disabled = pending;
+        restartButton.disabled = pending;
+        pauseButton.disabled = pending || gameState === 'over' || gameState === 'won' || gameState === 'ready';
+        if (pending) updateStatus('等待付款');
+    }
+
+    function showPaymentFallback(checkoutUrl) {
+        paymentFallback.href = checkoutUrl;
+        paymentFallback.hidden = false;
+    }
+
+    function showPaymentFailure(message) {
+        showOverlay('PAYMENT', '尚未解鎖下一局', message, '重試付款');
+        updateStatus('等待付款');
+        liveRegion.textContent = message;
+    }
+
+    function initializeCashLink() {
+        try {
+            cashLinkArcade = window.CashLinkArcade.create({ publishableKey: CASHLINK_PUBLISHABLE_KEY });
+        } catch {
+            paymentNote.textContent = '第一局免費；CashLink 付款服務目前無法載入。';
+            return;
+        }
+
+        cashLinkArcade.on('popup_blocked', ({ checkoutUrl }) => showPaymentFallback(checkoutUrl));
+        cashLinkArcade.on('payment_opened', () => {
+            updateStatus('等待付款');
+            liveRegion.textContent = 'CashLink 付款視窗已開啟';
+        });
+        cashLinkArcade.on('payment_status', (order) => {
+            const received = Number(order && order.received_satoshis) || 0;
+            overlayMessage.textContent = received > 0
+                ? `已偵測 ${received.toLocaleString()} sat，等待足額付款與解鎖。`
+                : '等待 CashLink 偵測付款；付款完成前不會開始下一局。';
+        });
+        cashLinkArcade.on('cancelled', () => showPaymentFailure('付款已取消；本局尚未開始，您可以重試。'));
+
+        cashLinkArcade.handshake().then((game) => {
+            const price = Number(game && game.price_satoshis) || 1000;
+            paymentNote.textContent = `第一局免費；之後每局需透過 CashLink 支付 ${price.toLocaleString()} sat。`;
+        }).catch(() => {
+            paymentNote.textContent = '第一局免費；CashLink 暫時無法確認後續局數的付款設定。';
+        });
     }
 
     function draw(failed = false) {
@@ -339,15 +444,14 @@
 
         if (event.code === 'Space') {
             event.preventDefault();
-            if (gameState === 'ready') startGame();
+            if (gameState === 'ready') void requestRoundStart();
             else togglePause();
             return;
         }
 
         if (event.key === 'r' || event.key === 'R') {
             event.preventDefault();
-            resetGame();
-            startGame();
+            void requestRoundStart(true);
         }
     }
 
@@ -371,13 +475,12 @@
     }
 
     startButton.addEventListener('click', () => {
-        if (gameState === 'paused') togglePause();
-        else startGame();
+        if (gameState === 'paused' && !paymentRetryRequired) togglePause();
+        else void requestRoundStart();
     });
     pauseButton.addEventListener('click', togglePause);
     restartButton.addEventListener('click', () => {
-        resetGame();
-        startGame();
+        void requestRoundStart(true);
     });
     themeToggle.addEventListener('click', toggleTheme);
     document.addEventListener('keydown', handleKeydown);
@@ -407,4 +510,5 @@
     applyStoredTheme();
     highScoreElement.textContent = String(highScore).padStart(4, '0');
     resetGame();
+    initializeCashLink();
 })();

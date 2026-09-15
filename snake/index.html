@@ -57,6 +57,7 @@
                     <h2 id="overlay-title">準備開玩</h2>
                     <p id="overlay-message">使用方向鍵、WASD 或下方按鈕控制。</p>
                     <button class="primary-button" id="start-button" type="button">開始遊戲</button>
+                    <a class="payment-link" id="payment-fallback" href="#" target="_blank" rel="noopener noreferrer" hidden>開啟完整付款頁 ↗</a>
                 </div>
             </div>
 
@@ -64,6 +65,8 @@
                 <button class="secondary-button" id="pause-button" type="button" disabled>暫停</button>
                 <button class="secondary-button" id="restart-button" type="button">重新開始</button>
             </div>
+
+            <p class="payment-note" id="payment-note">第一局免費；之後每局需透過 CashLink 支付 1,000 sat。</p>
 
             <div class="touch-controls" aria-label="方向控制">
                 <button type="button" data-direction="up" aria-label="向上">↑</button>
@@ -86,6 +89,7 @@
         </footer>
     </main>
 
+    <script src="https://linkincash.cc/arcade/sdk/v1.js" defer></script>
     <script src="./game.js" defer></script>
 </body>
 </html>

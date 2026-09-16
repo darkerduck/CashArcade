@@ -60,6 +60,36 @@
     const statusElement = document.querySelector('#status-text');
     const liveRegion = document.querySelector('#live-region');
     const themeToggle = document.querySelector('#theme-toggle');
+    const paymentStatus = document.querySelector('#payment-status');
+    const paymentRetry = document.querySelector('#payment-retry');
+    const paymentCancel = document.querySelector('#payment-cancel');
+    const paymentLink = document.querySelector('#payment-link');
+    const CHECKPOINT_KEY = 'casharcade.breakout.round.v1';
+    let lastCheckpoint = 0;
+    let paidReady = false;
+    const replayGate = CashArcadeReplayGate.create({
+        onStatus(message) { paymentStatus.textContent = message; },
+        onBusy(busy) {
+            startButton.disabled = busy;
+            restartButton.disabled = busy;
+            paymentRetry.disabled = busy;
+            paymentCancel.disabled = !busy;
+            pauseButton.disabled = busy || !['running', 'paused'].includes(gameState);
+            keys.left = false;
+            keys.right = false;
+        },
+        onCheckout(value) {
+            paymentLink.hidden = true;
+            paymentLink.removeAttribute('href');
+            if (!value) return;
+            try {
+                const url = new URL(value);
+                if (url.origin !== 'https://linkincash.cc' || !/^\/arcade\/checkout\/[0-9a-f-]+$/i.test(url.pathname) || url.search || url.username || url.password) return;
+                paymentLink.href = url.href; // Fragment credentials go only to the player's checkout link.
+                paymentLink.hidden = false;
+            } catch { /* Never display an untrusted checkout URL. */ }
+        },
+    });
 
     let paddle;
     let ball;
@@ -146,9 +176,13 @@
     }
 
     function startRound() {
-        if (gameState === 'running') return;
-
-        if (gameState === 'over' || gameState === 'won') resetGame();
+        if (replayGate.busy || !['ready', 'paused', 'life-lost', 'level-clear'].includes(gameState)) return;
+        if (gameState === 'ready') {
+            try { replayGate.markPlayed(); } catch {
+                paymentStatus.textContent = '瀏覽器儲存無法使用，無法安全恢復本局。請允許儲存後重試。';
+                return;
+            }
+        }
 
         if (gameState === 'level-clear') {
             levelIndex += 1;
@@ -163,6 +197,7 @@
         pauseButton.textContent = '暫停';
         updateStatus('遊戲中');
         updateHud();
+        checkpoint();
         liveRegion.textContent = `第 ${levelIndex + 1} 關開始`;
         previousTime = performance.now();
         cancelAnimationFrame(animationFrame);
@@ -170,6 +205,7 @@
     }
 
     function togglePause() {
+        if (replayGate.busy) return;
         if (gameState === 'running') {
             cancelAnimationFrame(animationFrame);
             gameState = 'paused';
@@ -177,6 +213,7 @@
             showOverlay('PAUSED', '遊戲暫停', '能量球已凍結，準備好再繼續。', '繼續遊戲');
             updateStatus('已暫停');
             liveRegion.textContent = '遊戲已暫停';
+            checkpoint();
             return;
         }
 
@@ -189,6 +226,7 @@
         previousTime = time;
         update(delta);
         draw();
+        if (time - lastCheckpoint > 250) { checkpoint(); lastCheckpoint = time; }
         if (gameState === 'running') animationFrame = requestAnimationFrame(loop);
     }
 
@@ -270,9 +308,10 @@
         if (levelIndex === TOTAL_LEVELS - 1) {
             gameState = 'won';
             pauseButton.disabled = true;
-            showOverlay('ALL CLEAR', '三道防線全數突破', `最終得分 ${score}，街機紀錄已更新。`, '再玩一次');
+            showOverlay('ALL CLEAR', '三道防線全數突破', `最終得分 ${score}，街機紀錄已更新。再來一局須付款解鎖。`, '再玩一次（付費）');
             updateStatus('全關制霸');
             liveRegion.textContent = `恭喜完成全部關卡，得分 ${score}`;
+            checkpoint();
             return;
         }
 
@@ -281,6 +320,7 @@
         showOverlay(`STAGE 0${levelIndex + 1} CLEAR`, '防線突破', LEVELS[levelIndex + 1].intro, '進入下一關');
         updateStatus('關卡完成');
         liveRegion.textContent = `第 ${levelIndex + 1} 關完成`;
+        checkpoint();
     }
 
     function loseLife() {
@@ -291,9 +331,10 @@
         if (lives <= 0) {
             gameState = 'over';
             pauseButton.disabled = true;
-            showOverlay('GAME OVER', `本局得分 ${score}`, `最高紀錄 ${highScore} 分，再挑戰一次吧。`, '再玩一次');
+            showOverlay('GAME OVER', `本局得分 ${score}`, `最高紀錄 ${highScore} 分。再來一局須付款解鎖。`, '再玩一次（付費）');
             updateStatus('遊戲結束');
             liveRegion.textContent = `遊戲結束，得分 ${score}`;
+            checkpoint();
             return;
         }
 
@@ -303,10 +344,12 @@
         showOverlay('BALL LOST', '再守住一次', `剩餘 ${lives} 條生命，能量球已回到擋板。`, '重新發球');
         updateStatus('等待發球');
         liveRegion.textContent = `失去一條生命，剩餘 ${lives} 條`;
+        checkpoint();
         draw();
     }
 
     function movePaddleTo(clientX) {
+        if (replayGate.busy) return;
         const rect = canvas.getBoundingClientRect();
         const canvasX = (clientX - rect.left) * (WIDTH / rect.width);
         paddle.x = clamp(canvasX - paddle.width / 2, 0, WIDTH - paddle.width);
@@ -431,16 +474,72 @@
 
     function handleKeydown(event) {
         if (['ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D', ' ', 'Spacebar'].includes(event.key)) event.preventDefault();
+        if (replayGate.busy) return;
         if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') keys.left = true;
         if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') keys.right = true;
         if (event.code === 'Space') {
+            if (event.repeat) return;
             if (gameState === 'running' || gameState === 'paused') togglePause();
-            else startRound();
+            else handleStart();
         }
         if (event.key === 'r' || event.key === 'R') {
-            resetGame();
-            startRound();
+            event.preventDefault();
+            if (!event.repeat) requestNewGame();
         }
+    }
+
+    function checkpoint() {
+        try {
+            sessionStorage.setItem(CHECKPOINT_KEY, JSON.stringify({ version: 1, gameState, paddle, ball, bricks, score, lives, levelIndex, paidReady }));
+            return true;
+        } catch { return false; }
+    }
+
+    function restoreRound() {
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(CHECKPOINT_KEY) || 'null');
+            if (!saved || saved.version !== 1 || !['running', 'paused', 'life-lost', 'level-clear', 'over', 'won', 'ready'].includes(saved.gameState)) return false;
+            if (!Number.isInteger(saved.score) || saved.score < 0 || !Number.isInteger(saved.lives) || saved.lives < 0 || saved.lives > 3 || !Number.isInteger(saved.levelIndex) || saved.levelIndex < 0 || saved.levelIndex >= TOTAL_LEVELS) return false;
+            if (saved.gameState === 'level-clear' && saved.levelIndex >= TOTAL_LEVELS - 1) return false;
+            if (!saved.paddle || !saved.ball || !Array.isArray(saved.bricks) || saved.bricks.length > 81) return false;
+            const values = [saved.paddle.x, saved.paddle.width, saved.paddle.speed, saved.ball.x, saved.ball.y, saved.ball.vx, saved.ball.vy, saved.ball.speed];
+            if (!values.every(Number.isFinite) || !saved.bricks.every(brick => [brick.x, brick.y, brick.width, brick.height, brick.row].every(Number.isFinite) && [1, 2].includes(brick.hp) && [1, 2].includes(brick.maxHp))) return false;
+            ({ paddle, ball, bricks, score, lives, levelIndex } = saved);
+            paidReady = saved.paidReady === true;
+            gameState = ['running', 'paused'].includes(saved.gameState) ? 'paused' : saved.gameState;
+            pauseButton.disabled = gameState !== 'paused';
+            pauseButton.textContent = gameState === 'paused' ? '繼續' : '暫停';
+            if (gameState === 'paused') showOverlay('ROUND RESTORED', '本局已恢復', '繼續同一局不會再次收費。', '繼續遊戲');
+            else if (gameState === 'life-lost') showOverlay('ROUND RESTORED', '等待重新發球', `剩餘 ${lives} 條生命；重新發球免費。`, '重新發球');
+            else if (gameState === 'level-clear') showOverlay('ROUND RESTORED', '防線突破', LEVELS[levelIndex + 1].intro, '進入下一關');
+            else if (gameState === 'over' || gameState === 'won') showOverlay('ROUND RESTORED', `本局得分 ${score}`, '再來一局須完成 CashLink 付款解鎖。', '再玩一次（付費）');
+            updateHud();
+            updateStatus(gameState === 'paused' ? '已恢復／暫停' : '本局已恢復');
+            draw();
+            return true;
+        } catch { return false; }
+    }
+
+    function handleStart() {
+        if (replayGate.busy) return;
+        if (['over', 'won', 'replay-pending'].includes(gameState) || (gameState === 'ready' && (replayGate.hasPlayed() || replayGate.pending()))) requestNewGame();
+        else if (gameState === 'paused') togglePause();
+        else startRound();
+    }
+
+    async function requestNewGame() {
+        if (replayGate.busy) return;
+        if (gameState === 'running') togglePause();
+        paidReady = false;
+        checkpoint();
+        const unlocked = await replayGate.unlock(() => {
+            resetGame();
+            replayGate.markPlayed();
+            gameState = 'paused';
+            paidReady = true;
+            if (!checkpoint()) throw new Error('Checkpoint unavailable');
+        });
+        if (unlocked) startRound();
     }
 
     function handleKeyup(event) {
@@ -461,9 +560,11 @@
         requestAnimationFrame(draw);
     }
 
-    startButton.addEventListener('click', () => gameState === 'paused' ? togglePause() : startRound());
+    startButton.addEventListener('click', handleStart);
     pauseButton.addEventListener('click', togglePause);
-    restartButton.addEventListener('click', () => { resetGame(); startRound(); });
+    restartButton.addEventListener('click', requestNewGame);
+    paymentRetry.addEventListener('click', requestNewGame);
+    paymentCancel.addEventListener('click', () => replayGate.cancel());
     themeToggle.addEventListener('click', toggleTheme);
     document.addEventListener('keydown', handleKeydown);
     document.addEventListener('keyup', handleKeyup);
@@ -475,4 +576,14 @@
 
     applyTheme();
     resetGame();
+    restoreRound();
+    if (paidReady) replayGate.acknowledgeCheckpoint();
+    if (replayGate.pending() || (gameState === 'ready' && replayGate.hasPlayed())) {
+        gameState = 'replay-pending';
+        pauseButton.disabled = true;
+        showOverlay('REPLAY RECOVERY', '恢復再來一局', '由 CashLink 恢復原訂單並確認解鎖；此頁不會自動付款。', '恢復／重試再來一局');
+        updateStatus('等待恢復');
+    }
+    replayGate.initialize();
+    window.addEventListener('pagehide', () => { if (gameState !== 'replay-pending') checkpoint(); });
 })();

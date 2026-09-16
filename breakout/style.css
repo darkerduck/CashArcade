@@ -82,6 +82,12 @@ canvas { display: block; width: 100%; aspect-ratio: 4 / 3; touch-action: none; c
 .game-actions { gap: 10px; margin-top: 14px; }
 .secondary-button { flex: 1; padding: 11px 14px; color: var(--ink); background: var(--raised); }
 .secondary-button:disabled { cursor: not-allowed; opacity: .45; }
+.payment-panel { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-family: system-ui, sans-serif; font-size: .78rem; line-height: 1.6; overflow-wrap: anywhere; }
+.payment-panel p { margin: 0 0 8px; }
+.payment-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.payment-actions button { flex: 1 1 160px; font-size: .74rem; }
+.payment-actions a { flex-basis: 100%; color: var(--accent); }
+.payment-actions a[hidden] { display: none; }
 .instructions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; margin: 18px 0 0; color: var(--muted); font-size: .67rem; }
 kbd { padding: 2px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; color: var(--ink); background: var(--raised); font: inherit; }
 footer { padding: 20px 4px 0; }

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://cashtokens.org/bcmr-v2.schema.json",
+  "version": {
+    "major": 0,
+    "minor": 1,
+    "patch": 0
+  },
+  "latestRevision": "2026-08-01T21:40:39.764Z",
+  "registryIdentity": {
+    "name": "bcmr for LinkCash",
+    "description": "self-published bcmr for LinkCash"
+  },
+  "identities": {
+    "9f4cc783174fb05bd9550ab28b64c71332a7bad4b0c1964727880c60a96b7652": {
+      "2026-08-01T21:40:39.764Z": {
+        "name": "LinkCash",
+        "description": "LinkCash is the utility and governance token of CashLink",
+        "token": {
+          "category": "9f4cc783174fb05bd9550ab28b64c71332a7bad4b0c1964727880c60a96b7652",
+          "symbol": "LINK",
+          "decimals": 2
+        },
+        "uris": {
+          "icon": "https://linking.cash/assets/LinkCash-Logo.png",
+          "web": "https://linking.cash/"
+        }
+      }
+    }
+  }
+}

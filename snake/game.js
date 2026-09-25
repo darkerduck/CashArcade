@@ -31,6 +31,7 @@
     const statusElement = document.querySelector('#status-text');
     const liveRegion = document.querySelector('#live-region');
     const themeToggle = document.querySelector('#theme-toggle');
+    const sound = CashArcadeAudio.create({ storageKey: 'casharcade-snake-sound-muted', toggleButton: document.querySelector('#sound-toggle') });
 
     let snake;
     let food;
@@ -86,6 +87,7 @@
     function startGame() {
         if (gameState === 'running') return;
 
+        sound.play(gameState === 'paused' ? 'resume' : 'start');
         gameState = 'running';
         overlay.hidden = true;
         pauseButton.disabled = false;
@@ -97,6 +99,7 @@
 
     function togglePause() {
         if (gameState === 'running') {
+            sound.play('pause');
             window.clearTimeout(timer);
             gameState = 'paused';
             pauseButton.textContent = '繼續';
@@ -130,6 +133,7 @@
             x: wrapCoordinate(head.x + direction.x),
             y: wrapCoordinate(head.y + direction.y),
         };
+        const wrapped = head.x + direction.x !== next.x || head.y + direction.y !== next.y;
         const ateFood = next.x === food.x && next.y === food.y;
         const collisionBody = ateFood ? snake : snake.slice(0, -1);
         const hitSelf = collisionBody.some((segment) => segment.x === next.x && segment.y === next.y);
@@ -152,11 +156,15 @@
                 return;
             }
 
+            sound.play('food');
+            if (foodsEaten % 5 === 0) sound.play('speed');
             food = placeFood();
             liveRegion.textContent = `得分 ${score}`;
         } else {
             snake.pop();
         }
+
+        if (wrapped) sound.play('wrap');
 
         updateHud();
         draw();
@@ -169,6 +177,7 @@
 
     function finishGame(won) {
         window.clearTimeout(timer);
+        sound.play(won ? 'win' : 'lose');
         gameState = won ? 'won' : 'over';
         pauseButton.disabled = true;
         updateStatus(won ? '全盤制霸' : '遊戲結束');
@@ -213,6 +222,7 @@
 
     async function requestRoundStart(forceRestart = false) {
         if (paymentPending) return;
+        sound.resume();
 
         if (gameState === 'paused' && !forceRestart && !paymentRetryRequired) {
             togglePause();

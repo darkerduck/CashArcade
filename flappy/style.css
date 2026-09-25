@@ -52,6 +52,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--gold); outline-
 .brand strong { letter-spacing: .06em; }
 .brand small { margin-top: 3px; color: var(--muted); font-size: .64rem; letter-spacing: .13em; }
 .icon-button { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 50%; color: var(--ink); background: var(--surface); cursor: pointer; }
+.header-controls { display: flex; align-items: center; gap: 8px; }
+.sound-toggle svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; }
+.sound-toggle[aria-pressed="false"] .sound-wave, .sound-toggle[aria-pressed="true"] .sound-slash { display: none; }
 .game-card { padding: clamp(18px, 4vw, 34px); border: 1px solid var(--line); border-radius: 24px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: var(--shadow); }
 .game-heading { gap: 16px; margin-bottom: 22px; }
 .eyebrow { margin: 0 0 7px; color: var(--accent); font-size: .69rem; font-weight: 900; letter-spacing: .2em; }

@@ -8,7 +8,10 @@ const gameSource = readFileSync(new URL('../breakout/game.js', import.meta.url),
 window.inspect = {
     state: () => ({ gameState, score, lives, levelIndex, paidReady }),
     set: (state, points = score) => { gameState = state; score = points; },
-    checkpoint, handleStart, requestNewGame
+    setBall: value => { ball = { ...ball, ...value }; },
+    setBricks: value => { bricks = value; },
+    setLevel: value => { levelIndex = value; },
+    checkpoint, handleStart, requestNewGame, update, collideWithBricks, completeLevel, loseLife
 };
 })();`);
 const KEY = 'clgame_1B2urqXhsmgm1tz3HmqppmCd3VElMeIXOUDGV5HUpwmSTReR';
@@ -36,6 +39,7 @@ async function harness({ session = storage(), local = storage(), handshakeError 
     const events = new Map();
     const sdkEvents = new Map();
     const attempts = [];
+    const audioEvents = [];
     let failHandshake = handshakeError;
     const sdk = {
         on: (name, handler) => sdkEvents.set(name, handler),
@@ -46,6 +50,7 @@ async function harness({ session = storage(), local = storage(), handshakeError 
     const sandbox = {
         sessionStorage: session, localStorage: local, URL,
         CashLinkArcade: { create: options => { assert.equal(options.publishableKey, KEY); return sdk; } },
+        CashArcadeAudio: { create: () => ({ play: name => audioEvents.push(name), resume() {} }) },
         performance: { now: () => 0 }, requestAnimationFrame: () => 1, cancelAnimationFrame() {},
         matchMedia: () => ({ matches: false }), getComputedStyle: () => ({ getPropertyValue: () => '#000' }),
         addEventListener: (name, handler) => events.set(`window:${name}`, handler),
@@ -61,11 +66,12 @@ async function harness({ session = storage(), local = storage(), handshakeError 
     vm.runInContext(gameSource, context);
     await flush();
     return {
-        context, session, local, attempts, sdkEvents,
+        context, session, local, attempts, sdkEvents, audioEvents,
         click: selector => elements.get(selector).click(),
         el: selector => elements.get(selector),
         key(key, code = '', repeat = false) { let prevented = false; events.get('keydown')({ key, code, repeat, preventDefault() { prevented = true; } }); return prevented; },
         state: () => context.inspect.state(), set: (...args) => context.inspect.set(...args),
+        inspect: context.inspect,
         checkpoint: () => context.inspect.checkpoint(),
         connect: () => { failHandshake = false; },
     };
@@ -94,12 +100,14 @@ test('all new-game controls serialize one awaited unlock; events do not authoriz
     assert.equal(h.attempts.length, 1);
     assert.equal(h.state().gameState, 'paused');
     assert.equal(h.state().score, 125);
+    assert.deepEqual(h.audioEvents, ['start']);
     h.sdkEvents.get('payment_status')({ credit_status: 'available' });
     h.sdkEvents.get('unlocked')({ credit_status: 'consumed' });
     assert.equal(h.state().gameState, 'paused');
     h.attempts[0].resolve({ credit_status: 'consumed' }); await restart;
     assert.equal(h.state().score, 0);
     assert.equal(h.state().gameState, 'running');
+    assert.deepEqual(h.audioEvents, ['start', 'start']);
     assert.equal(h.session.getItem(PENDING), null);
 });
 
@@ -193,4 +201,25 @@ test('untrusted popup fallback URLs are never displayed', async () => {
     h.attempts[0].reject({ code: 'popup_blocked', checkoutUrl: 'https://evil.example/arcade/checkout/123#secret' }); await promise;
     assert.equal(h.el('#payment-link').hidden, true);
     assert.equal(h.el('#payment-link').href, undefined);
+});
+
+test('breakout collision and transition sounds follow gameplay, not redraws', async () => {
+    const h = await harness(); h.click('#start-button');
+    h.inspect.setBricks([
+        { x: 100, y: 100, width: 64, height: 22, hp: 2, maxHp: 2, row: 0 },
+        { x: 210, y: 100, width: 64, height: 22, hp: 1, maxHp: 1, row: 0 },
+    ]);
+    h.inspect.setBall({ x: 110, y: 110, vx: 0, vy: 200 }); h.inspect.collideWithBricks(.016);
+    h.inspect.setBall({ x: 110, y: 110, vx: 0, vy: 200 }); h.inspect.collideWithBricks(.016);
+    h.inspect.setBall({ x: 220, y: 110, vx: 0, vy: 200 }); h.inspect.collideWithBricks(.016);
+    assert.deepEqual(h.audioEvents.slice(0, 5), ['start', 'crack', 'reinforced', 'brick', 'level']);
+    h.inspect.setBricks([{ x: 100, y: 100, width: 64, height: 22, hp: 1, maxHp: 1, row: 0 }]);
+    h.inspect.setBall({ x: 7, y: 320, vx: -100, vy: -100 }); h.inspect.update(.016);
+    h.inspect.setBall({ x: 360, y: 490, vx: 0, vy: 200 }); h.inspect.update(.016);
+    assert.ok(h.audioEvents.includes('wall'));
+    assert.ok(h.audioEvents.includes('paddle'));
+    h.inspect.loseLife();
+    assert.ok(h.audioEvents.includes('life'));
+    h.inspect.setLevel(2); h.inspect.completeLevel();
+    assert.equal(h.audioEvents.at(-1), 'win');
 });

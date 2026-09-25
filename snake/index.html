@@ -18,9 +18,12 @@
                     <small>INSERT FOCUS TO PLAY</small>
                 </span>
             </a>
-            <button class="icon-button" id="theme-toggle" type="button" aria-label="切換亮暗主題" title="切換亮暗主題">
-                <span aria-hidden="true">◐</span>
-            </button>
+            <div class="header-controls">
+                <button class="icon-button sound-toggle" id="sound-toggle" type="button" aria-label="關閉音效" aria-pressed="true" title="關閉音效"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4"/><path class="sound-wave" d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/><path class="sound-slash" d="M3 21 21 3"/></svg></button>
+                <button class="icon-button" id="theme-toggle" type="button" aria-label="切換亮暗主題" title="切換亮暗主題">
+                    <span aria-hidden="true">◐</span>
+                </button>
+            </div>
         </header>
 
         <section class="game-card" aria-labelledby="game-title">
@@ -89,6 +92,7 @@
         </footer>
     </main>
 
+    <script src="../audio.js" defer></script>
     <script src="https://linkincash.cc/arcade/sdk/v1.js" defer></script>
     <script src="./game.js" defer></script>
 </body>

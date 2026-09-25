@@ -134,6 +134,15 @@ footer {
     cursor: pointer;
 }
 
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sound-toggle svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; }
+.sound-toggle[aria-pressed="false"] .sound-wave, .sound-toggle[aria-pressed="true"] .sound-slash { display: none; }
+
 .game-card {
     padding: clamp(18px, 4vw, 34px);
     border: 1px solid var(--line);

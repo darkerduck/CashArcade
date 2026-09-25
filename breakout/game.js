@@ -60,6 +60,7 @@
     const statusElement = document.querySelector('#status-text');
     const liveRegion = document.querySelector('#live-region');
     const themeToggle = document.querySelector('#theme-toggle');
+    const sound = CashArcadeAudio.create({ storageKey: 'casharcade-breakout-sound-muted', toggleButton: document.querySelector('#sound-toggle') });
     const paymentStatus = document.querySelector('#payment-status');
     const paymentRetry = document.querySelector('#payment-retry');
     const paymentCancel = document.querySelector('#payment-cancel');
@@ -177,6 +178,7 @@
 
     function startRound() {
         if (replayGate.busy || !['ready', 'paused', 'life-lost', 'level-clear'].includes(gameState)) return;
+        const continuing = gameState === 'paused' && !ball.attached;
         if (gameState === 'ready') {
             try { replayGate.markPlayed(); } catch {
                 paymentStatus.textContent = '瀏覽器儲存無法使用，無法安全恢復本局。請允許儲存後重試。';
@@ -191,6 +193,7 @@
         }
 
         ball.attached = false;
+        sound.play(continuing ? 'resume' : 'start');
         gameState = 'running';
         overlay.hidden = true;
         pauseButton.disabled = false;
@@ -204,9 +207,10 @@
         animationFrame = requestAnimationFrame(loop);
     }
 
-    function togglePause() {
+    function togglePause({ silent = false } = {}) {
         if (replayGate.busy) return;
         if (gameState === 'running') {
+            if (!silent) sound.play('pause');
             cancelAnimationFrame(animationFrame);
             gameState = 'paused';
             pauseButton.textContent = '繼續';
@@ -238,14 +242,17 @@
         if (ball.x - BALL_RADIUS <= 0 && ball.vx < 0) {
             ball.x = BALL_RADIUS;
             ball.vx *= -1;
+            sound.play('wall');
         } else if (ball.x + BALL_RADIUS >= WIDTH && ball.vx > 0) {
             ball.x = WIDTH - BALL_RADIUS;
             ball.vx *= -1;
+            sound.play('wall');
         }
 
         if (ball.y - BALL_RADIUS <= 0 && ball.vy < 0) {
             ball.y = BALL_RADIUS;
             ball.vy *= -1;
+            sound.play('wall');
         }
 
         collideWithPaddle();
@@ -271,6 +278,7 @@
         const angle = offset * (Math.PI / 3);
         ball.vx = ball.speed * Math.sin(angle);
         ball.vy = -Math.abs(ball.speed * Math.cos(angle));
+        sound.play('paddle');
     }
 
     function collideWithBricks(delta) {
@@ -292,6 +300,7 @@
             else ball.vx *= -1;
 
             brick.hp -= 1;
+            sound.play(brick.hp === 0 ? (brick.maxHp === 2 ? 'reinforced' : 'brick') : 'crack');
             score += brick.hp === 0 ? 10 : 5;
             highScore = Math.max(highScore, score);
             saveHighScore();
@@ -306,6 +315,7 @@
     function completeLevel() {
         cancelAnimationFrame(animationFrame);
         if (levelIndex === TOTAL_LEVELS - 1) {
+            sound.play('win');
             gameState = 'won';
             pauseButton.disabled = true;
             showOverlay('ALL CLEAR', '三道防線全數突破', `最終得分 ${score}，街機紀錄已更新。再來一局須付款解鎖。`, '再玩一次（付費）');
@@ -315,6 +325,7 @@
             return;
         }
 
+        sound.play('level');
         gameState = 'level-clear';
         pauseButton.disabled = true;
         showOverlay(`STAGE 0${levelIndex + 1} CLEAR`, '防線突破', LEVELS[levelIndex + 1].intro, '進入下一關');
@@ -329,6 +340,7 @@
         updateHud();
 
         if (lives <= 0) {
+            sound.play('lose');
             gameState = 'over';
             pauseButton.disabled = true;
             showOverlay('GAME OVER', `本局得分 ${score}`, `最高紀錄 ${highScore} 分。再來一局須付款解鎖。`, '再玩一次（付費）');
@@ -338,6 +350,7 @@
             return;
         }
 
+        sound.play('life');
         prepareBall();
         gameState = 'life-lost';
         pauseButton.disabled = true;
@@ -529,7 +542,8 @@
 
     async function requestNewGame() {
         if (replayGate.busy) return;
-        if (gameState === 'running') togglePause();
+        sound.resume();
+        if (gameState === 'running') togglePause({ silent: true });
         paidReady = false;
         checkpoint();
         const unlocked = await replayGate.unlock(() => {

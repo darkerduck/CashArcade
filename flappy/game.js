@@ -31,6 +31,7 @@
     const statusElement = document.querySelector('#status-text');
     const liveRegion = document.querySelector('#live-region');
     const themeToggle = document.querySelector('#theme-toggle');
+    const sound = CashArcadeAudio.create({ storageKey: 'casharcade-flappy-sound-muted', toggleButton: document.querySelector('#sound-toggle') });
 
     let player;
     let gates;
@@ -82,6 +83,7 @@
         if (gameState === 'running') return;
         if (gameState === 'over') resetGame();
 
+        sound.play('flap');
         player.velocity = FLAP_VELOCITY;
         gameState = 'running';
         overlay.hidden = true;
@@ -101,10 +103,12 @@
         }
         if (gameState !== 'running') return;
         player.velocity = FLAP_VELOCITY;
+        sound.play('flap');
     }
 
     function togglePause(automatic = false) {
         if (gameState === 'running') {
+            if (!automatic) sound.play('pause');
             cancelAnimationFrame(animationFrame);
             gameState = 'paused';
             pauseButton.textContent = '繼續';
@@ -118,6 +122,7 @@
     }
 
     function resumeGame() {
+        sound.play('resume');
         gameState = 'running';
         overlay.hidden = true;
         pauseButton.textContent = '暫停';
@@ -152,6 +157,8 @@
             if (!gate.scored && gate.x + GATE_WIDTH < PLAYER_X) {
                 gate.scored = true;
                 score += 1;
+                sound.play('pass');
+                if (score % 5 === 0) sound.play('speed');
                 highScore = Math.max(highScore, score);
                 saveHighScore();
                 updateDifficulty();
@@ -199,6 +206,7 @@
 
     function endGame() {
         cancelAnimationFrame(animationFrame);
+        sound.play('lose');
         gameState = 'over';
         pauseButton.disabled = true;
         showOverlay('FLIGHT ENDED', `本局穿越 ${score} 道閘門`, `最高紀錄 ${highScore} 分。再試一次，飛得更遠。`, '再飛一次');

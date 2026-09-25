@@ -11,6 +11,7 @@
     --accent-strong: #19d864;
     --accent-ink: #03200d;
     --food: #ffcc4d;
+    --dessert: #ff75de;
     --danger: #ff6d71;
     --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
 }
@@ -28,6 +29,7 @@
     --accent-strong: #069847;
     --accent-ink: #f7fff9;
     --food: #e49c00;
+    --dessert: #b32393;
     --danger: #d83b48;
     --shadow: 0 24px 70px rgba(26, 75, 45, 0.14);
 }
@@ -210,6 +212,25 @@ h1 {
 .score-strip strong {
     display: block;
 }
+
+.item-guide {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px 18px;
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: .68rem;
+    line-height: 1.4;
+}
+
+.item-guide span { white-space: nowrap; }
+.item-guide strong { color: var(--dessert); white-space: nowrap; }
+.item-mark { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; }
+.item-food { border-radius: 50%; background: var(--food); }
+.item-dessert { background: var(--dessert); transform: rotate(45deg) scale(.8); }
+.item-bomb { border-radius: 50%; background: var(--danger); }
 
 .score-strip span {
     margin-bottom: 3px;

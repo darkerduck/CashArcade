@@ -67,6 +67,21 @@ test('rapid collision sounds are throttled while other effects still play', () =
     assert.equal(h.calls.filter(([name]) => name === 'toneStart').length, 2);
 });
 
+test('snake pickup and bomb sounds are distinct, and follow-up cues can be delayed', () => {
+    const h = setup(); const sound = h.create();
+    sound.play('food');
+    const foodStarts = h.calls.filter(([name]) => name === 'toneStart').map(([, time]) => time);
+    sound.play('dessert');
+    const dessertStarts = h.calls.filter(([name]) => name === 'toneStart').map(([, time]) => time).slice(2);
+    sound.play('bomb');
+    assert.equal(h.calls.filter(([name]) => name === 'noiseStart').length, 1);
+    assert.equal(foodStarts.length, 2);
+    assert.equal(dessertStarts.length, 2);
+    sound.play('speed', .26);
+    const speedStarts = h.calls.filter(([name]) => name === 'toneStart').map(([, time]) => time).slice(-3);
+    assert.ok(speedStarts[0] >= Math.max(...dessertStarts) + .17);
+});
+
 test('quiet flap tone gains 18 dB and louder sounds stay below clipping', () => {
     const h = setup(); const sound = h.create();
     sound.play('flap');

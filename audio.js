@@ -12,6 +12,8 @@
         confirm: { tones: [[660, 880, .09, 0, .10, 'sine']] },
         start: { tones: [[392, 523, .10, 0, .11, 'triangle'], [523, 784, .12, .10, .09, 'triangle']] },
         food: { tones: [[660, 880, .10, 0, .10, 'sine'], [880, 1047, .08, .06, .07, 'sine']] },
+        dessert: { tones: [[784, 1047, .10, 0, .09, 'triangle'], [1047, 1319, .11, .09, .10, 'sine']] },
+        bomb: { tones: [[220, 65, .28, 0, .12, 'sawtooth']], noise: [.22, .07, 800] },
         speed: { tones: [[523, 523, .08, 0, .08, 'triangle'], [659, 659, .08, .09, .08, 'triangle'], [784, 988, .13, .18, .09, 'triangle']] },
         wrap: { tones: [[330, 220, .085, 0, .055, 'sine']], minGap: 90 },
         pause: { tones: [[440, 330, .10, 0, .07, 'triangle']] },
@@ -131,7 +133,7 @@
             source.stop(base + duration + .015);
         }
 
-        function play(name) {
+        function play(name, delay = 0) {
             if (muted || !Object.prototype.hasOwnProperty.call(EFFECTS, name)) return;
             const effect = EFFECTS[name];
             const now = Date.now();
@@ -140,7 +142,7 @@
             if (!audio) return;
             resume();
             try {
-                const start = audio.currentTime + .005;
+                const start = audio.currentTime + .005 + (Number.isFinite(delay) ? Math.max(0, Math.min(delay, 1)) : 0);
                 effect.tones.forEach(spec => tone(audio, spec, start));
                 if (effect.noise) noise(audio, effect.noise, start);
                 lastPlayed.set(name, now);

@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#081711">
     <meta name="description" content="CashArcade：一款可以直接在瀏覽器遊玩的復古貪吃蛇遊戲。">
     <title>CashArcade — 貪吃蛇</title>
-    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./style.css?v=2">
 </head>
 <body>
     <main class="arcade-shell">
@@ -53,6 +53,13 @@
                 </div>
             </div>
 
+            <div class="item-guide" aria-label="遊戲物件說明">
+                <span><i class="item-mark item-food" aria-hidden="true"></i>普通食物 +1 節／10 分</span>
+                <span><i class="item-mark item-dessert" aria-hidden="true"></i>甜點 +2 節／20 分</span>
+                <span><i class="item-mark item-bomb" aria-hidden="true"></i>炸彈：碰到即結束</span>
+                <strong id="dessert-status">下次甜點 20 秒後</strong>
+            </div>
+
             <div class="canvas-frame">
                 <canvas id="game-canvas" width="600" height="600" aria-label="貪吃蛇遊戲區域"></canvas>
                 <div class="game-overlay" id="game-overlay">
@@ -92,8 +99,8 @@
         </footer>
     </main>
 
-    <script src="../audio.js?v=3" defer></script>
+    <script src="../audio.js?v=4" defer></script>
     <script src="https://linkincash.cc/arcade/sdk/v1.js" defer></script>
-    <script src="./game.js" defer></script>
+    <script src="./game.js?v=2" defer></script>
 </body>
 </html>

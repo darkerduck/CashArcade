@@ -6,6 +6,8 @@
     const MIN_DELAY = 70;
     const SPEED_STEP = 8;
     const SCORE_STEP = 10;
+    const DESSERT_INTERVAL_MS = 20000;
+    const DESSERT_LIFETIME_MS = 10000;
     const CASHLINK_PUBLISHABLE_KEY = 'clgame_Z8DkWrGouzFoSO4z1uC0SrKkQWpoSx8GJGWrHmN6MDm9Rx4L';
     const DIRECTIONS = Object.freeze({
         up: { x: 0, y: -1 },
@@ -28,6 +30,7 @@
     const scoreElement = document.querySelector('#score');
     const highScoreElement = document.querySelector('#high-score');
     const speedElement = document.querySelector('#speed');
+    const dessertStatus = document.querySelector('#dessert-status');
     const statusElement = document.querySelector('#status-text');
     const liveRegion = document.querySelector('#live-region');
     const themeToggle = document.querySelector('#theme-toggle');
@@ -35,10 +38,16 @@
 
     let snake;
     let food;
+    let dessert;
+    let bomb;
     let direction;
     let queuedDirection;
     let score;
     let foodsEaten;
+    let growthRemaining;
+    let elapsedPlayMs;
+    let runStartedAt;
+    let dessertCycle;
     let timer;
     let gameState;
     let touchStart;
@@ -75,12 +84,19 @@
         queuedDirection = DIRECTIONS.right;
         score = 0;
         foodsEaten = 0;
+        growthRemaining = 0;
+        elapsedPlayMs = 0;
+        runStartedAt = null;
+        dessertCycle = 0;
         gameState = 'ready';
-        food = placeFood();
+        dessert = null;
+        food = placeItem();
+        bomb = placeItem([food]);
         pauseButton.disabled = true;
         pauseButton.textContent = '暫停';
         showOverlay('READY?', '準備開玩', '使用方向鍵、WASD 或下方按鈕控制。', '開始遊戲');
         updateHud();
+        updateDessertStatus();
         draw();
     }
 
@@ -88,6 +104,7 @@
         if (gameState === 'running') return;
 
         sound.play(gameState === 'paused' ? 'resume' : 'start');
+        runStartedAt = performance.now();
         gameState = 'running';
         overlay.hidden = true;
         pauseButton.disabled = false;
@@ -97,20 +114,36 @@
         scheduleTick();
     }
 
+    function freezePlayClock() {
+        if (runStartedAt !== null) {
+            elapsedPlayMs += Math.max(0, performance.now() - runStartedAt);
+            runStartedAt = null;
+        }
+    }
+
+    function playingTime() {
+        return elapsedPlayMs + (runStartedAt === null ? 0 : Math.max(0, performance.now() - runStartedAt));
+    }
+
+    function pauseGame(automatic = false) {
+        if (gameState !== 'running') return;
+        if (!automatic) sound.play('pause');
+        window.clearTimeout(timer);
+        freezePlayClock();
+        gameState = 'paused';
+        pauseButton.textContent = '繼續';
+        showOverlay('PAUSED', '遊戲暫停', '休息一下。按空白鍵或按鈕繼續。', '繼續遊戲');
+        updateStatus('已暫停');
+        liveRegion.textContent = '遊戲已暫停';
+    }
+
     function togglePause() {
         if (gameState === 'running') {
-            sound.play('pause');
-            window.clearTimeout(timer);
-            gameState = 'paused';
-            pauseButton.textContent = '繼續';
-            showOverlay('PAUSED', '遊戲暫停', '休息一下。按空白鍵或按鈕繼續。', '繼續遊戲');
-            updateStatus('已暫停');
-            liveRegion.textContent = '遊戲已暫停';
+            pauseGame();
             return;
         }
 
-        if (gameState === 'paused') {
-            paymentRetryRequired = false;
+        if (gameState === 'paused' && !paymentRetryRequired && !paymentPending) {
             startGame();
         }
     }
@@ -127,6 +160,7 @@
     function tick() {
         if (gameState !== 'running') return;
 
+        updateDessert();
         direction = queuedDirection;
         const head = snake[0];
         const next = {
@@ -134,8 +168,15 @@
             y: wrapCoordinate(head.y + direction.y),
         };
         const wrapped = head.x + direction.x !== next.x || head.y + direction.y !== next.y;
-        const ateFood = next.x === food.x && next.y === food.y;
-        const collisionBody = ateFood ? snake : snake.slice(0, -1);
+        if (sameCell(next, bomb)) {
+            finishGame(false, 'bomb');
+            return;
+        }
+
+        const ateFood = sameCell(next, food);
+        const ateDessert = sameCell(next, dessert);
+        const growth = ateDessert ? 2 : ateFood ? 1 : 0;
+        const collisionBody = growthRemaining + growth > 0 ? snake : snake.slice(0, -1);
         const hitSelf = collisionBody.some((segment) => segment.x === next.x && segment.y === next.y);
 
         if (hitSelf) {
@@ -144,27 +185,35 @@
         }
 
         snake.unshift(next);
+        growthRemaining += growth;
+        if (growthRemaining > 0) growthRemaining -= 1;
+        else snake.pop();
 
-        if (ateFood) {
-            score += SCORE_STEP;
-            foodsEaten += 1;
+        if (ateFood || ateDessert) {
+            const previousFoodsEaten = foodsEaten;
+            score += SCORE_STEP * growth;
+            foodsEaten += growth;
             highScore = Math.max(highScore, score);
             saveValue('casharcade-high-score', highScore);
+            sound.play(ateDessert ? 'dessert' : 'food');
+            if (ateFood) food = null;
+            if (ateDessert) {
+                dessert = null;
+                updateDessertStatus();
+            }
 
             if (snake.length === GRID_SIZE * GRID_SIZE) {
-                finishGame(true);
+                updateHud();
+                finishGame(true, 'full', .26);
                 return;
             }
 
-            sound.play('food');
-            if (foodsEaten % 5 === 0) sound.play('speed');
-            food = placeFood();
+            ensureFood();
+            if (Math.floor(foodsEaten / 5) > Math.floor(previousFoodsEaten / 5)) sound.play('speed', .26);
             liveRegion.textContent = `得分 ${score}`;
-        } else {
-            snake.pop();
         }
 
-        if (wrapped) sound.play('wrap');
+        if (wrapped && !ateFood && !ateDessert) sound.play('wrap');
 
         updateHud();
         draw();
@@ -175,34 +224,76 @@
         return (value + GRID_SIZE) % GRID_SIZE;
     }
 
-    function finishGame(won) {
+    function finishGame(won, cause = 'self', soundDelay = 0) {
         window.clearTimeout(timer);
-        sound.play(won ? 'win' : 'lose');
+        freezePlayClock();
+        sound.play(cause === 'bomb' ? 'bomb' : won ? 'win' : 'lose', soundDelay);
         gameState = won ? 'won' : 'over';
         pauseButton.disabled = true;
-        updateStatus(won ? '全盤制霸' : '遊戲結束');
+        updateStatus(won ? '全盤制霸' : cause === 'bomb' ? '碰到炸彈' : '遊戲結束');
         showOverlay(
             won ? 'PERFECT!' : 'GAME OVER',
-            won ? '你填滿了整座街機' : `本局得分 ${score}`,
-            won ? '這不是運氣，是傳說。' : `最高紀錄 ${highScore} 分，再挑戰一次吧。`,
+            won ? '你填滿了整座街機' : cause === 'bomb' ? '碰到炸彈！' : `本局得分 ${score}`,
+            won ? '這不是運氣，是傳說。' : `本局 ${score} 分，最高紀錄 ${highScore} 分。`,
             '再玩一次',
         );
-        liveRegion.textContent = won ? '恭喜完成遊戲' : `遊戲結束，得分 ${score}`;
+        liveRegion.textContent = won ? '恭喜完成遊戲' : `${cause === 'bomb' ? '碰到炸彈，' : ''}遊戲結束，得分 ${score}`;
         draw(true);
     }
 
-    function placeFood() {
+    function sameCell(first, second) {
+        return Boolean(first && second && first.x === second.x && first.y === second.y);
+    }
+
+    function placeItem(occupied = []) {
         const openCells = [];
 
         for (let y = 0; y < GRID_SIZE; y += 1) {
             for (let x = 0; x < GRID_SIZE; x += 1) {
-                if (!snake.some((segment) => segment.x === x && segment.y === y)) {
+                if (!snake.some((segment) => segment.x === x && segment.y === y)
+                    && !occupied.some((item) => item && item.x === x && item.y === y)) {
                     openCells.push({ x, y });
                 }
             }
         }
 
-        return openCells[Math.floor(Math.random() * openCells.length)] || { x: 0, y: 0 };
+        return openCells.length ? openCells[Math.floor(Math.random() * openCells.length)] : null;
+    }
+
+    function ensureFood() {
+        if (food) return;
+        food = placeItem([bomb, dessert]);
+        if (!food && bomb) {
+            bomb = null;
+            food = placeItem([dessert]);
+        }
+        if (!food && dessert) {
+            dessert = null;
+            food = placeItem();
+        }
+    }
+
+    function updateDessert() {
+        const elapsed = playingTime();
+        const cycle = Math.floor(elapsed / DESSERT_INTERVAL_MS);
+        const withinWindow = cycle > 0 && elapsed - cycle * DESSERT_INTERVAL_MS < DESSERT_LIFETIME_MS;
+
+        if (cycle !== dessertCycle) {
+            dessertCycle = cycle;
+            dessert = withinWindow ? placeItem([food, bomb]) : null;
+            if (dessert) liveRegion.textContent = '限時甜點出現，10 秒後消失';
+        } else if (!withinWindow && dessert) {
+            dessert = null;
+            liveRegion.textContent = '限時甜點已消失';
+        }
+        updateDessertStatus(elapsed);
+    }
+
+    function updateDessertStatus(elapsed = playingTime()) {
+        const phase = elapsed % DESSERT_INTERVAL_MS;
+        dessertStatus.textContent = dessert
+            ? `甜點剩餘 ${Math.ceil((DESSERT_LIFETIME_MS - phase) / 1000)} 秒`
+            : `下次甜點 ${Math.ceil((DESSERT_INTERVAL_MS - phase) / 1000)} 秒後`;
     }
 
     function setDirection(nextDirection) {
@@ -233,10 +324,12 @@
         if (needsPayment) {
             if (gameState === 'running') {
                 window.clearTimeout(timer);
+                freezePlayClock();
                 gameState = 'paused';
                 pauseButton.textContent = '繼續';
             }
             paymentRetryRequired = true;
+            pauseButton.disabled = true;
             if (!cashLinkArcade) {
                 showPaymentFailure('CashLink 付款服務目前無法載入，請稍後重試。');
                 return;
@@ -278,7 +371,7 @@
         paymentPending = pending;
         startButton.disabled = pending;
         restartButton.disabled = pending;
-        pauseButton.disabled = pending || gameState === 'over' || gameState === 'won' || gameState === 'ready';
+        pauseButton.disabled = pending || paymentRetryRequired || gameState === 'over' || gameState === 'won' || gameState === 'ready';
         if (pending) updateStatus('等待付款');
     }
 
@@ -329,6 +422,7 @@
         const accent = styles.getPropertyValue('--accent').trim();
         const accentStrong = styles.getPropertyValue('--accent-strong').trim();
         const foodColor = styles.getPropertyValue('--food').trim();
+        const dessertColor = styles.getPropertyValue('--dessert').trim();
         const danger = styles.getPropertyValue('--danger').trim();
         const cell = canvas.width / GRID_SIZE;
 
@@ -348,6 +442,8 @@
         }
 
         drawFood(cell, foodColor);
+        drawDessert(cell, dessertColor);
+        drawBomb(cell, danger, background);
 
         snake.forEach((segment, index) => {
             const gap = index === 0 ? 2 : 3;
@@ -378,6 +474,60 @@
         context.beginPath();
         context.arc(centerX, centerY, cell * 0.28 * pulse, 0, Math.PI * 2);
         context.fill();
+        context.restore();
+    }
+
+    function drawDessert(cell, color) {
+        if (!dessert) return;
+
+        const centerX = dessert.x * cell + cell / 2;
+        const centerY = dessert.y * cell + cell / 2;
+        const remaining = Math.max(0, DESSERT_LIFETIME_MS - playingTime() % DESSERT_INTERVAL_MS);
+        context.save();
+        context.shadowColor = color;
+        context.shadowBlur = 14;
+        context.fillStyle = color;
+        context.beginPath();
+        context.moveTo(centerX, centerY - cell * .3);
+        context.lineTo(centerX + cell * .3, centerY);
+        context.lineTo(centerX, centerY + cell * .3);
+        context.lineTo(centerX - cell * .3, centerY);
+        context.closePath();
+        context.fill();
+        context.shadowBlur = 0;
+        context.strokeStyle = color;
+        context.lineWidth = 2;
+        context.beginPath();
+        context.arc(centerX, centerY, cell * .42, -Math.PI / 2,
+            -Math.PI / 2 + Math.PI * 2 * remaining / DESSERT_LIFETIME_MS);
+        context.stroke();
+        context.restore();
+    }
+
+    function drawBomb(cell, color, background) {
+        if (!bomb) return;
+
+        const centerX = bomb.x * cell + cell / 2;
+        const centerY = bomb.y * cell + cell / 2;
+        context.save();
+        context.fillStyle = color;
+        context.beginPath();
+        context.arc(centerX, centerY + cell * .06, cell * .25, 0, Math.PI * 2);
+        context.fill();
+        context.strokeStyle = color;
+        context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(centerX, centerY - cell * .18);
+        context.lineTo(centerX + cell * .13, centerY - cell * .33);
+        context.stroke();
+        context.strokeStyle = background;
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(centerX - cell * .09, centerY - cell * .02);
+        context.lineTo(centerX + cell * .09, centerY + cell * .15);
+        context.moveTo(centerX + cell * .09, centerY - cell * .02);
+        context.lineTo(centerX - cell * .09, centerY + cell * .15);
+        context.stroke();
         context.restore();
     }
 
@@ -494,6 +644,9 @@
     });
     themeToggle.addEventListener('click', toggleTheme);
     document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) pauseGame(true);
+    });
 
     document.querySelectorAll('[data-direction]').forEach((button) => {
         button.addEventListener('click', () => setDirection(DIRECTIONS[button.dataset.direction]));

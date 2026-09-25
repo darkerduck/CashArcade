@@ -8,6 +8,7 @@
     const SCORE_STEP = 10;
     const DESSERT_INTERVAL_MS = 20000;
     const DESSERT_LIFETIME_MS = 10000;
+    const BOMB_RELOCATION_MS = 30000;
     const CASHLINK_PUBLISHABLE_KEY = 'clgame_Z8DkWrGouzFoSO4z1uC0SrKkQWpoSx8GJGWrHmN6MDm9Rx4L';
     const DIRECTIONS = Object.freeze({
         up: { x: 0, y: -1 },
@@ -48,6 +49,7 @@
     let elapsedPlayMs;
     let runStartedAt;
     let dessertCycle;
+    let bombCycle;
     let timer;
     let gameState;
     let touchStart;
@@ -88,6 +90,7 @@
         elapsedPlayMs = 0;
         runStartedAt = null;
         dessertCycle = 0;
+        bombCycle = 0;
         gameState = 'ready';
         dessert = null;
         food = placeItem();
@@ -167,6 +170,7 @@
             x: wrapCoordinate(head.x + direction.x),
             y: wrapCoordinate(head.y + direction.y),
         };
+        updateBomb(next);
         const wrapped = head.x + direction.x !== next.x || head.y + direction.y !== next.y;
         if (sameCell(next, bomb)) {
             finishGame(false, 'bomb');
@@ -271,6 +275,20 @@
             dessert = null;
             food = placeItem();
         }
+    }
+
+    function updateBomb(next) {
+        const cycle = Math.floor(playingTime() / BOMB_RELOCATION_MS);
+        if (cycle <= bombCycle) return;
+        bombCycle = cycle;
+        if (!bomb) return;
+
+        const nextNeighbors = Object.values(DIRECTIONS).map((step) => ({
+            x: wrapCoordinate(next.x + step.x),
+            y: wrapCoordinate(next.y + step.y),
+        }));
+        const newPosition = placeItem([food, dessert, bomb, next, ...nextNeighbors]);
+        if (newPosition) bomb = newPosition;
     }
 
     function updateDessert() {

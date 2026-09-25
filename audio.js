@@ -1,7 +1,7 @@
 (() => {
     'use strict';
 
-    // Each voice is [start Hz, end Hz, duration seconds, delay seconds, level, wave].
+    // Each voice is [start Hz, end Hz, duration seconds, delay seconds, level, wave, optional hold seconds].
     // Boost quiet effects by 18 dB while softly limiting loud or overlapping voices.
     const MASTER_LEVEL = .7;
     const VOICE_BOOST = 2.5;
@@ -11,7 +11,7 @@
     const EFFECTS = Object.freeze({
         confirm: { tones: [[660, 880, .09, 0, .10, 'sine']] },
         start: { tones: [[392, 523, .10, 0, .11, 'triangle'], [523, 784, .12, .10, .09, 'triangle']] },
-        food: { tones: [[660, 880, .10, 0, .10, 'sine'], [880, 1047, .08, .06, .07, 'sine']] },
+        food: { tones: [[520, 260, .24, 0, .12, 'triangle', .09], [260, 180, .19, 0, .07, 'sine', .055]], noise: [.035, .035, 1800] },
         dessert: { tones: [[784, 1047, .10, 0, .09, 'triangle'], [1047, 1319, .11, .09, .10, 'sine']] },
         bomb: { tones: [[220, 65, .28, 0, .12, 'sawtooth']], noise: [.22, .07, 800] },
         speed: { tones: [[523, 523, .08, 0, .08, 'triangle'], [659, 659, .08, .09, .08, 'triangle'], [784, 988, .13, .18, .09, 'triangle']] },
@@ -93,21 +93,24 @@
             }
         }
 
-        function envelope(gain, start, duration, level) {
+        function envelope(gain, start, duration, level, hold = 0) {
             gain.setValueAtTime(.0001, start);
-            gain.exponentialRampToValueAtTime(level * VOICE_BOOST, start + Math.min(.008, duration / 3));
+            const attackEnd = start + Math.min(.008, duration / 3);
+            const peak = level * VOICE_BOOST;
+            gain.exponentialRampToValueAtTime(peak, attackEnd);
+            if (hold > 0) gain.setValueAtTime(peak, Math.max(attackEnd, start + Math.min(hold, duration - .01)));
             gain.exponentialRampToValueAtTime(.0001, start + duration);
         }
 
         function tone(audio, spec, base) {
-            const [from, to, duration, delay, level, wave] = spec;
+            const [from, to, duration, delay, level, wave, hold] = spec;
             const start = base + delay;
             const oscillator = audio.createOscillator();
             const gain = audio.createGain();
             oscillator.type = wave;
             oscillator.frequency.setValueAtTime(from, start);
             oscillator.frequency.exponentialRampToValueAtTime(to, start + duration);
-            envelope(gain.gain, start, duration, level);
+            envelope(gain.gain, start, duration, level, hold);
             oscillator.connect(gain);
             gain.connect(output);
             oscillator.start(start);

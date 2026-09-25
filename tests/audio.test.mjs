@@ -71,10 +71,17 @@ test('snake pickup and bomb sounds are distinct, and follow-up cues can be delay
     const h = setup(); const sound = h.create();
     sound.play('food');
     const foodStarts = h.calls.filter(([name]) => name === 'toneStart').map(([, time]) => time);
+    const foodStops = h.calls.filter(([name]) => name === 'toneStop').map(([, time]) => time);
+    const foodFrequencies = h.calls.filter(([name]) => name === 'freqSet').map(([, frequency]) => frequency);
+    assert.ok(foodStops[0] - foodStarts[0] >= .24, 'food cue should last long enough to hear');
+    assert.ok(Math.max(...foodFrequencies) <= 520, 'food cue should use a lower register');
+    assert.equal(h.calls.filter(([name, level]) => name === 'gainSet' && level > .1).length, 2,
+        'food tones should sustain briefly before fading');
+    assert.equal(h.calls.filter(([name]) => name === 'noiseStart').length, 1);
     sound.play('dessert');
     const dessertStarts = h.calls.filter(([name]) => name === 'toneStart').map(([, time]) => time).slice(2);
     sound.play('bomb');
-    assert.equal(h.calls.filter(([name]) => name === 'noiseStart').length, 1);
+    assert.equal(h.calls.filter(([name]) => name === 'noiseStart').length, 2);
     assert.equal(foodStarts.length, 2);
     assert.equal(dessertStarts.length, 2);
     sound.play('speed', .26);

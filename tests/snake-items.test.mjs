@@ -5,8 +5,8 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../snake/game.js', import.meta.url), 'utf8').replace(/\}\)\(\);\s*$/, `
     window.inspect = {
-        tick, updateDessert, resetGame, togglePause, playingTime,
-        state: () => ({ snake, food, dessert, bomb, score, foodsEaten, growthRemaining, gameState }),
+        tick, updateDessert, updateBomb, resetGame, togglePause, playingTime,
+        state: () => ({ snake, food, dessert, bomb, bombCycle, score, foodsEaten, growthRemaining, gameState }),
         set: values => {
             if ('snake' in values) snake = values.snake;
             if ('food' in values) food = values.food;
@@ -138,6 +138,76 @@ test('manual pause, hidden-page auto pause and restart freeze or reset the desse
     assert.equal(h.el('#dessert-status').textContent, '下次甜點 20 秒後');
 });
 
+test('bomb relocates at 30-second play-time marks away from the next cells', () => {
+    const h = harness(); h.click('#start-button');
+    const next = { x: 11, y: 10 };
+    h.inspect.set({ food: { x: 1, y: 1 }, dessert: { x: 3, y: 3 }, bomb: { x: 2, y: 2 } });
+    h.time(29999); h.inspect.updateBomb(next);
+    assert.deepEqual(state(h).bomb, { x: 2, y: 2 });
+    for (const [time, cycle] of [[30000, 1], [60000, 2], [90000, 3]]) {
+        const previous = state(h).bomb;
+        h.time(time); h.inspect.updateBomb(next);
+        const current = state(h);
+        assert.equal(current.bombCycle, cycle);
+        assert.notDeepEqual(current.bomb, previous);
+        const forbidden = [current.food, current.dessert, next,
+            { x: 10, y: 10 }, { x: 12, y: 10 }, { x: 11, y: 9 }, { x: 11, y: 11 }];
+        for (const cell of forbidden) assert.notDeepEqual(current.bomb, cell);
+        assert.ok(!current.snake.some(cell => cell.x === current.bomb.x && cell.y === current.bomb.y));
+        h.inspect.updateBomb(next);
+        assert.deepEqual(state(h).bomb, current.bomb, 'one cycle must move only once');
+    }
+    assert.ok(!h.sounds.some(([name]) => name === 'bomb'), 'moving should be silent');
+});
+
+test('bomb moves before collision at the boundary and delayed ticks do not replay moves', () => {
+    const h = harness(); h.click('#start-button');
+    h.inspect.set({ food: { x: 1, y: 1 }, dessert: null, bomb: { x: 11, y: 10 } });
+    h.time(30000); h.inspect.tick();
+    assert.equal(state(h).gameState, 'running');
+    assert.equal(state(h).bombCycle, 1);
+    assert.notDeepEqual(state(h).bomb, { x: 11, y: 10 });
+    h.time(95000); h.inspect.tick();
+    assert.equal(state(h).bombCycle, 3);
+    const moved = state(h).bomb;
+    h.inspect.updateBomb({ x: 13, y: 10 });
+    assert.deepEqual(state(h).bomb, moved);
+    h.inspect.resetGame();
+    assert.equal(state(h).bombCycle, 0);
+});
+
+test('pause freezes bomb relocation; no available cell or retired bomb is safe', () => {
+    const h = harness(); h.click('#start-button');
+    const next = { x: 11, y: 10 };
+    h.inspect.set({ bomb: { x: 2, y: 2 } });
+    h.time(10000); h.click('#pause-button');
+    h.time(50000); h.inspect.updateBomb(next);
+    assert.deepEqual(state(h).bomb, { x: 2, y: 2 });
+    h.click('#pause-button');
+    h.time(70000); h.inspect.updateBomb(next);
+    assert.equal(state(h).bombCycle, 1);
+    const moved = state(h).bomb;
+    h.hide(); h.time(140000); h.inspect.updateBomb(next);
+    assert.deepEqual(state(h).bomb, moved);
+    h.show(); h.click('#pause-button');
+    h.time(170000); h.inspect.updateBomb(next);
+    assert.equal(state(h).bombCycle, 2);
+
+    const occupied = [];
+    for (let y = 0; y < 20; y += 1) {
+        for (let x = 0; x < 20; x += 1) {
+            if (y === 0 && (x === 1 || x === 2)) continue;
+            occupied.push({ x, y });
+        }
+    }
+    h.inspect.set({ snake: occupied, food: { x: 1, y: 0 }, bomb: { x: 2, y: 0 }, dessert: null });
+    h.time(200000); h.inspect.updateBomb({ x: 1, y: 0 });
+    assert.deepEqual(state(h).bomb, { x: 2, y: 0 });
+    h.inspect.set({ bomb: null });
+    h.time(230000); h.inspect.updateBomb({ x: 1, y: 0 });
+    assert.equal(state(h).bomb, null);
+});
+
 test('dessert scores 20, grows twice and crosses a five-food speed threshold once', () => {
     const h = harness(); h.click('#start-button');
     h.time(20000); h.inspect.updateDessert();
@@ -242,8 +312,11 @@ test('cancelled payment leaves the prior round paused without time or success so
     const h = harness(); h.click('#start-button');
     h.time(5000); h.click('#restart-button');
     const before = h.sounds.length;
-    h.time(25000);
+    const beforeBomb = state(h).bomb;
+    h.time(45000); h.inspect.updateBomb({ x: 11, y: 10 });
     assert.equal(h.inspect.playingTime(), 5000);
+    assert.equal(state(h).bombCycle, 0);
+    assert.deepEqual(state(h).bomb, beforeBomb);
     h.rejectUnlock('cancelled'); await new Promise(resolve => setImmediate(resolve));
     assert.equal(state(h).gameState, 'paused');
     assert.equal(h.inspect.playingTime(), 5000);

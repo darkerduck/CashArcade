@@ -6,7 +6,7 @@
 
 ## 遊戲
 
-- [霓虹貪吃蛇](https://darkerduck.github.io/CashArcade/snake/)：使用方向鍵、`WASD` 或觸控操作，穿越邊界。普通食物得 10 分並增長一節；每遊玩 20 秒出現一次的限時甜點得 20 分並增長兩節，10 秒後消失；碰到炸彈會結束本局。暫停時甜點計時也會暫停。
+- [霓虹貪吃蛇](https://darkerduck.github.io/CashArcade/snake/)：使用方向鍵、`WASD` 或觸控操作，穿越邊界。普通食物得 10 分並增長一節；每遊玩 20 秒出現一次的限時甜點得 20 分並增長兩節，10 秒後消失；炸彈每遊玩 30 秒換位，碰到即結束本局。暫停時兩種計時都會停止。
 - [霓虹打磚塊](https://darkerduck.github.io/CashArcade/breakout/)：使用方向鍵、A/D、滑鼠或觸控控制擋板，突破矩形、雙翼與堡壘三道防線。第二、三關的金色磚塊需擊中兩次，第一次命中會留下裂痕。
 - [霓虹飛行](https://darkerduck.github.io/CashArcade/flappy/)：使用 `Space`、方向鍵、W、滑鼠或觸控拍翼，穿越逐步加速並縮小間隙的無盡能源閘門。
 

@@ -2,9 +2,12 @@
     'use strict';
 
     // Each voice is [start Hz, end Hz, duration seconds, delay seconds, level, wave].
-    // The two-stage gain previously made short effects almost inaudible on laptop speakers.
+    // Boost quiet effects by 18 dB while softly limiting loud or overlapping voices.
     const MASTER_LEVEL = .7;
     const VOICE_BOOST = 2.5;
+    const OUTPUT_BOOST = 10 ** (18 / 20);
+    const LIMIT_KNEE = .9;
+    const LIMIT_HEADROOM = .09;
     const EFFECTS = Object.freeze({
         confirm: { tones: [[660, 880, .09, 0, .10, 'sine']] },
         start: { tones: [[392, 523, .10, 0, .11, 'triangle'], [523, 784, .12, .10, .09, 'triangle']] },
@@ -25,6 +28,19 @@
         flap: { tones: [[390, 570, .105, 0, .065, 'sine']], minGap: 55 },
         pass: { tones: [[740, 990, .11, 0, .085, 'sine']], minGap: 80 },
     });
+
+    function limiterCurve() {
+        const curve = new Float32Array(4097);
+        for (let index = 0; index < curve.length; index += 1) {
+            const input = index * 2 / (curve.length - 1) - 1;
+            const boosted = Math.abs(input) * OUTPUT_BOOST;
+            const limited = boosted <= LIMIT_KNEE
+                ? boosted
+                : LIMIT_KNEE + LIMIT_HEADROOM * (1 - Math.exp(-(boosted - LIMIT_KNEE) / LIMIT_HEADROOM));
+            curve[index] = Math.sign(input) * limited;
+        }
+        return curve;
+    }
 
     function create({ storageKey, toggleButton }) {
         let muted = false;
@@ -51,7 +67,15 @@
                 context = new AudioContextClass();
                 output = context.createGain();
                 output.gain.value = MASTER_LEVEL;
-                output.connect(context.destination);
+                if (typeof context.createWaveShaper === 'function') {
+                    const limiter = context.createWaveShaper();
+                    limiter.curve = limiterCurve();
+                    limiter.oversample = '4x';
+                    output.connect(limiter);
+                    limiter.connect(context.destination);
+                } else {
+                    output.connect(context.destination);
+                }
                 return context;
             } catch {
                 unavailable = true;

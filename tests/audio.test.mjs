@@ -26,6 +26,12 @@ function setup({ supported = true, initial = new Map(), storageFails = false } =
             Object.defineProperty(gain, 'value', { set: value => calls.push(['gainValue', value]) });
             return { gain, connect: () => {} };
         }
+        createWaveShaper() {
+            const node = { connect: () => {} };
+            Object.defineProperty(node, 'curve', { set: value => calls.push(['limiterCurve', value]) });
+            Object.defineProperty(node, 'oversample', { set: value => calls.push(['oversample', value]) });
+            return node;
+        }
         createOscillator() { return { frequency: { setValueAtTime: (...args) => calls.push(['freqSet', ...args]), exponentialRampToValueAtTime: (...args) => calls.push(['freqRamp', ...args]) }, connect: () => {}, start: time => calls.push(['toneStart', time]), stop: time => calls.push(['toneStop', time]) }; }
         createBuffer(_channels, length) { calls.push(['buffer', length]); return { getChannelData: () => new Float32Array(length) }; }
         createBufferSource() { return { connect: () => {}, start: time => calls.push(['noiseStart', time]), stop: time => calls.push(['noiseStop', time]) }; }
@@ -61,13 +67,19 @@ test('rapid collision sounds are throttled while other effects still play', () =
     assert.equal(h.calls.filter(([name]) => name === 'toneStart').length, 2);
 });
 
-test('short flap tone reaches an audible output level without clipping', () => {
+test('quiet flap tone gains 18 dB and louder sounds stay below clipping', () => {
     const h = setup(); const sound = h.create();
     sound.play('flap');
     const master = h.calls.find(([name]) => name === 'gainValue')[1];
     const peak = Math.max(...h.calls.filter(([name]) => name === 'gainRamp').map(([, value]) => value));
-    assert.ok(master * peak >= .1, `effective peak ${master * peak} is too quiet`);
-    assert.ok(master * peak < .5, `effective peak ${master * peak} risks clipping`);
+    const curve = h.calls.find(([name]) => name === 'limiterCurve')[1];
+    const transfer = input => curve[Math.round((input + 1) * (curve.length - 1) / 2)];
+    const previousPeak = master * peak;
+    const newPeak = transfer(previousPeak);
+    assert.ok(Math.abs(20 * Math.log10(newPeak / previousPeak) - 18) < .1);
+    assert.ok(newPeak > .9, `effective peak ${newPeak} is too quiet`);
+    assert.ok(Math.max(...curve) < 1, 'limiter must prevent digital clipping');
+    assert.equal(h.calls.find(([name]) => name === 'oversample')[1], '4x');
 });
 
 test('mute persists by game key, updates accessibility and unmutes with confirmation', () => {

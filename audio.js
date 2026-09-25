@@ -2,24 +2,27 @@
     'use strict';
 
     // Each voice is [start Hz, end Hz, duration seconds, delay seconds, level, wave].
+    // The two-stage gain previously made short effects almost inaudible on laptop speakers.
+    const MASTER_LEVEL = .7;
+    const VOICE_BOOST = 2.5;
     const EFFECTS = Object.freeze({
         confirm: { tones: [[660, 880, .09, 0, .10, 'sine']] },
         start: { tones: [[392, 523, .10, 0, .11, 'triangle'], [523, 784, .12, .10, .09, 'triangle']] },
         food: { tones: [[660, 880, .10, 0, .10, 'sine'], [880, 1047, .08, .06, .07, 'sine']] },
         speed: { tones: [[523, 523, .08, 0, .08, 'triangle'], [659, 659, .08, .09, .08, 'triangle'], [784, 988, .13, .18, .09, 'triangle']] },
-        wrap: { tones: [[330, 220, .065, 0, .055, 'sine']], minGap: 90 },
+        wrap: { tones: [[330, 220, .085, 0, .055, 'sine']], minGap: 90 },
         pause: { tones: [[440, 330, .10, 0, .07, 'triangle']] },
         resume: { tones: [[440, 660, .10, 0, .08, 'triangle']] },
         lose: { tones: [[440, 330, .15, 0, .10, 'triangle'], [330, 220, .20, .15, .09, 'triangle']] },
         win: { tones: [[523, 523, .11, 0, .10, 'triangle'], [659, 659, .11, .12, .10, 'triangle'], [784, 784, .11, .24, .10, 'triangle'], [1047, 1047, .24, .36, .11, 'triangle']] },
-        wall: { tones: [[240, 190, .045, 0, .045, 'sine']], minGap: 75 },
+        wall: { tones: [[240, 190, .065, 0, .045, 'sine']], minGap: 75 },
         paddle: { tones: [[330, 510, .075, 0, .075, 'triangle']], minGap: 85 },
         brick: { tones: [[660, 480, .09, 0, .075, 'triangle']], minGap: 45 },
         crack: { tones: [[420, 230, .11, 0, .075, 'sawtooth']], noise: [.055, .045, 1800], minGap: 45 },
         reinforced: { tones: [[740, 520, .13, 0, .09, 'triangle'], [520, 780, .08, .07, .06, 'sine']], noise: [.045, .035, 2600], minGap: 45 },
         life: { tones: [[320, 180, .20, 0, .09, 'triangle']], noise: [.11, .045, 900] },
         level: { tones: [[523, 523, .10, 0, .09, 'triangle'], [784, 784, .10, .12, .09, 'triangle'], [1047, 1047, .18, .24, .10, 'triangle']] },
-        flap: { tones: [[390, 570, .075, 0, .065, 'sine']], minGap: 55 },
+        flap: { tones: [[390, 570, .105, 0, .065, 'sine']], minGap: 55 },
         pass: { tones: [[740, 990, .11, 0, .085, 'sine']], minGap: 80 },
     });
 
@@ -47,7 +50,7 @@
             try {
                 context = new AudioContextClass();
                 output = context.createGain();
-                output.gain.value = .23;
+                output.gain.value = MASTER_LEVEL;
                 output.connect(context.destination);
                 return context;
             } catch {
@@ -66,7 +69,7 @@
 
         function envelope(gain, start, duration, level) {
             gain.setValueAtTime(.0001, start);
-            gain.exponentialRampToValueAtTime(level, start + Math.min(.008, duration / 3));
+            gain.exponentialRampToValueAtTime(level * VOICE_BOOST, start + Math.min(.008, duration / 3));
             gain.exponentialRampToValueAtTime(.0001, start + duration);
         }
 

@@ -21,7 +21,11 @@ function setup({ supported = true, initial = new Map(), storageFails = false } =
     };
     class AudioContext {
         constructor() { calls.push(['context']); this.currentTime = 1; this.sampleRate = 44100; this.state = 'suspended'; this.destination = {}; }
-        createGain() { return { gain: { value: 0, setValueAtTime: (...args) => calls.push(['gainSet', ...args]), exponentialRampToValueAtTime: (...args) => calls.push(['gainRamp', ...args]) }, connect: () => {} }; }
+        createGain() {
+            const gain = { setValueAtTime: (...args) => calls.push(['gainSet', ...args]), exponentialRampToValueAtTime: (...args) => calls.push(['gainRamp', ...args]) };
+            Object.defineProperty(gain, 'value', { set: value => calls.push(['gainValue', value]) });
+            return { gain, connect: () => {} };
+        }
         createOscillator() { return { frequency: { setValueAtTime: (...args) => calls.push(['freqSet', ...args]), exponentialRampToValueAtTime: (...args) => calls.push(['freqRamp', ...args]) }, connect: () => {}, start: time => calls.push(['toneStart', time]), stop: time => calls.push(['toneStop', time]) }; }
         createBuffer(_channels, length) { calls.push(['buffer', length]); return { getChannelData: () => new Float32Array(length) }; }
         createBufferSource() { return { connect: () => {}, start: time => calls.push(['noiseStart', time]), stop: time => calls.push(['noiseStop', time]) }; }
@@ -55,6 +59,15 @@ test('rapid collision sounds are throttled while other effects still play', () =
     const h = setup(); const sound = h.create();
     sound.play('wall'); sound.play('wall'); sound.play('brick');
     assert.equal(h.calls.filter(([name]) => name === 'toneStart').length, 2);
+});
+
+test('short flap tone reaches an audible output level without clipping', () => {
+    const h = setup(); const sound = h.create();
+    sound.play('flap');
+    const master = h.calls.find(([name]) => name === 'gainValue')[1];
+    const peak = Math.max(...h.calls.filter(([name]) => name === 'gainRamp').map(([, value]) => value));
+    assert.ok(master * peak >= .1, `effective peak ${master * peak} is too quiet`);
+    assert.ok(master * peak < .5, `effective peak ${master * peak} risks clipping`);
 });
 
 test('mute persists by game key, updates accessibility and unmutes with confirmation', () => {

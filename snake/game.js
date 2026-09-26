@@ -638,11 +638,10 @@
         try {
             storedTheme = localStorage.getItem('casharcade-theme') || '';
         } catch {
-            // System preference is the fallback.
+            // Use the dark default when storage is unavailable.
         }
 
-        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-        document.documentElement.dataset.theme = storedTheme || (prefersLight ? 'light' : 'dark');
+        document.documentElement.dataset.theme = storedTheme || 'dark';
     }
 
     function toggleTheme() {

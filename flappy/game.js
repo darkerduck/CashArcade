@@ -380,8 +380,8 @@
 
     function applyTheme() {
         let storedTheme = '';
-        try { storedTheme = localStorage.getItem('casharcade-theme') || ''; } catch { /* Use system preference. */ }
-        document.documentElement.dataset.theme = storedTheme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        try { storedTheme = localStorage.getItem('casharcade-theme') || ''; } catch { /* Use dark default. */ }
+        document.documentElement.dataset.theme = storedTheme || 'dark';
     }
 
     function toggleTheme() {

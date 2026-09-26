@@ -8,10 +8,10 @@
     try {
         storedTheme = localStorage.getItem('casharcade-theme') || '';
     } catch {
-        // System preference is used when storage is unavailable.
+        // Use the dark default when storage is unavailable.
     }
 
-    root.dataset.theme = storedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    root.dataset.theme = storedTheme || 'dark';
 
     themeToggle.addEventListener('click', () => {
         const nextTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';

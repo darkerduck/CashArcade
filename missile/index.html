@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090c20"><meta name="description" content="霓虹天盾：十關飛彈防禦戰役、連鎖爆炸、強化道具與母艦首領。">
+    <title>CashArcade — 霓虹天盾</title><link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main class="shell">
+    <header><a class="brand" href="../"><b>CA</b><span>CashArcade<small>THE SKY IS YOUR BATTLEFIELD</small></span></a>
+        <div class="controls"><button id="sound-toggle" aria-label="關閉音效" aria-pressed="true" title="關閉音效">♪</button><button id="theme-toggle" aria-label="切換亮暗主題" title="切換亮暗主題">◐</button></div></header>
+    <section class="heading"><div><p class="eyebrow">ARCADE 004 / MISSILE DEFENSE</p><h1>霓虹天盾<span>NEON AEGIS</span></h1></div><p class="tagline">點亮防線。<br>守住最後一座城市。</p></section>
+    <section class="machine" aria-label="霓虹天盾遊戲">
+        <div class="hud"><div><small>SECTOR / 關卡</small><strong id="level">01 / 10</strong></div><div><small>SCORE / 分數</small><strong id="score">000000</strong></div><div><small>BEST / 最高分</small><strong id="best">000000</strong></div><div><small>CITIES / 城市</small><strong id="cities">6 / 6</strong></div></div>
+        <div class="mission"><span id="mission-name">防線啟動</span><span id="status">準備部署</span></div>
+        <div class="arena" id="arena"><canvas id="game-canvas" width="960" height="720" tabindex="0" aria-label="飛彈防禦戰場，方向鍵瞄準、空白鍵發射"></canvas>
+            <div class="fullscreen-controls"><button id="full-pause">暫停／繼續</button><button id="full-exit">離開全螢幕</button></div>
+            <div class="overlay" id="overlay"><p class="eyebrow" id="overlay-kicker">DEFENSE SYSTEM ONLINE</p><h2 id="overlay-title">準備守護城市</h2><p id="overlay-message">點擊目標位置發射攔截彈，爆炸能引發連鎖反應。守住六座城市，突破十道防線。</p>
+                <div class="choices" id="choices" hidden><button data-upgrade="radius"><b>✦ 擴大爆破</b><span>爆炸半徑 +8</span></button><button data-upgrade="reload"><b>» 快速裝填</b><span>裝填時間 −0.04 秒</span></button><button data-upgrade="repair"><b>◇ 修復防線</b><span>修復城市、復原一座廢墟</span></button></div>
+                <button class="primary" id="start">開始戰役</button>
+            </div>
+        </div>
+        <div id="effects" class="effects" aria-live="polite">攔截空中金色道具以啟動強化</div>
+        <div class="actions"><button id="pause" disabled>暫停</button><button id="retry" disabled>重試本關</button><button id="new">新戰役</button><button id="preview-sound">試播音效</button><button id="fullscreen">全螢幕</button></div>
+        <p class="help">點擊／觸控瞄準 · 按住連射 · 方向鍵＋Space 發射 · P／Esc 暫停 · R 重試本關</p>
+    </section>
+    <section class="field-guide"><div><span>01 / CHAIN REACTION</span><h3>讓天空成為你的武器</h3><p>瞄準敵彈前方；一發攔截、一串爆炸。金色裝甲要由兩次不同爆炸擊中。</p></div><div><span>02 / POWER UP</span><h3>每場戰鬥，都能變得更強</h3><p>» 急速　✦ 超載　◷ 緩速　◇ 護盾　ϟ 電磁脈衝<br>過關後三選一升級，關卡起點自動保存。</p></div></section>
+    <p class="notice" id="storage-note" role="status"></p><p id="live" class="sr-only" aria-live="polite"></p>
+    <footer><a href="../">← ALL GAMES</a><span>10 SECTORS · ONE SKY</span><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
+</main>
+<script src="../audio.js?v=6" defer></script><script src="./engine.js" defer></script><script src="./renderer.js" defer></script><script src="./game.js" defer></script>
+</body></html>

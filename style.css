@@ -60,7 +60,12 @@ h1 span { color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--
 .hero-status { gap: 9px; margin-top: 28px; color: var(--muted); font-size: .67rem; letter-spacing: .14em; }
 .hero-status span { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
 
-.game-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.game-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.missile-card .card-screen { color: var(--violet); background-image: radial-gradient(ellipse at center, #8547ba33, transparent 70%), linear-gradient(transparent 90%, #59ddd933); }
+.pixel-defense { width: 230px; height: 175px; position: relative; }
+.pixel-defense i { position: absolute; inset: 20px 65px 45px; border: 3px solid #73fff2; border-radius: 50%; box-shadow: 0 0 24px #73fff288, inset 0 0 25px #73fff233; }
+.pixel-defense b { position: absolute; left: 93px; top: 52px; color: #ee9aff; font-size: 45px; text-shadow: 0 0 20px #ef90ff; }
+.pixel-defense em { position: absolute; bottom: 0; left: 20px; width: 195px; color: #73fff2; border-bottom: 3px solid #73fff2; font: 70px monospace; text-align: center; }
 .game-card { overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: var(--shadow); }
 .card-screen { position: relative; display: grid; height: 245px; place-items: center; overflow: hidden; border-bottom: 1px solid var(--line); background-color: color-mix(in srgb, var(--bg) 88%, var(--surface)); background-image: linear-gradient(color-mix(in srgb, currentColor 4%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, currentColor 4%, transparent) 1px, transparent 1px); background-size: 24px 24px; }
 .snake-card .card-screen { color: var(--green); }

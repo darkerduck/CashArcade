@@ -67,6 +67,17 @@ test('rapid collision sounds are throttled while other effects still play', () =
     assert.equal(h.calls.filter(([name]) => name === 'toneStart').length, 2);
 });
 
+test('missile launches and pickups never drop events while explosions merge their voices', () => {
+    const h = setup(); const sound = h.create();
+    for (let i = 0; i < 4; i++) sound.play('defenseLaunch');
+    assert.equal(h.calls.filter(([name]) => name === 'toneStart').length, 4);
+    assert.equal(h.calls.filter(([name]) => name === 'noiseStart').length, 4);
+    sound.play('defenseBlast'); sound.play('defenseBlast'); sound.play('defenseBlast');
+    assert.equal(h.calls.filter(([name]) => name === 'toneStart').length, 5);
+    sound.play('defensePickup'); sound.play('defensePickup');
+    assert.equal(h.calls.filter(([name]) => name === 'toneStart').length, 9);
+});
+
 test('snake pickup and bomb sounds are distinct, and follow-up cues can be delayed', () => {
     const h = setup(); const sound = h.create();
     sound.play('food');

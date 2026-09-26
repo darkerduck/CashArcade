@@ -9,6 +9,17 @@
     const LIMIT_KNEE = .9;
     const LIMIT_HEADROOM = .09;
     const EFFECTS = Object.freeze({
+        defenseStart: { tones: [[220, 440, .22, 0, .12, 'triangle', .06]] },
+        defenseLaunch: { tones: [[300, 760, .17, 0, .11, 'triangle', .045]], noise: [.08, .04, 2300] },
+        defenseBlast: { tones: [[170, 60, .34, 0, .1, 'triangle', .08]], noise: [.28, .08, 1700], minGap: 65 },
+        defenseChain: { tones: [[380, 190, .19, 0, .085, 'triangle', .04]], noise: [.12, .055, 2400], minGap: 80 },
+        defenseArmor: { tones: [[660, 280, .16, 0, .07, 'triangle', .03]], minGap: 65 },
+        defenseDamage: { tones: [[180, 55, .45, 0, .12, 'triangle', .10]], noise: [.35, .075, 950], minGap: 100 },
+        defensePickup: { tones: [[523, 784, .18, 0, .1, 'triangle', .06], [784, 1047, .20, .15, .1, 'triangle', .05]] },
+        defenseShield: { tones: [[300, 650, .25, 0, .11, 'sine', .08]], minGap: 80 },
+        defenseAlarm: { tones: [[440, 660, .30, 0, .1, 'triangle', .12], [440, 660, .30, .35, .1, 'triangle', .12]] },
+        defenseBoss: { tones: [[220, 45, .7, 0, .12, 'triangle', .2]], noise: [.65, .09, 1900] },
+        defenseUpgrade: { tones: [[523, 659, .16, 0, .1, 'triangle', .04], [784, 1047, .24, .17, .11, 'triangle', .06]] },
         confirm: { tones: [[660, 880, .09, 0, .10, 'sine']] },
         start: { tones: [[392, 523, .10, 0, .11, 'triangle'], [523, 784, .12, .10, .09, 'triangle']] },
         food: { tones: [[520, 260, .24, 0, .12, 'triangle', .09], [260, 180, .19, 0, .07, 'sine', .055]], noise: [.035, .035, 1800] },
@@ -44,7 +55,7 @@
         return curve;
     }
 
-    function create({ storageKey, toggleButton }) {
+    function create({ storageKey, toggleButton, outputLevel = 1 }) {
         let muted = false;
         let context;
         let output;
@@ -74,7 +85,12 @@
                     limiter.curve = limiterCurve();
                     limiter.oversample = '4x';
                     output.connect(limiter);
-                    limiter.connect(context.destination);
+                    if (outputLevel !== 1) {
+                        const headroom = context.createGain();
+                        headroom.gain.value = Number.isFinite(outputLevel) ? Math.max(0, Math.min(1, outputLevel)) : 1;
+                        limiter.connect(headroom);
+                        headroom.connect(context.destination);
+                    } else limiter.connect(context.destination);
                 } else {
                     output.connect(context.destination);
                 }

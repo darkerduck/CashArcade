@@ -61,41 +61,9 @@ h1 span { color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--
 .hero-status span { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
 
 .game-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
-.missile-card .card-screen { color: var(--violet); background-image: radial-gradient(ellipse at center, #8547ba33, transparent 70%), linear-gradient(transparent 90%, #59ddd933); }
-.pixel-defense { width: 230px; height: 175px; position: relative; }
-.pixel-defense i { position: absolute; inset: 20px 65px 45px; border: 3px solid #73fff2; border-radius: 50%; box-shadow: 0 0 24px #73fff288, inset 0 0 25px #73fff233; }
-.pixel-defense b { position: absolute; left: 93px; top: 52px; color: #ee9aff; font-size: 45px; text-shadow: 0 0 20px #ef90ff; }
-.pixel-defense em { position: absolute; bottom: 0; left: 20px; width: 195px; color: #73fff2; border-bottom: 3px solid #73fff2; font: 70px monospace; text-align: center; }
 .game-card { overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: var(--shadow); }
-.card-screen { position: relative; display: grid; height: 245px; place-items: center; overflow: hidden; border-bottom: 1px solid var(--line); background-color: color-mix(in srgb, var(--bg) 88%, var(--surface)); background-image: linear-gradient(color-mix(in srgb, currentColor 4%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, currentColor 4%, transparent) 1px, transparent 1px); background-size: 24px 24px; }
-.snake-card .card-screen { color: var(--green); }
-.breakout-card .card-screen { color: var(--cyan); }
-.flappy-card .card-screen { color: var(--green); }
-.screen-label { position: absolute; top: 17px; left: 19px; color: currentColor; font-size: .62rem; font-weight: 900; letter-spacing: .16em; }
-
-.pixel-snake { position: relative; width: 210px; height: 110px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--green) 50%, transparent)); }
-.pixel-snake i, .pixel-snake b { position: absolute; width: 32px; height: 32px; border-radius: 8px; background: var(--green); }
-.pixel-snake i:nth-child(1) { left: 0; bottom: 0; }
-.pixel-snake i:nth-child(2) { left: 37px; bottom: 0; }
-.pixel-snake i:nth-child(3) { left: 74px; bottom: 0; }
-.pixel-snake i:nth-child(4) { left: 74px; bottom: 37px; }
-.pixel-snake i:nth-child(5) { left: 111px; bottom: 37px; }
-.pixel-snake b { right: 0; top: 0; width: 20px; height: 20px; border-radius: 50%; background: #ffcc4d; }
-
-.pixel-bricks { position: relative; display: grid; grid-template-columns: repeat(4, 48px); gap: 8px; padding-bottom: 72px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--cyan) 38%, transparent)); }
-.pixel-bricks i { height: 18px; border-radius: 4px; background: var(--cyan); }
-.pixel-bricks i:nth-child(4n + 2), .pixel-bricks i:nth-child(4n + 3) { background: var(--violet); }
-.pixel-bricks b { position: absolute; bottom: 21px; left: 54px; width: 110px; height: 12px; border-radius: 8px; background: var(--cyan); }
-.pixel-bricks em { position: absolute; bottom: 47px; left: 99px; width: 14px; height: 14px; border-radius: 50%; background: #ffdf68; box-shadow: 0 0 14px #ffdf68; }
-
-.pixel-flight { position: relative; width: 220px; height: 142px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--green) 42%, transparent)); }
-.pixel-flight i, .pixel-flight b { position: absolute; right: 8px; width: 48px; border: 8px solid var(--green); }
-.pixel-flight i { top: 0; height: 50px; border-top: 0; }
-.pixel-flight b { bottom: 0; height: 50px; border-bottom: 0; }
-.pixel-flight em { position: absolute; top: 59px; left: 45px; width: 54px; height: 29px; border-radius: 50% 60% 55% 45%; background: var(--cyan); box-shadow: 0 0 14px color-mix(in srgb, var(--cyan) 70%, transparent); }
-.pixel-flight em::before { content: ""; position: absolute; left: -18px; top: 12px; width: 25px; height: 12px; border-radius: 70% 20% 60% 30%; background: var(--violet); transform: rotate(-18deg); }
-.pixel-flight em::after { content: ""; position: absolute; right: -15px; top: 9px; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 17px solid #ffdf68; }
-.pixel-flight span { position: absolute; top: 67px; left: 61px; width: 6px; height: 6px; border-radius: 50%; background: var(--bg); box-shadow: 0 0 0 2px white; }
+.card-screen { aspect-ratio: 1672 / 941; overflow: hidden; border-bottom: 1px solid var(--line); background: var(--raised); }
+.card-screen img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 .card-body { padding: 28px; }
 .card-number { margin: 0 0 10px; color: var(--muted); font-size: .64rem; letter-spacing: .14em; }
@@ -124,7 +92,6 @@ footer a { color: var(--cyan); text-decoration: none; }
 @media (max-width: 720px) {
     .game-grid { grid-template-columns: 1fr; }
     .hero { padding-top: 64px; }
-    .card-screen { height: 215px; }
 }
 
 @media (max-width: 430px) {

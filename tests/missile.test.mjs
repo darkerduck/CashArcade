@@ -10,7 +10,9 @@ const advance = (g, seconds) => { for (let t = 0; t < seconds; t += .025) g.upda
 
 test('nearest ready turret fires once with cooldown; unsuccessful shots are silent', () => {
     const g = game(); assert.equal(g.fire(100, 200), true); assert.equal(g.shots[0].x, 70);
-    g.fire(100, 200); g.fire(100, 200); assert.equal(g.fire(100, 200), false);
+    g.fire(100, 200); assert.equal(g.shots[1].x, 480);
+    g.fire(100, 200); assert.equal(g.shots[2].x, 890);
+    assert.equal(g.fire(100, 200), false); assert.equal(g.shots.length, 3);
     assert.equal(g.drain().filter(e => e.type === 'launch').length, 3);
     advance(g, .7); assert.equal(g.fire(100, 200), true);
 });

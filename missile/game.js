@@ -6,7 +6,8 @@
     const sound = CashArcadeAudio.create({ storageKey: 'casharcade-missile-sound-muted', toggleButton: $('sound-toggle'), outputLevel: .8 });
     const renderer = new NeonDefenseRenderer($('game-canvas'));
     const names = { rapid: '» 急速裝填', wide: '✦ 超載爆破', slow: '◷ 時間緩速', shield: '◇ 城市護盾', emp: 'ϟ 電磁脈衝' };
-    let checkpoint = null, game = null, mode = 'ready', best = 0, previous = 0, held = false, space = false;
+    let checkpoint = null, game = null, mode = 'ready', best = 0, previous = 0, space = false;
+    const pressedPointers = new Set();
     let aim = { x: W / 2, y: H / 2 }, keys = new Set(), toast = '', toastUntil = 0;
     function read(key) { try { return localStorage.getItem(key); } catch { return null; } }
     function save(key, value) {
@@ -17,7 +18,7 @@
     best = Math.max(0, Number(read(BEST)) || 0);
     document.documentElement.dataset.theme = read('casharcade-theme') || 'dark';
     function persist() { if (checkpoint) save(KEY, JSON.stringify(checkpoint)); }
-    function clearInput() { held = false; space = false; keys.clear(); }
+    function clearInput() { pressedPointers.clear(); space = false; keys.clear(); }
     function overlay(kicker, title, message, button = '繼續防守') {
         $('overlay').hidden = false; $('overlay-kicker').textContent = kicker; $('overlay-title').textContent = title;
         $('overlay-message').textContent = message; $('start').textContent = button; $('start').hidden = false;
@@ -88,7 +89,6 @@
         if (mode === 'running') {
             aim.x = Math.max(15, Math.min(W - 15, aim.x + ((keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0)) * 450 * dt));
             aim.y = Math.max(35, Math.min(615, aim.y + ((keys.has('ArrowDown') ? 1 : 0) - (keys.has('ArrowUp') ? 1 : 0)) * 450 * dt));
-            if (held || space) game.fire(aim.x, aim.y);
             game.update(dt); events(); hud();
         }
         renderer.draw(game, aim, ['paused', 'ready'].includes(mode) ? 0 : dt); requestAnimationFrame(loop);
@@ -100,16 +100,20 @@
     }
     $('game-canvas').addEventListener('pointerdown', e => {
         if (mode !== 'running' || (e.pointerType === 'mouse' && e.button !== 0)) return;
-        e.preventDefault(); sound.resume(); point(e); held = true; $('game-canvas').setPointerCapture(e.pointerId); $('game-canvas').focus();
+        e.preventDefault(); if (pressedPointers.has(e.pointerId)) return;
+        pressedPointers.add(e.pointerId); sound.resume(); point(e);
+        $('game-canvas').setPointerCapture(e.pointerId); $('game-canvas').focus();
         game.fire(aim.x, aim.y);
     });
     $('game-canvas').addEventListener('pointermove', point);
-    for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) $('game-canvas').addEventListener(name, () => { held = false; });
+    for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) $('game-canvas').addEventListener(name, e => { pressedPointers.delete(e.pointerId); });
     document.addEventListener('keydown', e => {
         if (e.target instanceof HTMLButtonElement && (e.key.startsWith('Arrow') || e.code === 'Space')) return;
         if (e.key.startsWith('Arrow') || e.code === 'Space') {
             e.preventDefault(); if (mode !== 'running') return;
-            sound.resume(); if (e.code === 'Space') { space = true; if (!e.repeat) game.fire(aim.x, aim.y); } else keys.add(e.key);
+            sound.resume(); if (e.code === 'Space') {
+                if (!e.repeat && !space) { space = true; game.fire(aim.x, aim.y); }
+            } else keys.add(e.key);
         }
         if (e.repeat) return;
         if (e.key === 'Escape' || e.key.toLowerCase() === 'p') { if (mode === 'running') pause(); else resume(); }

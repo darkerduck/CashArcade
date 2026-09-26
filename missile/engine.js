@@ -66,7 +66,7 @@
             if (this.state !== 'running') return false;
             x = clamp(x, 15, W - 15); y = clamp(y, 35, GROUND - 35);
             const turret = this.turrets.filter(t => t.ready <= this.time)
-                .sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x))[0];
+                .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0];
             if (!turret) return false;
             const rapid = this.effects.rapid > 0;
             turret.ready = this.time + this.reload * (rapid ? .5 : 1);

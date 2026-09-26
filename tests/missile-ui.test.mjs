@@ -34,20 +34,47 @@ function harness(storage = new Map()) {
     tick();
     return { storage, audio, element, scope, tick, get game() { return latest; },
         click: id => element(id).fire('click'),
-        key: (key, code = key) => events.get('keydown')({ key, code, target: {}, preventDefault() {} }),
+        key: (key, code = key, repeat = false) => events.get('keydown')({ key, code, repeat, target: {}, preventDefault() {} }),
+        keyUp: (key, code = key) => events.get('keyup')({ key, code }),
         blur: () => events.get('blur')(),
     };
 }
-test('real UI handles quick Space, held touch, silent blur pause, resume and retry', () => {
+test('each Space or touch press launches once; holding and repeat events do not launch', () => {
     const h = harness(); assert.equal(h.audio.length, 0); h.click('start'); h.tick();
     h.key(' ', 'Space'); assert.equal(h.audio.filter(n => n === 'defenseLaunch').length, 0);
-    h.tick(); assert.equal(h.audio.filter(n => n === 'defenseLaunch').length, 2); // immediate shot plus held shot
-    h.element('game-canvas').fire('pointerdown', { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 200, preventDefault() {} });
-    h.tick(30); h.element('game-canvas').fire('pointerup'); assert.ok(h.game.shots.length > 0);
+    h.tick(30); assert.equal(h.audio.filter(n => n === 'defenseLaunch').length, 1);
+    h.key(' ', 'Space', true); h.key(' ', 'Space'); h.tick();
+    assert.equal(h.audio.filter(n => n === 'defenseLaunch').length, 1);
+    h.keyUp(' ', 'Space'); h.key(' ', 'Space'); h.tick();
+    assert.equal(h.audio.filter(n => n === 'defenseLaunch').length, 2);
+    const canvas = h.element('game-canvas');
+    const touch = { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 200, preventDefault() {} };
+    canvas.fire('pointerdown', touch); canvas.fire('pointerdown', touch);
+    canvas.fire('pointermove', { clientX: 200, clientY: 250 }); h.tick(30);
+    assert.equal(h.audio.filter(n => n === 'defenseLaunch').length, 3);
+    canvas.fire('pointerup', { pointerId: 1 }); canvas.fire('pointerdown', touch); h.tick();
+    assert.equal(h.audio.filter(n => n === 'defenseLaunch').length, 4);
+    canvas.fire('pointerup', { pointerId: 1 });
     const elapsed = h.game.time, count = h.audio.length;
     h.blur(); h.tick(80); assert.equal(h.game.time, elapsed); assert.equal(h.audio.length, count);
     h.click('start'); h.tick(); assert.ok(h.game.time > elapsed);
+    h.tick(30); assert.equal(h.audio.filter(n => n === 'defenseLaunch').length, 4);
     h.game.score = 500; h.key('r'); h.tick(); assert.equal(h.game.score, 0); assert.ok(h.game.time < .1);
+});
+test('pointer clicks use the nearest ready turret and never queue a shot', () => {
+    const h = harness(); h.click('start'); h.tick();
+    const canvas = h.element('game-canvas');
+    const press = pointerId => {
+        canvas.fire('pointerdown', { pointerType: 'mouse', button: 0, pointerId, clientX: 100, clientY: 200, preventDefault() {} });
+        canvas.fire('pointerup', { pointerId });
+    };
+    press(1); assert.equal(h.game.shots.at(-1).x, 70);
+    press(2); assert.equal(h.game.shots.at(-1).x, 480);
+    press(3); assert.equal(h.game.shots.at(-1).x, 890);
+    press(4); assert.equal(h.game.shots.length, 3);
+    h.tick(30); assert.equal(h.audio.filter(n => n === 'defenseLaunch').length, 3);
+    h.tick(30); assert.equal(h.audio.filter(n => n === 'defenseLaunch').length, 3);
+    press(5); assert.equal(h.game.shots.at(-1).x, 70);
 });
 test('upgrade choice commits once, reload restores stage start, and victory clears checkpoint', () => {
     const h = harness(); h.click('start'); h.tick();

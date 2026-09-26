@@ -10,7 +10,7 @@
 - [霓虹打磚塊](https://darkerduck.github.io/CashArcade/breakout/)：使用方向鍵、A/D、滑鼠或觸控控制擋板，突破矩形、雙翼與堡壘三道防線。第二、三關的金色磚塊需擊中兩次，第一次命中會留下裂痕。
 - [霓虹飛行](https://darkerduck.github.io/CashArcade/flappy/)：使用 `Space`、方向鍵、W、滑鼠或觸控拍翼，穿越逐步加速並縮小間隙的無盡能源閘門。
 
-- [霓虹天盾](https://darkerduck.github.io/CashArcade/missile/)：十關飛彈防禦戰役，三座砲台自動選擇發射位置。點擊或觸控瞄準、按住連射；方向鍵移動準星、Space 發射，P／Esc 暫停、R 重試本關。攔截彈引發連鎖爆炸，保護六座城市並擊破第十關母艦的護盾節點與核心。
+- [霓虹天盾](https://darkerduck.github.io/CashArcade/missile/)：十關飛彈防禦戰役，每次點擊、觸控或按下 Space 只發射一枚，由距離目標最近且已裝填的砲台執行；按住不連射。方向鍵移動準星，P／Esc 暫停、R 重試本關。攔截彈引發連鎖爆炸，城市會顯示損壞程度；保護六座城市並擊破第十關母艦的護盾節點與核心。
 
 四款遊戲都支援亮暗主題、暫停、重新開始與瀏覽器本機最高分。没有儲存主題偏好時一律使用暗版。
 

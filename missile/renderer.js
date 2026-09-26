@@ -35,6 +35,57 @@
             const c = this.c; c.beginPath(); c.arc(x, y, Math.max(0, r), 0, Math.PI * 2); c.shadowColor = color; c.shadowBlur = glow;
             if (fill) { c.fillStyle = color; c.fill(); } else { c.strokeStyle = color; c.lineWidth = 2; c.stroke(); } c.shadowBlur = 0;
         }
+        city(city, light) {
+            const c = this.c, x = city.x, y = GROUND, hp = city.hp;
+            const color = hp === 3 ? (light ? '#006e79' : '#66fff0')
+                : hp === 2 ? (light ? '#855600' : '#ffc468')
+                    : (light ? '#913a58' : '#ff739c');
+            if (hp === 0) {
+                c.fillStyle = light ? '#725b70' : '#392a42';
+                for (const points of [
+                    [[-30, 0], [-30, -9], [-19, -17], [-10, -6], [0, -12], [8, 0]],
+                    [[4, 0], [12, -10], [20, -6], [27, -16], [31, 0]],
+                ]) {
+                    c.beginPath(); points.forEach(([dx, dy], i) => i ? c.lineTo(x + dx, y + dy) : c.moveTo(x + dx, y + dy));
+                    c.closePath(); c.fill();
+                }
+                this.line([{ x: x - 30, y: y - 9 }, { x: x - 19, y: y - 17 }, { x: x - 10, y: y - 6 },
+                    { x, y: y - 12 }, { x: x + 8, y }], color, 2);
+                this.line([{ x: x + 12, y: y - 10 }, { x: x + 20, y: y - 6 }, { x: x + 27, y: y - 16 },
+                    { x: x + 31, y }], color, 2);
+                c.fillStyle = light ? '#463e53' : '#171b30';
+                c.fillRect(x - 17, y - 5, 8, 4); c.fillRect(x + 17, y - 8, 7, 5);
+            } else {
+                const outline = hp === 3
+                    ? [[-28, 0], [-28, -43], [-10, -43], [-10, -55], [9, -55], [9, -43], [28, -43], [28, 0]]
+                    : hp === 2
+                        ? [[-28, 0], [-28, -43], [-16, -43], [-11, -35], [-6, -49], [9, -49], [9, -43], [23, -43], [28, -36], [28, 0]]
+                        : [[-28, 0], [-28, -24], [-18, -29], [-9, -18], [-2, -35], [7, -27], [14, -31], [22, -17], [28, -21], [28, 0]];
+                c.beginPath(); outline.forEach(([dx, dy], i) => i ? c.lineTo(x + dx, y + dy) : c.moveTo(x + dx, y + dy));
+                c.closePath(); c.fillStyle = hp === 3 ? (light ? '#d5eef3' : '#10374b')
+                    : hp === 2 ? (light ? '#e6d9cb' : '#443447') : (light ? '#b9a9b9' : '#4e2b45');
+                c.fill();
+                this.line(outline.map(([dx, dy]) => ({ x: x + dx, y: y + dy })), color, 2, light ? 0 : 6);
+                if (hp === 3) {
+                    c.fillStyle = light ? '#006e79' : '#81fff2';
+                    for (const dx of [-18, -5, 8]) for (const dy of [-33, -19]) c.fillRect(x + dx, y + dy, 8, 7);
+                } else {
+                    c.fillStyle = light ? '#3c4155' : '#141827';
+                    for (const [dx, dy] of hp === 2 ? [[-19, -31], [-4, -30], [10, -31], [-18, -17], [8, -17]]
+                        : [[-19, -17], [-4, -19], [11, -15]]) c.fillRect(x + dx, y + dy, 8, 7);
+                    this.line(hp === 2
+                        ? [{ x: x + 9, y: y - 49 }, { x: x + 3, y: y - 35 }, { x: x + 13, y: y - 27 }, { x: x + 7, y: y - 12 }]
+                        : [{ x: x - 2, y: y - 35 }, { x: x - 8, y: y - 17 }, { x: x + 4, y: y - 11 }, { x: x - 2, y }],
+                    light ? '#65345b' : '#ffd3b3', 2);
+                    if (hp === 1) this.line([{ x: x + 22, y: y - 17 }, { x: x + 15, y: y - 3 }], color, 2);
+                }
+            }
+            for (let j = 0; j < 3; j++) {
+                c.fillStyle = j < hp ? color : (light ? '#8c91a2' : '#3c435b');
+                c.fillRect(x - 23 + j * 17, y + 11, 12, 4);
+            }
+            if (city.shield && hp) this.circle(x, y - 24, 43, light ? '#6743b0' : '#a993ff', false, 10);
+        }
         draw(game, aim, dt = 0) {
             const c = this.c, light = document.documentElement.dataset.theme === 'light', t = game?.time || 0;
             c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.clearRect(0, 0, W, H);
@@ -70,16 +121,7 @@
             }
             this.line([{ x: 0, y: GROUND }, { x: W, y: GROUND }], cyan, 2, 10);
             if (game) {
-                for (const city of game.cities) {
-                    const color = city.hp ? cyan : '#755165';
-                    c.fillStyle = city.hp ? (light ? '#d5eef3' : '#10374b') : '#292237';
-                    c.fillRect(city.x - 28, GROUND - 43, 56, 43);
-                    this.line([{ x: city.x - 28, y: GROUND }, { x: city.x - 28, y: GROUND - 35 }, { x: city.x - 10, y: GROUND - 35 },
-                        { x: city.x - 10, y: GROUND - 55 }, { x: city.x + 9, y: GROUND - 55 }, { x: city.x + 9, y: GROUND - 43 },
-                        { x: city.x + 28, y: GROUND - 43 }, { x: city.x + 28, y: GROUND }], color, 2, city.hp ? 8 : 0);
-                    for (let j = 0; j < 3; j++) { c.fillStyle = j < city.hp ? color : '#3c435b'; c.fillRect(city.x - 23 + j * 17, GROUND + 11, 12, 4); }
-                    if (city.shield && city.hp) this.circle(city.x, GROUND - 24, 43, '#a993ff', false, 10);
-                }
+                for (const city of game.cities) this.city(city, light);
                 for (const turret of game.turrets) {
                     const angle = Math.atan2(aim.y - turret.y, aim.x - turret.x);
                     this.circle(turret.x, turret.y, 18, cyan, false, 12);

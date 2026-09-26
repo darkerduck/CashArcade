@@ -22,11 +22,18 @@
         </div>
         <div id="effects" class="effects" aria-live="polite">攔截空中金色道具以啟動強化</div>
         <div class="actions"><button id="pause" disabled>暫停</button><button id="retry" disabled>重試本關</button><button id="new">新戰役</button><button id="preview-sound">試播音效</button><button id="fullscreen">全螢幕</button></div>
-        <p class="help">每次點擊／觸控發射一枚 · 方向鍵瞄準、每次按 Space 發射一枚 · P／Esc 暫停 · R 重試本關</p>
+        <div class="payment-panel" aria-label="再來一局付款">
+            <p>首次遊玩免費 · 只有六座城市全毀後再次開局才需解鎖「再來一局」 · 價格以 CashLink 付款頁為準</p>
+            <p id="payment-status" role="status" aria-live="polite">正在連線 CashLink…</p>
+            <div class="payment-actions"><button id="payment-retry" disabled>恢復付款／再來一局</button><button id="payment-cancel" disabled>取消付款流程</button>
+                <a id="payment-link" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" hidden>開啟 CashLink 付款頁 ↗</a></div>
+        </div>
+        <p class="help">每次點擊／觸控發射一枚 · 方向鍵瞄準、每次按 Space 發射一枚 · P／Esc 暫停 · R 重試本關（失敗後付費）</p>
     </section>
     <section class="field-guide"><div><span>01 / CHAIN REACTION</span><h3>讓天空成為你的武器</h3><p>瞄準敵彈前方；一發攔截、一串爆炸。金色裝甲要由兩次不同爆炸擊中。</p></div><div><span>02 / POWER UP</span><h3>每場戰鬥，都能變得更強</h3><p>» 急速　✦ 超載　◷ 緩速　◇ 護盾　ϟ 電磁脈衝<br>過關後三選一升級，關卡起點自動保存。</p></div></section>
     <p class="notice" id="storage-note" role="status"></p><p id="live" class="sr-only" aria-live="polite"></p>
     <footer><a href="../">← ALL GAMES</a><span>10 SECTORS · ONE SKY</span><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
 </main>
-<script src="../audio.js?v=6" defer></script><script src="./engine.js" defer></script><script src="./renderer.js" defer></script><script src="./game.js" defer></script>
+<script src="../audio.js?v=6" defer></script><script src="https://linkincash.cc/arcade/sdk/v1.js" defer referrerpolicy="no-referrer"></script>
+<script src="./engine.js" defer></script><script src="./renderer.js" defer></script><script src="./payment-gate.js" defer></script><script src="./game.js" defer></script>
 </body></html>

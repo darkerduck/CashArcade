@@ -7,7 +7,7 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
 function harness(storage = new Map(), options = {}) {
     const elements = new Map(), events = new Map(), audio = [], attempts = [], sdkEvents = new Map();
     const session = options.session || new Map();
-    let frame, now = 0, latest;
+    let frame, now = 0, latest, visualDt=0, resets=0;
     const element = id => {
         if (!elements.has(id)) {
             const listeners = new Map();
@@ -40,7 +40,7 @@ function harness(storage = new Map(), options = {}) {
                 unlock: () => new Promise((resolve, reject) => attempts.push({ resolve, reject })),
                 cancel: () => attempts.at(-1)?.reject({ code: 'cancelled' }) };
         } }, URL,
-        NeonDefenseRenderer: class { draw(game) { latest = game; } event() {} },
+        NeonDefenseRenderer: class { draw(game,aim,dt) { latest = game; visualDt=dt; } event() {} reset() { resets++; } },
         performance: { now: () => now }, requestAnimationFrame: fn => { frame = fn; },
         HTMLButtonElement: class {}, confirm: () => true,
         addEventListener: (type, fn) => events.set(type, fn),
@@ -50,6 +50,7 @@ function harness(storage = new Map(), options = {}) {
     function tick(count = 1) { for (let i = 0; i < count; i++) { now += 25; frame(now); } }
     tick();
     return { storage, session, audio, attempts, sdkEvents, element, scope, tick, get game() { return latest; },
+        get visualDt() { return visualDt; }, get resets() { return resets; },
         record: () => JSON.parse(storage.get('casharcade-missile-checkpoint') || 'null'),
         setFailWrites: value => { options.failWrites = value; },
         connect: () => { options.failHandshake = false; },
@@ -247,4 +248,38 @@ test('unavailable checkpoint storage prevents a paid attempt or new round', asyn
     const restored = harness(h.storage, { session: h.session }); await flush();
     restored.click('retry'); assert.equal(restored.attempts.length, 1);
     restored.attempts[0].reject({ code: 'cancelled' }); await flush();
+});
+
+test('old stage 10 flows freely to 11; capped stage 19 upgrade deploys final boss and reloads once', async () => {
+    const init=harness(); const cp={...init.scope.NeonDefense.fresh(),level:10,seed:42};
+    const legacy=new Map([['casharcade-missile-checkpoint',JSON.stringify(cp)]]);
+    const h=harness(legacy); await flush(); h.click('start'); h.tick();
+    h.game.state='upgrade'; h.tick();
+    assert.equal(h.element('level').textContent,'10 / 20'); assert.equal(h.attempts.length,0);
+    h.click('repair'); h.tick(); assert.equal(h.game.level,11); assert.equal(h.attempts.length,0);
+    const finalUpgrade={...cp,phase:'upgrade',level:19,radius:136,reload:.29};
+    const storage=new Map([['casharcade-missile-checkpoint',JSON.stringify(finalUpgrade)]]);
+    const capped=harness(storage); await flush();
+    assert.equal(capped.element('radius').disabled,true); assert.equal(capped.element('reload').disabled,true);
+    assert.equal(capped.element('repair').disabled,false);
+    capped.click('radius'); capped.click('reload'); assert.equal(capped.record().phase,'upgrade');
+    capped.click('repair'); capped.click('repair'); capped.tick();
+    assert.equal(capped.game.level,20); assert.equal(capped.game.boss.variant,'ark');
+    assert.equal(capped.attempts.length,0); assert.equal(capped.record().checkpoint.radius,136);
+    const restored=harness(storage); await flush(); restored.click('start'); restored.tick();
+    assert.equal(restored.game.level,20); assert.equal(restored.attempts.length,0);
+    lose(restored); restored.key('r'); assert.equal(restored.attempts.length,1);
+    restored.attempts[0].reject({code:'cancelled'}); await flush();
+});
+
+test('visual clocks freeze in pause/upgrade/payment; final city settles briefly and starts reset visuals', async () => {
+    const h=harness(); await flush(); assert.equal(h.visualDt,0);
+    h.click('start'); h.tick(); assert.ok(h.visualDt > 0); assert.equal(h.resets,1);
+    h.click('pause'); h.tick(10); assert.equal(h.visualDt,0);
+    h.click('start'); h.tick(); assert.ok(h.visualDt > 0); assert.equal(h.resets,1);
+    h.game.state='upgrade'; h.tick(); assert.equal(h.visualDt,0);
+    h.click('repair'); h.tick(); assert.equal(h.resets,2);
+    lose(h); assert.ok(h.visualDt > 0); h.tick(50); assert.equal(h.visualDt,0);
+    h.click('retry'); h.tick(10); assert.equal(h.visualDt,0);
+    h.attempts[0].resolve({credit_status:'consumed'}); await flush(); h.tick(); assert.equal(h.resets,3);
 });

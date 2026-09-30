@@ -1,6 +1,6 @@
 (() => {
     'use strict';
-    const { W, H, LEVELS, Game, fresh, valid, upgrade, clone } = NeonDefense;
+    const { W, H, LEVELS, Game, fresh, valid, upgrade, canUpgrade, clone } = NeonDefense;
     const $ = id => document.getElementById(id);
     const KEY = 'casharcade-missile-checkpoint', BEST = 'casharcade-missile-high-score';
     const LOSS_BACKUP = 'casharcade.missile.loss-lock.v1', PAID_BACKUP = 'casharcade.missile.paid-recovery.v1';
@@ -8,7 +8,7 @@
     const renderer = new NeonDefenseRenderer($('game-canvas'));
     const names = { rapid: '» 急速裝填', wide: '✦ 超載爆破', slow: '◷ 時間緩速', shield: '◇ 城市護盾', emp: 'ϟ 電磁脈衝' };
     let checkpoint = null, replay = { state: 'open', intent: null, score: 0 };
-    let game = null, mode = 'ready', best = 0, previous = 0, space = false;
+    let game = null, mode = 'ready', best = 0, previous = 0, space = false, settleTime = 0;
     let storageBlocked = false, paymentBusy = false, consumedCheckpoint = null;
     const pressedPointers = new Set();
     let aim = { x: W / 2, y: H / 2 }, keys = new Set(), toast = '', toastUntil = 0;
@@ -84,11 +84,21 @@
         mode = 'upgrade'; clearInput();
         overlay('SECTOR SECURED', `第 ${checkpoint.level} 關完成`, '選擇一項本局升級，部署下一道防線。');
         $('start').hidden = true; $('choices').hidden = false; $('status').textContent = '選擇升級'; syncControls();
+        document.querySelectorAll('[data-upgrade]').forEach(button => {
+            const choice=button.dataset.upgrade;
+            button.disabled=!canUpgrade(checkpoint,choice);
+            button.title=button.disabled ? '已達升級上限' : '';
+            const detail=button.querySelector?.('span');
+            if (detail) detail.textContent=choice === 'radius' ? (button.disabled ? '已達上限 136' : `爆炸半徑 ${checkpoint.radius} → ${Math.min(136,checkpoint.radius+8)}`)
+                : choice === 'reload' ? (button.disabled ? '已達下限 0.29 秒' : `裝填 ${checkpoint.reload.toFixed(2)} → ${Math.max(.29,checkpoint.reload-.04).toFixed(2)} 秒`)
+                    : checkpoint.cities.every(c => c.hp === 3) ? '防線完整 · 直接部署下一關' : '修復城市、復原一座廢墟';
+        });
     }
     function begin() {
         sound.resume(); clearInput();
         game = new Game(checkpoint); mode = 'running';
-        renderer.particles = []; renderer.labels = []; renderer.shake = 0; renderer.flash = 0;
+        settleTime=0;
+        renderer.reset?.();
         $('overlay').hidden = true; $('pause').textContent = '暫停';
         $('status').textContent = '防守中'; toast = ''; sound.play('defenseStart'); previous = performance.now(); hud(); syncControls();
     }
@@ -147,7 +157,7 @@
     }
     function hud() {
         const level = game?.level || checkpoint?.level || 1;
-        $('level').textContent = `${String(level).padStart(2, '0')} / 10`;
+        $('level').textContent = `${String(level).padStart(2, '0')} / ${LEVELS.length}`;
         $('score').textContent = String(game?.score ?? checkpoint?.score ?? 0).padStart(6, '0');
         $('best').textContent = String(best).padStart(6, '0');
         $('cities').textContent = `${(game?.cities || checkpoint?.cities || fresh().cities).filter(c => c.hp > 0).length} / 6`;
@@ -161,7 +171,7 @@
     }
     const audio = { launch: 'defenseLaunch', explosion: 'defenseBlast', chain: 'defenseChain', armor: 'defenseArmor',
         damage: 'defenseDamage', pickup: 'defensePickup', shield: 'defenseShield', alarm: 'defenseAlarm',
-        level: 'level', win: 'win', lose: 'lose', bossDeath: 'defenseBoss' };
+        level: 'level', win: 'win', lose: 'lose', bossDeath: 'defenseBoss', breakup: 'defenseBlast' };
     function events() {
         for (const e of game.drain()) {
             renderer.event(e); if (audio[e.type]) sound.play(audio[e.type]);
@@ -179,14 +189,14 @@
                 replay = { state: 'lost', intent: null, score: game.score };
                 $('storage-note').textContent = '無法保存失敗狀態；請先恢復瀏覽器儲存，再重試付款。儲存未恢復前請勿關閉分頁。';
             }
-            mode = 'lost'; clearInput(); $('status').textContent = '防線失守';
+            mode = 'lost'; settleTime=1.2; clearInput(); $('status').textContent = '防線失守';
             overlay('SIGNAL LOST', '城市防線失守', `本次 ${game.score} 分。重試本關或新戰役都需先解鎖「再來一局」。`, '再來一局（付費）');
             syncControls();
         }
         if (game.state === 'won' && mode === 'running') {
             mode = 'won'; clearInput(); checkpoint = null; replay = { state: 'open', intent: null, score: 0 }; save(KEY, null);
             sessionClear(LOSS_BACKUP); sessionClear(PAID_BACKUP);
-            $('status').textContent = '戰役完成'; overlay('ALL TEN SECTORS SECURED', '天空，重回我們手中', `十關戰役完成！總分 ${game.score}，${game.cities.filter(c => c.hp).length} 座城市存活。`, '開始新戰役（免費）');
+            $('status').textContent = '戰役完成'; overlay('ALL SECTORS SECURED', '天空，重回我們手中', `${LEVELS.length} 關戰役完成！總分 ${game.score}，${game.cities.filter(c => c.hp).length} 座城市存活。`, '開始新戰役（免費）');
             syncControls();
         }
     }
@@ -197,7 +207,10 @@
             aim.y = Math.max(35, Math.min(615, aim.y + ((keys.has('ArrowDown') ? 1 : 0) - (keys.has('ArrowUp') ? 1 : 0)) * 450 * dt));
             game.update(dt); events(); hud();
         }
-        renderer.draw(game, aim, ['paused', 'ready'].includes(mode) ? 0 : dt); requestAnimationFrame(loop);
+        // Let the final city collapse play out, without advancing gameplay or payment.
+        const visualDt=mode === 'running' ? dt : mode === 'lost' && !document.hidden ? Math.min(dt,settleTime) : 0;
+        if (mode === 'lost') settleTime=Math.max(0,settleTime-visualDt);
+        renderer.draw(game, aim, visualDt); requestAnimationFrame(loop);
     }
     function point(event) {
         const rect = $('game-canvas').getBoundingClientRect();

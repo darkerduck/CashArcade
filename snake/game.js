@@ -1,7 +1,8 @@
-import { SnakeGame, LEVELS, POWERS } from './engine.mjs';
-import { Campaign, CampaignStore, BEST_KEY, SAVE_KEY } from './storage.mjs';
+import { SnakeGame, LEVELS, POWERS } from './engine.mjs?v=2';
+import { Campaign, CampaignStore, BEST_KEY, SAVE_KEY } from './storage.mjs?v=2';
 import { ReplayGate, sdkFactory } from './payment.mjs';
 import { playEvents } from './audio-events.mjs';
+import { Tutorial, LESSONS, shouldOfferTutorial, canEnterTutorial } from './tutorial.mjs';
 
 const $ = id => document.getElementById(id);
 const canvas = $('game-canvas'), overlay = $('game-overlay');
@@ -9,6 +10,7 @@ let campaign, store, renderer, sound, music, initialized = false, busy = false, 
 let lastFrame = 0, lastHud = 0, lastRevision = -1, lastSave = 0, storageError = false, conflict = false;
 let highScore = 0, musicStarted = false, musicLevel = -1, resumeSound = false, restored = false;
 let game = new SnakeGame(), touchStart = null, unavailable = false;
+let tutorial, inTutorial = false, paymentStatus = '', lastLesson = -1, lastTutorialRevision = -1;
 const map = $('mini-map').getContext('2d');
 const mobileLayout = matchMedia('(max-width: 640px)');
 const controlPanel = document.querySelector('.control-panel'), navigationPanel = document.querySelector('.navigation');
@@ -34,6 +36,17 @@ function message(kicker, title, detail, action, { survey = false, disabled = fal
 const reasonText = { wall: '撞到牆面', self: '撞到自己的身體', bomb: '碰到炸彈', laser: '碰到啟動中的雷射' };
 function showState() {
     if (unavailable || conflict) return;
+    if (inTutorial) {
+        const lesson = tutorial.current;
+        if (game.state === 'failed') message('TRAINING / FREE RETRY', reasonText[game.reason] || '練習結束', '第 0 關死亡不收費。已完成的目標保留，免費重新部署目前步驟。', '免費重試');
+        else if (!tutorial.completed && lesson.kind === 'observe') {
+            message('TRAINING / TACTICAL VIEW', lesson.name, tutorial.waiting ? lesson.detail : tutorial.observed ? '已改變鏡頭。按繼續復原標準視角，再前往出口。' : '拖曳或縮放鏡頭，或按下方「旋轉視角」；實際觀察後才能繼續。', tutorial.waiting ? '開始觀察' : '繼續教學', { survey: !tutorial.waiting, disabled: !tutorial.waiting && !tutorial.observed });
+        } else if (tutorial.waiting && !tutorial.completed) message(`TRAINING ${tutorial.lesson + 1} / ${LESSONS.length}`, lesson.name, lesson.detail, lesson.kind === 'reverse' ? '請按 Q／降，試試反向' : `開始練習 · ${lesson.direction === 'rise' ? 'E／升' : lesson.direction === 'dive' ? 'Q／降' : ({ right: 'D／→', left: 'A／←', forward: 'W／↑', back: 'S／↓' })[lesson.direction]}`, { disabled: lesson.kind === 'reverse' });
+        else if (game.state === 'paused') message('TRAINING / FREE PRACTICE', '暫停 · 自由觀察', '繼續時恢復標準視角；練習與重試皆免費。', '繼續練習', { survey: true });
+        else if (game.state === 'ready') message('TRAINING COMPLETE', '教學完成 · 自由練習', '全部目標已完成。可繼續慢速練習，或自行進入戰役；本頁不會自動開始正式第一關。', '開始自由練習');
+        else overlay.hidden = true;
+        return;
+    }
     if (storageError) { message('SAVE REQUIRED', '存檔暫時無法保存', $('storage-note').textContent, campaign?.consumed ? '恢復已解鎖局' : '重試保存／恢復'); return; }
     if (campaign?.record.replay === 'pending') { message('CASHLINK / REPLAY', '尚未開始下一局', '保留原局與原訂單；請確認付款狀態，不要重複付款。', campaign.consumed ? '恢復已解鎖局' : '恢復付款'); return; }
     if (game.state === 'failed') message('SIGNAL LOST', reasonText[game.reason] || '本局結束', `戰役得分 ${game.score}。重試會從第 ${game.levelIndex + 1} 關起點恢復，需先解鎖「再來一局」。`, '解鎖並重試本關');
@@ -45,13 +58,28 @@ function showState() {
 }
 function controls() {
     const locked = !initialized || busy || conflict || unavailable;
-    $('restart-button').disabled = locked || storageError; $('new-button').disabled = locked || storageError;
-    $('pause-button').disabled = locked || !['running', 'paused'].includes(game.state) || campaign?.record.replay === 'pending' || storageError;
+    $('restart-button').disabled = locked || !inTutorial && storageError; $('new-button').disabled = locked || !inTutorial && storageError;
+    $('pause-button').disabled = locked || (!['running', 'paused'].includes(game.state) && !(inTutorial && tutorial.current.kind === 'observe')) || !inTutorial && (campaign?.record.replay === 'pending' || storageError);
     $('pause-button').textContent = game.state === 'paused' ? '繼續遊戲' : '暫停／觀察';
-    $('cancel-payment').hidden = !gate.busy;
+    $('restart-button').textContent = inTutorial ? '免費重試 ↻' : '重試本關 ↻';
+    $('new-button').textContent = inTutorial ? '進入／返回戰役' : '新戰役';
+    $('tutorial-button').hidden = inTutorial;
+    $('tutorial-button').disabled = locked || !canEnterTutorial({ busy, countdown, gate, campaign });
+    $('tutorial-panel').hidden = !inTutorial;
+    $('tutorial-return').disabled = locked || !!countdown;
+    $('tutorial-restart').disabled = locked || !!countdown;
+    $('tutorial-rotate').hidden = !inTutorial || game.state !== 'paused';
+    $('cancel-payment').hidden = inTutorial || !gate.busy;
+    $('payment-fallback').hidden = inTutorial || !$('payment-fallback').getAttribute('href')?.startsWith('https:');
     if (locked) $('start-button').disabled = true;
 }
 function save() {
+    if (inTutorial) {
+        tutorial.save(); lastRevision = game.revision; lastSave = game.time; lastTutorialRevision = tutorial.revision;
+        $('storage-note').classList.remove('error');
+        $('storage-note').textContent = tutorial.persistent ? '教學進度獨立保存 · 不計正式分數，不消耗首次免費戰役' : '教學仍可免費練習；儲存不可用，進度只保留於本頁。正式存檔保持原狀。';
+        return true;
+    }
     if (!campaign || conflict) return false;
     try { campaign.save(); storageError = false; lastRevision = game.revision; lastSave = game.time; return true; }
     catch {
@@ -62,12 +90,51 @@ function save() {
 }
 const gate = new ReplayGate({
     factory: sdkFactory,
-    status: text => { $('payment-note').textContent = text; },
-    checkout: url => { $('payment-fallback').hidden = !url; $('payment-fallback').href = url || '#'; },
+    status: text => { paymentStatus = text; if (!inTutorial) $('payment-note').textContent = text; },
+    checkout: url => { $('payment-fallback').hidden = inTutorial || !url; $('payment-fallback').href = url || '#'; },
     busy: value => { $('cancel-payment').hidden = !value; showState(); controls(); },
 });
 
+function tutorialReady() {
+    game = tutorial.game; lastLesson = tutorial.lesson; lastRevision = lastTutorialRevision = -1;
+    renderer.load(game); renderer.survey(game.state === 'paused');
+    showState(); controls(); updateHUD();
+}
+function enterTutorial() {
+    if (!initialized || unavailable || conflict || !canEnterTutorial({ busy, countdown, gate, campaign })) return;
+    if (campaign) { game.pause(); music.pause(); if (!save()) return; }
+    inTutorial = true; tutorial.enter(); countdown = 0; musicStarted = false; tutorialReady(); save();
+}
+function leaveTutorial() {
+    if (!inTutorial || busy || countdown || unavailable || conflict) return;
+    tutorial.pause(); tutorial.leave(); music.pause(); inTutorial = false; musicStarted = false;
+    game = campaign?.game || new SnakeGame(); lastRevision = -1; renderer.load(game); renderer.survey(game.state === 'paused');
+    $('storage-note').classList.toggle('error', storageError);
+    $('storage-note').textContent = storageError ? '正式戰役存檔無法讀取或保存，請保留付款資料並確認儲存權限。免費教學仍可使用。' : '正式戰役原局已保留；過關、暫停與恢復同一局免費。';
+    $('payment-note').textContent = paymentStatus || '首個正式戰役免費；之後重試、R 或新戰役須解鎖「再來一局」。';
+    showState(); controls(); updateHUD();
+}
+function requestTutorial(intent = 'continue') {
+    if (!initialized || unavailable || conflict || busy || countdown) return;
+    sound.resume(); music.wake();
+    const old = tutorial.game;
+    if (intent === 'retry' || game.state === 'failed') tutorial.retry();
+    if (intent === 'lessons') tutorial.restartLessons();
+    game = tutorial.game;
+    if (old !== game) { renderer.load(game); music.pause(); musicStarted = false; }
+    if (tutorial.current.kind === 'observe') {
+        if (tutorial.waiting) { tutorial.startObservation(); renderer.survey(true); tutorial.observe(renderer.camera.position.toArray()); sound.play('pause'); }
+        else if (tutorial.resumeObservation()) { renderer.survey(false); sound.play('resume'); }
+        save(); showState(); controls(); updateHUD(); return;
+    }
+    if (!tutorial.prepareStart()) { showState(); controls(); return; }
+    resumeSound = game.state === 'paused'; renderer.survey(false); countdown = performance.now() + 1000;
+    save(); overlay.hidden = true; $('countdown').hidden = false; $('countdown').textContent = '1'; controls();
+    if (mobileLayout.matches) canvas.scrollIntoView({ block: 'start', behavior: 'instant' });
+}
+
 async function requestRound(intent = 'continue') {
+    if (inTutorial) return requestTutorial(intent);
     if (!initialized || unavailable || conflict || busy || countdown) return;
     sound.resume(); music.wake(); busy = true; const oldGame = game;
     game.pause(); music.pause(); renderer.survey(false); controls();
@@ -95,8 +162,8 @@ async function requestRound(intent = 'continue') {
 function begin() {
     countdown = 0; $('countdown').hidden = true;
     try {
-        if (!campaign.begin()) { showState(); return; }
-        game = campaign.game; restored = false;
+        if (!(inTutorial ? tutorial.begin() : campaign.begin())) { showState(); return; }
+        game = inTutorial ? tutorial.game : campaign.game; restored = false;
         sound.play(resumeSound ? 'resume' : 'start');
         if (musicStarted && musicLevel === game.levelIndex && resumeSound) music.resume();
         else { music.start(1, game.level.chapter); musicStarted = true; musicLevel = game.levelIndex; }
@@ -105,7 +172,8 @@ function begin() {
     controls();
 }
 function pause(automatic = false, persist = true) {
-    if (!initialized || !campaign || conflict || unavailable) return;
+    if (!initialized || !inTutorial && !campaign || conflict || unavailable) return;
+    if (inTutorial && tutorial.current.kind === 'observe' && tutorial.waiting && !automatic) { requestTutorial(); return; }
     if (game.state !== 'running' && !countdown) return;
     countdown = 0; $('countdown').hidden = true;
     if (game.state === 'ready') game.state = 'paused'; else game.pause();
@@ -114,11 +182,20 @@ function pause(automatic = false, persist = true) {
     renderer.survey(true); showState(); controls();
 }
 function input(direction) {
-    if (!initialized || busy || unavailable || storageError || conflict || countdown || campaign.record.replay === 'pending') return;
+    if (!initialized || busy || unavailable || !inTutorial && storageError || conflict || countdown || !inTutorial && campaign?.record.replay === 'pending') return;
     sound.resume();
+    if (inTutorial) {
+        const reverse = tutorial.current.kind === 'reverse';
+        if (!tutorial.input(direction)) return;
+        if (reverse) { save(); showState(); controls(); updateHUD(); }
+        else if (tutorial.waiting) requestTutorial();
+        else save();
+        return;
+    }
     if (game.state === 'running' && game.input(direction)) save();
 }
 function primary() {
+    if (inTutorial) { requestTutorial(game.state === 'failed' ? 'retry' : 'continue'); return; }
     if (game.state === 'level-clear' && campaign?.record.replay === 'open') requestRound('next');
     else if (game.state === 'won') requestRound('new');
     else if (game.state === 'failed') requestRound('retry');
@@ -135,26 +212,29 @@ function drawMap() {
     game.level.gates.forEach((gate, i) => gate.cells.filter(p => p.y === layer).forEach(p => box(p, game.gates[i].active ? '#ff426c' : game.gates[i].warning ? '#ffc355' : '#372837', 2)));
     game.level.portals.forEach(pair => [pair.a, pair.b].filter(p => p.y === layer).forEach(p => box(p, pair.color, 3)));
     game.snake.slice().reverse().filter(p => p.y === layer).forEach(p => box(p, '#2eba96', 2)); box(game.snake[0], '#ccfff2', 1.5);
-    for (const [p, color] of [[game.food, '#ffcf5b'], [game.dessert, '#ff8bd9'], [game.power, '#94a2ff'], [game.level.exit, game.collected >= game.level.quota ? '#8cffab' : '#465d62'], ...game.bombs.map(p => [p, '#ff4966'])]) {
+    for (const [p, color] of [[game.food, '#ffcf5b'], [game.dessert, '#ff8bd9'], [game.power, '#94a2ff'], [game.tutorialPractice ? null : game.level.exit, game.exitOpen() ? '#8cffab' : '#465d62'], ...game.bombs.map(p => [p, '#ff4966'])]) {
         if (!p) continue;
         if (p.y === layer) box(p, color, 3);
-        else if (p === game.food || p === game.level.exit && game.collected >= game.level.quota) { map.strokeStyle = color; map.lineWidth = 1.4; map.strokeRect(p.x * unit + 2, p.z * unit + 2, unit - 4, unit - 4); }
+        else if (p === game.food || p === game.level.exit && game.exitOpen()) { map.strokeStyle = color; map.lineWidth = 1.4; map.strokeRect(p.x * unit + 2, p.z * unit + 2, unit - 4, unit - 4); }
     }
 }
 function updateHUD() {
-    $('level-number').innerHTML = `${String(game.levelIndex + 1).padStart(2, '0')} <small>/ ${LEVELS.length}</small>`;
+    $('level-number').innerHTML = inTutorial ? '00 <small>/ 教學</small>' : `${String(game.levelIndex + 1).padStart(2, '0')} <small>/ ${LEVELS.length}</small>`;
     $('score').textContent = String(game.score).padStart(5, '0'); $('high-score').textContent = String(highScore).padStart(5, '0');
     $('speed').innerHTML = `${(1000 / game.delay()).toFixed(1)} <small>格／秒</small>`;
-    $('sector-label').textContent = `CHAPTER ${String(game.level.chapter + 1).padStart(2, '0')} · ${game.level.name}`;
+    $('score-label').textContent = inTutorial ? 'SCORE / 練習分數' : 'SCORE / 戰役分數';
+    $('sector-label').textContent = inTutorial ? 'SECTOR 00 · 光域訓練 · 永久免費' : `CHAPTER ${String(game.level.chapter + 1).padStart(2, '0')} · ${game.level.name}`;
     $('clock-label').textContent = `${String(Math.floor(game.time / 60000)).padStart(2, '0')}:${String(Math.floor(game.time / 1000) % 60).padStart(2, '0')}`;
-    $('mission-title').textContent = game.level.name; $('mission-hint').textContent = game.level.hint;
-    $('goal-count').textContent = `${Math.min(game.collected, game.level.quota)} / ${game.level.quota}`;
-    $('goal-progress').max = game.level.quota; $('goal-progress').value = game.collected;
+    $('mission-title').textContent = inTutorial ? tutorial.current.name : game.level.name;
+    $('mission-hint').textContent = inTutorial ? tutorial.current.detail : game.level.hint;
+    $('goal-label').textContent = inTutorial ? '已完成教學目標' : '能量收集';
+    $('goal-count').textContent = inTutorial ? `${tutorial.lesson} / ${LESSONS.length}` : `${Math.min(game.collected, game.level.quota)} / ${game.level.quota}`;
+    $('goal-progress').max = inTutorial ? LESSONS.length : game.level.quota; $('goal-progress').value = inTutorial ? tutorial.lesson : game.collected;
     const y = game.snake[0].y; $('altitude').textContent = `${String(y + 1).padStart(2, '0')} / ${String(game.level.height).padStart(2, '0')}`;
     $('altitude-bars').innerHTML = Array.from({ length: game.level.height }, (_, i) => `<span class="${i === y ? 'active' : ''}"></span>`).join('');
-    const target = game.collected >= game.level.quota ? game.level.exit : game.food;
-    $('target-label').textContent = target ? `${game.collected >= game.level.quota ? '出口已啟動' : '食物'}：${target.y === y ? '同高度' : target.y > y ? `↑ 上方 ${target.y - y} 層` : `↓ 下方 ${y - target.y} 層`}` : '目標準備中';
-    $('dessert-status').textContent = game.levelIndex === 0 ? '本關沒有甜點' : game.collected >= game.level.quota ? '能量已足夠，前往出口' : game.dessert ? `甜點剩 ${Math.ceil((10000 - game.time % 20000) / 1000)} 秒` : `下次甜點 ${Math.ceil((20000 - game.time % 20000) / 1000)} 秒後`;
+    const target = game.exitOpen() ? game.level.exit : game.food;
+    $('target-label').textContent = target ? `${game.exitOpen() ? '出口已啟動' : '食物'}：${target.y === y ? '同高度' : target.y > y ? `↑ 上方 ${target.y - y} 層` : `↓ 下方 ${y - target.y} 層`}` : '目標準備中';
+    $('dessert-status').textContent = inTutorial ? '教學沒有甜點、炸彈或隨機道具' : game.levelIndex === 0 ? '本關沒有甜點' : game.collected >= game.level.quota ? '能量已足夠，前往出口' : game.dessert ? `甜點剩 ${Math.ceil((10000 - game.time % 20000) / 1000)} 秒` : `下次甜點 ${Math.ceil((20000 - game.time % 20000) / 1000)} 秒後`;
     const danger = game.danger(); $('danger-status').textContent = danger ? `△ ${danger} · 可用 E / Q 改變高度` : '六面封閉 · E 持續上升 · Q 持續下降 · 不可立即反向'; $('danger-status').classList.toggle('danger', !!danger);
     const active = [];
     if (game.effects.shield) active.push('◇ 護盾 ×1');
@@ -162,27 +242,39 @@ function updateHUD() {
     if (game.effects.immune > game.time) active.push('◇ 護盾抵擋中');
     $('effects').innerHTML = active.length ? active.map(s => `<span class="effect-chip">${s}</span>`).join('') : 'NO ACTIVE POWERS / 道具吃到立即生效';
     const stateText = { ready: '準備部署', running: '遊戲中', paused: '暫停觀察', failed: '本局結束', 'level-clear': '關卡完成', won: '戰役完成' };
-    $('status-text').textContent = unavailable ? '場景中斷' : campaign?.record.replay === 'pending' ? '等待解鎖' : storageError ? '等待存檔' : stateText[game.state];
+    $('status-text').textContent = unavailable ? '場景中斷' : inTutorial ? tutorial.completed ? '免費自由練習' : '免費教學' : campaign?.record.replay === 'pending' ? '等待解鎖' : storageError ? '等待存檔' : stateText[game.state];
     $('view-mode').textContent = game.state === 'paused' && !countdown ? '自由觀察' : '固定視角'; drawMap();
+    document.querySelector('.control-note').innerHTML = `Space / P 暫停 · R ${inTutorial ? '免費' : '付費'}重試<br>暫停時拖曳旋轉、滾輪縮放`;
+    document.querySelectorAll('[data-direction]').forEach(b => { const highlighted = inTutorial && !tutorial.completed && b.dataset.direction === tutorial.current.direction; b.classList.toggle('tutorial-target', highlighted); b.setAttribute('aria-describedby', highlighted ? 'tutorial-instructions' : 'mission-hint'); });
+    navigationPanel.classList.toggle('tutorial-focus', inTutorial && !!tutorial.current.focus);
+    if (inTutorial) {
+        $('tutorial-heading').textContent = tutorial.completed ? '教學完成 · 自由練習' : `步驟 ${tutorial.lesson + 1} / ${LESSONS.length} · ${tutorial.current.name}`;
+        $('tutorial-instructions').textContent = tutorial.current.detail;
+        $('tutorial-return').textContent = campaign?.record.played ? '返回正式戰役' : tutorial.completed ? '進入第一關' : '跳過教學／進入戰役';
+        $('payment-note').textContent = '第 0 關開始、死亡、R、重試與自由練習全部免費。不計正式分數，不消耗首次免費戰役。';
+    }
 }
 function frame(now) {
     requestAnimationFrame(frame);
     const delta = lastFrame ? Math.min(100, now - lastFrame) : 0; lastFrame = now;
     if (!renderer || renderer.lost || document.hidden || !initialized) return;
     if (countdown && now >= countdown) begin();
-    if (!countdown && !busy && !storageError && !unavailable && !conflict) {
-        game.advance(delta);
-        const events = game.drain();
+    if (!countdown && !busy && (!storageError || inTutorial) && !unavailable && !conflict) {
+        if (inTutorial) tutorial.advance(delta); else game.advance(delta);
+        if (inTutorial && game !== tutorial.game) { game = tutorial.game; renderer.load(game); musicStarted = false; }
+        const events = inTutorial ? tutorial.drain() : game.drain();
         if (events.length) {
             renderer.events(events, game); playEvents(events, sound, music);
             const latest = events.filter(e => ['eat', 'power', 'level-clear', 'won', 'lose'].includes(e.type)).at(-1);
-            if (latest) $('live-region').textContent = latest.type === 'power' ? `取得${POWERS[latest.kind].name}` : latest.type === 'eat' ? `${latest.kind === 'food' ? '能量' : '甜點'}，戰役分數 ${game.score}` : latest.type === 'lose' ? reasonText[game.reason] : '關卡完成';
-            if (game.score > highScore) { highScore = game.score; try { localStorage.setItem(BEST_KEY, String(highScore)); } catch { /* Main save will surface a storage error. */ } }
+            if (latest) $('live-region').textContent = latest.type === 'power' ? `取得${POWERS[latest.kind].name}` : latest.type === 'eat' ? `${latest.kind === 'food' ? '能量' : '甜點'}，${inTutorial ? '練習' : '戰役'}分數 ${game.score}` : latest.type === 'lose' ? reasonText[game.reason] : inTutorial ? '教學完成' : '關卡完成';
+            if (!inTutorial && game.score > highScore) { highScore = game.score; try { localStorage.setItem(BEST_KEY, String(highScore)); } catch { /* Main save will surface a storage error. */ } }
             if (['failed', 'level-clear', 'won'].includes(game.state)) { showState(); controls(); }
         }
-        if (game.revision !== lastRevision || game.state === 'running' && game.time - lastSave >= 250) save();
+        if (inTutorial && tutorial.lesson !== lastLesson) { lastLesson = tutorial.lesson; music.pause(); renderer.survey(false); showState(); controls(); }
+        if (inTutorial && tutorial.observe(renderer.camera.position.toArray())) { showState(); controls(); }
+        if (game.revision !== lastRevision || inTutorial && tutorial.revision !== lastTutorialRevision || game.state === 'running' && game.time - lastSave >= 250) save();
     }
-    const animate = !countdown && !busy && game.state !== 'paused' && !storageError && campaign?.record.replay !== 'pending';
+    const animate = !countdown && !busy && game.state !== 'paused' && (inTutorial || !storageError && campaign?.record.replay !== 'pending');
     renderer.draw(game, animate ? delta / 1000 : 0);
     if (now - lastHud > 90) { updateHUD(); lastHud = now; }
 }
@@ -191,9 +283,14 @@ $('start-button').addEventListener('click', primary);
 $('pause-button').addEventListener('click', () => game.state === 'paused' ? requestRound('continue') : pause());
 $('restart-button').addEventListener('click', () => requestRound('retry'));
 $('new-button').addEventListener('click', () => {
+    if (inTutorial) { leaveTutorial(); return; }
     pause(true);
     if (!campaign?.record.played || confirm('開始新戰役會取代目前戰役，且需要解鎖「再來一局」。確定繼續？')) requestRound('new');
 });
+$('tutorial-button').addEventListener('click', enterTutorial);
+$('tutorial-return').addEventListener('click', leaveTutorial);
+$('tutorial-restart').addEventListener('click', () => requestTutorial('lessons'));
+$('tutorial-rotate').addEventListener('click', () => { if (!inTutorial) return; renderer.rotateSurvey(); tutorial.observe(renderer.camera.position.toArray()); save(); showState(); controls(); });
 $('cancel-payment').addEventListener('click', () => gate.cancel());
 $('theme-toggle').addEventListener('click', () => { const theme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = theme; try { localStorage.setItem('casharcade-theme', theme); } catch { /* Page preference still works. */ } });
 $('fullscreen-button').addEventListener('click', async () => {
@@ -202,12 +299,14 @@ $('fullscreen-button').addEventListener('click', async () => {
 const keyDirections = { ArrowUp: 'forward', w: 'forward', ArrowDown: 'back', s: 'back', ArrowLeft: 'left', a: 'left', ArrowRight: 'right', d: 'right', e: 'rise', q: 'dive' };
 window.addEventListener('keydown', event => {
     if (event.target?.closest?.('input,textarea,select,[contenteditable="true"]') || ['music-toggle', 'sound-toggle', 'theme-toggle'].includes(event.target?.id)) return;
+    // Let focused tutorial/action buttons keep native Space activation (one click).
+    if (event.key === ' ' && ['start-button', 'tutorial-button', 'tutorial-return', 'tutorial-restart', 'tutorial-rotate'].includes(event.target?.id)) return;
     const k = event.key.length === 1 ? event.key.toLowerCase() : event.key;
     if (keyDirections[k] || [' ', 'p', 'Escape', 'r'].includes(k)) event.preventDefault(); else return;
     if (event.repeat) return;
     if (keyDirections[k]) input(keyDirections[k]);
     else if (k === 'r') requestRound('retry');
-    else if (game.state === 'running' || countdown) pause();
+    else if (game.state === 'running' || countdown || inTutorial && tutorial.current.kind === 'observe' && tutorial.waiting) pause();
     else if (game.state === 'paused') requestRound('continue');
 });
 document.querySelectorAll('[data-direction]').forEach(button => button.addEventListener('click', () => input(button.dataset.direction)));
@@ -224,6 +323,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { pau
 window.addEventListener('pagehide', () => { if (!unavailable && !conflict) { pause(true); save(); } });
 window.addEventListener('storage', event => {
     if (event.key !== SAVE_KEY || !initialized) return;
+    if (inTutorial) { tutorial.pause(); tutorial.save(); }
     pause(true, false); conflict = true; controls();
     message('ANOTHER TAB', '其他分頁更新了戰役', '為避免覆蓋存檔或重複解鎖，本頁已停止。請重新載入後繼續。', '請重新載入本頁', { disabled: true });
 });
@@ -234,12 +334,18 @@ async function initialize() {
         music = window.CashArcadeMusic.create({ score: window.CashArcadeScores.snake, storagePrefix: 'casharcade-snake-music', toggleButton: $('music-toggle'), volumeInput: $('music-volume'), volumeLabel: $('music-volume-value'), trackLabel: $('music-track'), audioOutput: sound.musicOutput });
         try { store = new CampaignStore(localStorage, sessionStorage); campaign = new Campaign(store, gate); game = campaign.game; restored = campaign.record.played; highScore = Math.max(0, Number(localStorage.getItem(BEST_KEY)) || 0); }
         catch { storageError = true; $('storage-note').classList.add('error'); $('storage-note').textContent = '戰役存檔無法讀取或驗證。請確認儲存權限，勿清除未完成付款資料。'; }
-        const { SnakeRenderer } = await import('./renderer.mjs');
+        let tutorialStorage = null; try { tutorialStorage = localStorage; } catch { /* Teaching works in memory. */ }
+        tutorial = new Tutorial(tutorialStorage);
+        inTutorial = shouldOfferTutorial(campaign, tutorial);
+        if (inTutorial) game = tutorial.game;
+        const { SnakeRenderer } = await import('./renderer.mjs?v=2');
         renderer = new SnakeRenderer(canvas, {
             onLost: () => { pause(true); unavailable = true; music.pause(); controls(); message('WEBGL INTERRUPTED', '3D 畫面暫時中斷', '已暫停並保留原局；待瀏覽器恢復後可免費繼續。', '等待恢復', { disabled: true }); },
             onRestored: () => { unavailable = false; showState(); controls(); },
         });
         renderer.load(game); await renderer.ready(); initialized = true;
+        if (inTutorial) tutorial.enter();
+        lastLesson = tutorial.lesson;
         if (game.state === 'paused') renderer.survey(true);
         $('power-guide-list').innerHTML = Object.values(POWERS).map(p => `<div><strong>${p.glyph} ${p.name}</strong>${p.detail}</div>`).join('');
         showState(); controls(); updateHUD(); requestAnimationFrame(frame); gate.initialize();

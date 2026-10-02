@@ -1,4 +1,4 @@
-import { SnakeGame } from './engine.mjs';
+import { SnakeGame } from './engine.mjs?v=2';
 export const SAVE_KEY = 'casharcade-snake-3d-campaign-v1';
 export const PAID_KEY = 'casharcade-snake-3d-paid-backup-v1';
 export const BEST_KEY = 'casharcade-snake-3d-high-score';
@@ -7,7 +7,8 @@ export const freshRecord = () => ({ version: 1, paidSerial: 0, played: false, re
 export function validRecord(e) {
     return !!e && e.version === 1 && typeof e.played === 'boolean' && ['open', 'pending', 'paid-ready'].includes(e.replay)
         && (e.paidSerial === undefined || Number.isSafeInteger(e.paidSerial) && e.paidSerial >= 0)
-        && (e.replay === 'pending' ? ['retry', 'new'].includes(e.intent) : e.intent === null) && SnakeGame.valid(e.game);
+        && (e.replay === 'pending' ? ['retry', 'new'].includes(e.intent) : e.intent === null)
+        && (e.game?.mode ?? 'campaign') === 'campaign' && SnakeGame.valid(e.game);
 }
 export class CampaignStore {
     constructor(local, session) { this.local = local; this.session = session; }

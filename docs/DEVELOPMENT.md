@@ -17,6 +17,7 @@
 | [music.js](../music.js)、[music-scores.js](../music-scores.js)、[music.css](../music.css) | 配樂合成／排程與控制；蛇、飛行、打磚塊的原創樂譜 |
 | [snake/game.js](../snake/game.js)、[snake/audio-events.mjs](../snake/audio-events.mjs) | 六方向輸入、介面、保存協調、音效與四階段配樂 |
 | [snake/levels.mjs](../snake/levels.mjs)、[snake/engine.mjs](../snake/engine.mjs) | 十二關地形／種子、純三維規則、機關／道具、固定步進及 snapshot |
+| [snake/tutorial.mjs](../snake/tutorial.mjs) | 獨立第0關、固定引導目標、免費重試、自由練習及教學存檔；無SDK依賴 |
 | [snake/renderer.mjs](../snake/renderer.mjs)、[vendor/three-r186](../vendor/three-r186) | Three.js 立體場景、插值、實例化、反射／光暈、固定與觀察鏡頭 |
 | [snake/storage.mjs](../snake/storage.mjs)、[snake/payment.mjs](../snake/payment.mjs) | 完整戰役存檔、已解鎖備援、單一重試 gate 與 SDK 恢復 |
 | [flappy/game.js](../flappy/game.js)、[flappy/renderer.js](../flappy/renderer.js) | 飛行規則／輸入與獨立的小鳥、閘門、視差場景繪製 |
@@ -38,7 +39,7 @@
 
 | 遊戲 | 邏輯畫布 | 遊戲更新 |
 | --- | --- | --- |
-| 貪吃蛇 | 10 × 10 × 3 至 14 × 14 × 5 三維格點 | 10 ms 固定模擬；每格 250–160 ms，渲染獨立插值 |
+| 貪吃蛇 | 10 × 10 × 3 至 14 × 14 × 5 三維格點 | 10 ms 固定模擬；正式每格 250–160 ms、教學400ms，渲染獨立插值 |
 | 打磚塊 | 720 × 540 | 引擎 120 Hz 固定物理步進、掃掠碰撞；控制器安排畫格 |
 | 霓虹飛行 | 720 × 540 | 畫格 delta 更新重力／閘門；renderer 與碰撞圈分離 |
 | 霓虹天盾 | 960 × 720 | 引擎按 delta 更新戰役；控制器處理畫格與單次按壓 |

@@ -10,6 +10,7 @@
 
 ```sh
 node --test tests/snake-3d.test.mjs tests/snake-payment.test.mjs
+node --test tests/snake-tutorial.test.mjs tests/snake-tutorial-ui.test.mjs
 node --test tests/breakout-engine.test.mjs tests/breakout-payment.test.mjs
 node --test tests/missile.test.mjs tests/missile-ui.test.mjs
 git diff --check
@@ -27,6 +28,7 @@ node --test tests/*.test.mjs
 | --- | --- | --- |
 | 蛇的三維規則與十二關 | [snake-3d.test.mjs](../tests/snake-3d.test.mjs) | 六方向、十二關完整移動回放、出口、傳送、雷射、道具、甜點／炸彈計時與 snapshot |
 | 蛇的付款與存檔 | [snake-payment.test.mjs](../tests/snake-payment.test.mjs) | 免費續關、付費入口、單次解鎖、錯誤／取消、存檔失敗與付款前後恢復 |
+| 蛇的第0關與控制器 | [snake-tutorial.test.mjs](../tests/snake-tutorial.test.mjs)、[snake-tutorial-ui.test.mjs](../tests/snake-tutorial-ui.test.mjs) | 真實移動完成13個教學目標、免費重試／R、觀察、自由練習、跳過、儲存降級與正式付款隔離 |
 | 蛇與飛行事件 | [game-audio-events.test.mjs](../tests/game-audio-events.test.mjs) | 拍翼、計分、加速、暫停、遊戲與音樂協調 |
 | 飛行畫面 | [flappy-renderer.test.mjs](../tests/flappy-renderer.test.mjs) | 鳥形、場景、亮暗版、減少動態效果、裝飾上限 |
 | 打磚塊規則／存檔 | [breakout-engine.test.mjs](../tests/breakout-engine.test.mjs) | 30 關、蓄力、多球、道具、首領與 snapshot／遷移 |

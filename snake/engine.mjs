@@ -1,4 +1,4 @@
-import { LEVELS, DIRECTIONS, POWERS, key, equal, add, distance } from './levels.mjs';
+import { LEVELS, TUTORIAL_LEVEL, DIRECTIONS, POWERS, key, equal, add, distance } from './levels.mjs?v=2';
 export { LEVELS, DIRECTIONS, POWERS, key, equal, add, distance };
 const clone = value => JSON.parse(JSON.stringify(value));
 const vectors = Object.values(DIRECTIONS);
@@ -6,9 +6,10 @@ const CELL_FIELDS = ['x', 'y', 'z'];
 export const STATES = ['ready', 'running', 'paused', 'failed', 'level-clear', 'won'];
 
 export class SnakeGame {
-    constructor(levelIndex = 0, score = 0) {
-        if (!LEVELS[levelIndex]) throw new Error('Unknown level');
-        this.levelIndex = levelIndex; this.level = LEVELS[levelIndex];
+    constructor(levelIndex = 0, score = 0, mode = 'campaign') {
+        if (!['campaign', 'tutorial'].includes(mode) || (mode === 'tutorial' ? levelIndex !== -1 : !LEVELS[levelIndex])) throw new Error('Unknown level');
+        this.mode = mode; this.tutorialExitOpen = false; this.tutorialPractice = false;
+        this.levelIndex = levelIndex; this.level = mode === 'tutorial' ? TUTORIAL_LEVEL : LEVELS[levelIndex];
         this.walls = new Set(this.level.walls.map(key));
         this.state = 'ready'; this.score = score; this.startScore = score; this.seed = this.level.seed;
         this.snake = [3, 2, 1, 0].map(x => ({ x, y: 0, z: 1 }));
@@ -22,6 +23,8 @@ export class SnakeGame {
         for (let i = 0; i < this.level.bombs; i++) { const p = this.place(this.safeExclusion(this.peek())); if (p) this.bombs.push(p); }
     }
     inside(p) { return p.x >= 0 && p.x < this.level.width && p.y >= 0 && p.y < this.level.height && p.z >= 0 && p.z < this.level.depth; }
+    static tutorial() { return new SnakeGame(-1, 0, 'tutorial'); }
+    exitOpen() { return this.mode === 'tutorial' ? this.tutorialExitOpen && !this.tutorialPractice : this.collected >= this.level.quota; }
     emit(type, data = {}) { this.events.push({ type, ...data }); this.revision++; }
     drain() { return this.events.splice(0); }
     random() { this.seed = (Math.imul(this.seed, 1664525) + 1013904223) >>> 0; return this.seed / 4294967296; }
@@ -71,7 +74,8 @@ export class SnakeGame {
     }
     safeExclusion(next) { return [next, ...vectors.map(d => add(next, d))]; }
     updateTimers() {
-        if (this.levelIndex >= 1 && this.collected < this.level.quota) {
+        if (this.mode === 'tutorial') return;
+        if (this.mode === 'campaign' && this.levelIndex >= 1 && this.collected < this.level.quota) {
             const cycle = Math.floor(this.time / 20000);
             if (cycle > this.dessertCycle) {
                 this.dessertCycle = cycle; this.dessert = null;
@@ -124,7 +128,7 @@ export class SnakeGame {
         this.score += amount * 10; this.collected += amount; this.growth += amount;
         if (kind === 'dessert') this.dessert = null; else this.food = null;
         this.emit('eat', { kind, at: clone(at), magnetic, amount });
-        if (this.collected >= this.level.quota && this.collected - amount < this.level.quota) this.emit('exit-open', { at: this.level.exit });
+        if (this.mode === 'campaign' && this.collected >= this.level.quota && this.collected - amount < this.level.quota) this.emit('exit-open', { at: this.level.exit });
     }
     collectPower(kind, at) {
         const targets = this.bombs.map(p => clone(p));
@@ -160,13 +164,13 @@ export class SnakeGame {
             const blocked = distance(this.food, next) === 2 && (this.walls.has(key(middle)) || this.snake.some(p => equal(p, middle)) || this.bombs.some(p => equal(p, middle)) || this.hazard(middle));
             if (!blocked) this.eat('food', this.food, true);
         }
-        if (!this.food && this.collected < this.level.quota) {
+        if (!this.food && (this.mode === 'campaign' && this.collected < this.level.quota || this.tutorialPractice)) {
             this.food = this.place([], this.collected % this.level.height);
             if (!this.food) { this.bombs = []; this.bombsRetired = true; this.dessert = null; this.power = null; this.food = this.place(); }
             // A full volume opens the exit; it never bypasses the exit or final victory.
             if (!this.food) { this.collected = this.level.quota; this.emit('exit-open', { at: this.level.exit }); }
         }
-        if (this.collected >= this.level.quota && equal(next, this.level.exit)) {
+        if (this.exitOpen() && equal(next, this.level.exit)) {
             this.state = this.levelIndex === LEVELS.length - 1 ? 'won' : 'level-clear'; this.emit(this.state, { at: next });
         }
         this.steps++; this.revision++;
@@ -181,13 +185,16 @@ export class SnakeGame {
         return !this.inside(two) || this.walls.has(key(two)) ? '兩格內接近牆面' : '';
     }
     snapshot() {
-        return clone(Object.fromEntries(['levelIndex', 'state', 'score', 'startScore', 'seed', 'snake', 'previous', 'direction', 'queue',
+        return clone(Object.fromEntries(['mode', 'tutorialExitOpen', 'tutorialPractice', 'levelIndex', 'state', 'score', 'startScore', 'seed', 'snake', 'previous', 'direction', 'queue',
             'growth', 'collected', 'time', 'moveElapsed', 'remainder', 'dessertCycle', 'bombCycle', 'powerCycle', 'food', 'dessert', 'power',
             'bombs', 'bombsRetired', 'effects', 'gates', 'steps', 'reason'].map(k => [k, this[k]])));
     }
     static valid(s) {
-        if (!s || !Number.isInteger(s.levelIndex) || !LEVELS[s.levelIndex] || !STATES.includes(s.state)) return false;
-        const l = LEVELS[s.levelIndex];
+        if (!s || !Number.isInteger(s.levelIndex) || !STATES.includes(s.state)) return false;
+        const mode = s.mode ?? 'campaign';
+        if (!['campaign', 'tutorial'].includes(mode) || (mode === 'tutorial' ? s.levelIndex !== -1 : !LEVELS[s.levelIndex])) return false;
+        if (mode === 'tutorial' && (typeof s.tutorialExitOpen !== 'boolean' || typeof s.tutorialPractice !== 'boolean')) return false;
+        const l = mode === 'tutorial' ? TUTORIAL_LEVEL : LEVELS[s.levelIndex];
         const cell = p => p && CELL_FIELDS.every(k => Number.isInteger(p[k])) && p.x >= 0 && p.x < l.width && p.y >= 0 && p.y < l.height && p.z >= 0 && p.z < l.depth;
         const dir = d => d && vectors.some(v => equal(v, d));
         const nonnegative = ['score', 'startScore', 'seed', 'growth', 'collected', 'time', 'moveElapsed', 'remainder', 'dessertCycle', 'bombCycle', 'steps'];
@@ -202,7 +209,7 @@ export class SnakeGame {
     }
     static restore(snapshot) {
         if (!SnakeGame.valid(snapshot)) throw new Error('Invalid campaign checkpoint');
-        const game = new SnakeGame(snapshot.levelIndex, snapshot.startScore);
+        const game = new SnakeGame(snapshot.levelIndex, snapshot.startScore, snapshot.mode ?? 'campaign');
         Object.assign(game, clone(snapshot)); game.events = []; game.revision = 0;
         if (game.state === 'running') game.state = 'paused';
         return game;

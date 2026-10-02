@@ -16,6 +16,12 @@ export const equal = (a, b) => !!a && !!b && a.x === b.x && a.y === b.y && a.z =
 export const add = (a, b) => ({ x: a.x + b.x, y: a.y + b.y, z: a.z + b.z });
 export const distance = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + Math.abs(a.z - b.z);
 
+// Separate from LEVELS: campaign indexes, seeds and old checkpoints never shift.
+export const TUTORIAL_LEVEL = Object.freeze({ index: -1, name: '光域訓練', width: 10, depth: 10, height: 3,
+    quota: 1, delay: 400, bombs: 0, hint: '第 0 關免費教學，可跳過，也可反覆練習。',
+    walls: [], portals: [], gates: [], powers: [], exit: { x: 8, y: 2, z: 8 }, seed: 0xCA5A0000, chapter: 0,
+});
+
 const specs = [
     ['立方覺醒', 10, 3, 6, 250, 0, '先找金色方塊，E 上升、Q 下降；六面外牆都不能穿越。'],
     ['琉光階梯', 10, 3, 8, 240, 0, '繞過半高牆；每 20 秒出現的蛋糕可一次取得兩份能量。'],

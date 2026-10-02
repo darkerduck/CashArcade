@@ -256,6 +256,11 @@ export class SnakeRenderer {
         }
     }
     survey(enabled) { this.controls.enabled = enabled; if (!enabled) this.resetCamera(); }
+    rotateSurvey() {
+        if (!this.controls.enabled) return;
+        this.camera.position.sub(this.controls.target).applyAxisAngle(UP, Math.PI / 8).add(this.controls.target);
+        this.controls.update();
+    }
     resize() {
         const width = Math.max(1, this.canvas.clientWidth), height = Math.max(1, this.canvas.clientHeight);
         this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, this.low ? 1.25 : 1.75)); this.renderer.setSize(width, height, false);
@@ -309,7 +314,7 @@ export class SnakeRenderer {
         this.bombs.forEach((m, i) => { item(m, game.bombs[i], false); m.userData.spark.rotation.z = t * 3; m.userData.spark.scale.setScalar(1 + Math.sin(t * 8) * .16); });
         for (const [kind, model] of Object.entries(this.powerModels)) { item(model, game.power?.kind === kind ? game.power : null); model.children[0].rotation.y = t; }
         this.portalModels.forEach(m => { m.children[1].rotation.z = t * .7; });
-        this.exit.visible = true; this.exitBeam.visible = game.collected >= game.level.quota;
+        this.exit.visible = !game.tutorialPractice; this.exitBeam.visible = game.exitOpen();
         this.exit.children[0].material.color.set(this.exitBeam.visible ? GREEN : '#345251').multiplyScalar(this.exitBeam.visible ? 2 : 1);
         this.exit.children[1].material.color.copy(this.exit.children[0].material.color);
         this.gateModels.forEach((models, i) => models.forEach(m => {
@@ -319,7 +324,7 @@ export class SnakeRenderer {
         }));
         this.layerGrid.position.y = game.snake[0].y + .03; this.layerGrid.visible = game.snake[0].y > 0;
         this.shadow.position.set(this.head.position.x, .035, this.head.position.z);
-        const target = game.collected >= game.level.quota ? game.level.exit : game.food;
+        const target = game.exitOpen() ? game.level.exit : game.food;
         this.targetBeam.visible = !!target;
         if (target) { const p = this.point(target); this.targetBeam.position.set(p.x, p.y / 2, p.z); this.targetBeam.scale.set(1, p.y, 1); this.targetBeam.material.color.set(this.exitBeam.visible ? GREEN : GOLD).multiplyScalar(1.5); }
         this.slowRing.visible = game.effects.slow > game.time; this.slowRing.position.y = 1 + Math.sin(t) * .2;

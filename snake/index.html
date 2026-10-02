@@ -11,7 +11,7 @@
     <link rel="icon" href="../assets/brand/favicon-32.png?v=1" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="../assets/brand/apple-touch-icon.png?v=1" sizes="180x180">
     <link rel="manifest" href="../site.webmanifest?v=1">
-    <link rel="stylesheet" href="./style.css?v=3">
+    <link rel="stylesheet" href="./style.css?v=4">
     <link rel="stylesheet" href="../music.css?v=1">
     <link rel="stylesheet" href="../brand.css?v=1">
     <script type="importmap">{"imports":{"three":"../vendor/three-r186/build/three.module.js","three/addons/":"../vendor/three-r186/examples/jsm/"}}</script>
@@ -33,12 +33,17 @@
             </div>
             <div class="score-strip" aria-label="戰役資訊">
                 <div><span>SECTOR / 關卡</span><strong id="level-number">01 <small>/ 12</small></strong></div>
-                <div><span>SCORE / 戰役分數</span><strong id="score">00000</strong></div>
+                <div><span id="score-label">SCORE / 戰役分數</span><strong id="score">00000</strong></div>
                 <div><span>BEST / 3D 最高分</span><strong id="high-score">00000</strong></div>
                 <div><span>TEMPO / 移動速度</span><strong id="speed">4.0 <small>格／秒</small></strong></div>
             </div>
             <div class="mission-layout">
                 <div class="arena-column">
+                    <section class="tutorial-panel" id="tutorial-panel" hidden aria-label="免費教學指引">
+                        <p class="eyebrow">SECTOR 00 / ALWAYS FREE</p><h2 id="tutorial-heading">光域訓練</h2>
+                        <p id="tutorial-instructions" aria-live="polite">可跳過、可反覆練習；死亡與 R 不收費。</p>
+                        <div class="tutorial-actions"><button class="secondary-button" id="tutorial-return" type="button">跳過教學／進入戰役</button><button class="text-button" id="tutorial-restart" type="button">重跑教學</button><button class="secondary-button" id="tutorial-rotate" type="button" hidden>旋轉視角 ↻</button></div>
+                    </section>
                     <div class="arena-caption"><span id="sector-label">CHAPTER 01 · 立方覺醒</span><span id="clock-label">00:00</span></div>
                     <div class="canvas-frame" id="canvas-frame">
                         <canvas id="game-canvas" width="900" height="760" aria-label="三維貪吃蛇戰場：WASD 或方向鍵水平移動，E 上升，Q 下降"></canvas>
@@ -53,10 +58,10 @@
                     <div class="mobile-navigation" id="mobile-navigation"></div>
                     <div class="navigation-note" id="danger-status">六面封閉 · E 持續上升 · Q 持續下降 · 不可立即反向</div>
                     <div class="effects-strip" id="effects" aria-label="生效中的道具">NO ACTIVE POWERS / 道具吃到立即生效</div>
-                    <div class="game-actions"><button class="secondary-button" id="pause-button" type="button" disabled>暫停／觀察</button><button class="secondary-button" id="restart-button" type="button" disabled>重試本關 ↻</button><button class="text-button" id="new-button" type="button" disabled>新戰役</button></div>
+                    <div class="game-actions"><button class="secondary-button" id="pause-button" type="button" disabled>暫停／觀察</button><button class="secondary-button" id="restart-button" type="button" disabled>重試本關 ↻</button><button class="text-button" id="new-button" type="button" disabled>新戰役</button><button class="secondary-button" id="tutorial-button" type="button" disabled>第 0 關 · 免費教學</button></div>
                 </div>
                 <aside class="mission-panel" aria-label="導航與操作">
-                    <div class="objective"><p class="eyebrow">MISSION OBJECTIVE</p><h2 id="mission-title">立方覺醒</h2><p id="mission-hint">收集能量，啟動頂層出口。</p><div class="progress-label"><span>能量收集</span><strong id="goal-count">0 / 6</strong></div><progress id="goal-progress" value="0" max="6" aria-label="關卡收集進度"></progress></div>
+                    <div class="objective"><p class="eyebrow">MISSION OBJECTIVE</p><h2 id="mission-title">立方覺醒</h2><p id="mission-hint">收集能量，啟動頂層出口。</p><div class="progress-label"><span id="goal-label">能量收集</span><strong id="goal-count">0 / 6</strong></div><progress id="goal-progress" value="0" max="6" aria-label="關卡收集進度"></progress></div>
                     <div class="navigation"><div class="altitude-row"><span>ALTITUDE / 高度</span><strong id="altitude">01 / 03</strong></div><div class="altitude-bars" id="altitude-bars" aria-hidden="true"></div><p id="target-label">目標：同高度</p><canvas id="mini-map" width="168" height="168" aria-label="目前高度的俯視小圖"></canvas><small>↑ 前方 −Z · 右方 +X<br>空心目標位於其他高度</small></div>
                     <div class="control-panel"><p class="eyebrow">SIX-AXIS CONTROL</p><div class="touch-controls" aria-label="六方向控制">
                         <button type="button" data-direction="forward" aria-label="向前">↑<small>W</small></button><button type="button" data-direction="left" aria-label="向左">←<small>A</small></button><button type="button" data-direction="back" aria-label="向後">↓<small>S</small></button><button type="button" data-direction="right" aria-label="向右">→<small>D</small></button><button type="button" class="vertical" data-direction="rise" aria-label="持續上升">升<small>E</small></button><button type="button" class="vertical" data-direction="dive" aria-label="持續下降">降<small>Q</small></button>
@@ -66,13 +71,13 @@
             <div class="item-guide"><span><i class="food-mark"></i>能量 +1 節／10 分</span><span><i class="dessert-mark"></i>甜點 +2 節／20 分</span><span><i class="bomb-mark"></i>炸彈每 30 秒換位</span><strong id="dessert-status">本關沒有甜點</strong></div>
             <details class="power-guide"><summary>五種道具 · 十二關戰役說明</summary><div id="power-guide-list"></div><p>集滿能量後進入綠色出口。每關重新部署四節蛇身；牆壁、自身、炸彈及啟動中的雷射具有碰撞。關卡進度自動保存；重載恢復同一局，不會重置本關。重試會還原本關起點分數。</p></details>
             <div class="music-panel" aria-label="背景音樂控制"><button class="music-toggle" id="music-toggle" type="button" aria-label="關閉背景音樂" aria-pressed="true">♫ 音樂：開</button><div class="music-info"><small>ORIGINAL CHIPTUNE / 四階段編曲</small><span id="music-track">翠光迴路 · 待命</span></div><label class="music-volume" for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output><input id="music-volume" type="range" min="0" max="100" step="5" value="65"></label><p>沿用原創配樂與音效音量；每三關提升編曲強度，取食時配樂降低音量。</p></div>
-            <div class="payment-panel"><p id="payment-note">首個戰役免費；之後重試、R 或新戰役需以 CashLink 解鎖「再來一局」。過關、暫停與恢復同一局免費。</p><a id="payment-fallback" class="payment-link" href="#" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" hidden>開啟 CashLink 完整付款頁 ↗</a><button class="text-button" id="cancel-payment" type="button" hidden>取消等待</button></div>
+            <div class="payment-panel"><p id="payment-note">第 0 關教學與重試永久免費。首個正式戰役免費；之後重試、R 或新戰役需以 CashLink 解鎖「再來一局」。過關、暫停與恢復同一局免費。</p><a id="payment-fallback" class="payment-link" href="#" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" hidden>開啟 CashLink 完整付款頁 ↗</a><button class="text-button" id="cancel-payment" type="button" hidden>取消等待</button></div>
             <p class="storage-note" id="storage-note">自動保存於此瀏覽器 · 舊版最高分保留，不混入 3D 戰役</p><p class="sr-only" id="live-region" aria-live="polite"></p>
             <noscript>這款 Three.js 遊戲需要啟用 JavaScript 與 WebGL2。尚未開始遊戲或付款。</noscript>
         </section>
         <footer><span>12 SECTORS · SIX AXES · NO TRACKING</span><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
     </main>
     <script src="../audio.js?v=8" defer></script><script src="../music.js?v=1" defer></script><script src="../music-scores.js?v=1" defer></script>
-    <script type="module" src="./game.js?v=6"></script>
+    <script type="module" src="./game.js?v=7"></script>
 </body>
 </html>

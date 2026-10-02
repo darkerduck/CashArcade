@@ -7,6 +7,7 @@
     <meta name="description" content="CashArcade 霓虹飛行：拍動飛行器、穿越能源閘門的純前端無盡街機遊戲。">
     <title>CashArcade — 霓虹飛行</title>
     <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="../music.css?v=1">
 </head>
 <body>
     <main class="arcade-shell">
@@ -48,6 +49,12 @@
                 <button class="secondary-button" id="restart-button" type="button">重新開始</button>
             </div>
 
+            <div class="music-panel" aria-label="背景音樂控制">
+                <button class="music-toggle" id="music-toggle" type="button" aria-label="關閉背景音樂" aria-pressed="true">♫ 音樂：開</button>
+                <div class="music-info"><small>ORIGINAL CHIPTUNE / 飛行配樂</small><span id="music-track">逐光羽翼 · 待命</span></div>
+                <label class="music-volume" for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output><input id="music-volume" type="range" min="0" max="100" step="5" value="65"></label>
+                <p>起飛後播放，暫停同步停樂；每十分增加編曲密度，最多三階。音樂與音效分別控制。</p>
+            </div>
             <p class="instructions">
                 <span><kbd>Space</kbd> / <kbd>↑</kbd> / <kbd>W</kbd> 拍翼</span>
                 <span>點擊或觸控畫面拍翼</span>
@@ -60,7 +67,8 @@
         <footer><a href="../">← ALL GAMES</a><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
     </main>
 
-    <script src="../audio.js?v=3" defer></script>
-    <script src="./game.js?v=2" defer></script>
+    <script src="../audio.js?v=7" defer></script>
+    <script src="../music.js?v=1" defer></script><script src="../music-scores.js?v=1" defer></script>
+    <script src="./game.js?v=3" defer></script>
 </body>
 </html>

@@ -7,10 +7,14 @@
     const paymentStatus = $('#payment-status'), paymentRetry = $('#payment-retry'), paymentCancel = $('#payment-cancel'), paymentLink = $('#payment-link');
     const themeToggle = $('#theme-toggle'), liveRegion = $('#live-region');
     // Keep the shared +18 dB synthesis gain; leave headroom for oversampling in dense multiball mixes.
-    const sound = CashArcadeAudio.create({ storageKey: 'casharcade-breakout-sound-muted', toggleButton: $('#sound-toggle'), outputLevel: .9 });
+    const sound = CashArcadeAudio.create({ storageKey: 'casharcade-breakout-sound-muted', toggleButton: $('#sound-toggle'), outputLevel: .9, musicMix: true });
     const renderer = new Renderer(canvas, { reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches });
     const store = Save.create(localStorage, sessionStorage), loaded = store.load();
     let game = loaded.envelope ? Game.restore(loaded.envelope.game) : new Game();
+    const music = CashArcadeMusic.create({ score: CashArcadeScores.breakout, storagePrefix: 'casharcade-breakout-music',
+        toggleButton: $('#music-toggle'), volumeInput: $('#music-volume'), volumeLabel: $('#music-volume-value'), trackLabel: $('#music-track'),
+        audioOutput: sound.musicOutput, initialLevel: game.levelIndex + 1, initialPhase: game.bossPhase });
+    let musicGame = null, musicLevel = -1, musicRunning = false;
     let played = loaded.envelope?.played === true, hasActive = !!loaded.envelope;
     let pending = loaded.envelope?.pending === true, paidReady = loaded.envelope?.paidReady === true;
     let storageBlocked = loaded.blocked === true, authorizedCandidate = null;
@@ -44,6 +48,21 @@
         }
     }
     function clearInput() { keys.left = false; keys.right = false; chargePointer = null; game.cancelInput(); }
+    function syncMusic() {
+        // Observe committed game state only. Music never starts a round or calls the gate.
+        if (game.state !== 'running' || pending || storageBlocked || authorizedCandidate || replayGate.busy) {
+            if (musicRunning) music.pause(); musicRunning = false; return;
+        }
+        let phase = game.levelIndex === 28 ? game.wave : game.bossPhase;
+        if (game.level.boss && game.levelIndex !== 29 && !game.bricks.some(b => b.bossRole === 'node' && b.hp > 0)) {
+            const core = game.bricks.find(b => b.bossRole === 'core');
+            phase = core && core.hp <= core.maxHp / 2 ? 2 : 1;
+        }
+        if (musicGame !== game || musicLevel !== game.levelIndex) {
+            music.start(game.levelIndex + 1, phase); musicGame = game; musicLevel = game.levelIndex;
+        } else if (!musicRunning) music.resume();
+        music.phase(phase); musicRunning = true;
+    }
     function unlockedCommit() {
         // A consumed credit survives a failed durable write, without requesting another unlock.
         if (!authorizedCandidate) { authorizedCandidate = new Game(); authorizedCandidate.launch(); authorizedCandidate.drainEvents(); }
@@ -101,6 +120,7 @@
         const events = game.drainEvents(); renderer.accept(events, game);
         const names = { impulse:'breakoutImpulse', strong:'breakoutStrong', charge:'breakoutCharge', power:'breakoutPower', portal:'breakoutPortal', magnetic:'breakoutMagnetic', switch:'breakoutSwitch', explosion:'breakoutExplosion', fire:'breakoutExplosion', lightning:'breakoutLightning', laser:'breakoutLaser', boss:'breakoutBoss', bossDown:'breakoutBossDown', wave:'level', shield:'defenseShield' };
         for (const e of events) {
+            if (['power','boss','bossDown','explosion','strong','life'].includes(e.name)) music.duck();
             if (e.name === 'brick') sound.play(e.size === 13 ? 'breakoutHeavy' : e.size === 5 ? 'breakoutTiny' : e.type === 'armor' || e.type === 'heavy' ? 'reinforced' : 'brick');
             else if (e.name === 'paddle') sound.play(e.size === 13 ? 'breakoutHeavy' : e.size === 5 ? 'breakoutTiny' : 'paddle');
             else sound.play(names[e.name] || e.name);
@@ -108,11 +128,13 @@
             if (['level','win','life','lose','wave','boss'].includes(e.name)) { checkpoint(); liveRegion.textContent = e.name === 'life' ? `還有 ${game.lives} 命` : game.level.name; }
         }
         if (game.score > highScore) { highScore = game.score; try { localStorage.setItem('casharcade-breakout-high-score', String(highScore)); } catch { /* Optional. */ } }
+        syncMusic();
     }
     function showOverlay(kicker, title, message, button) {
         overlay.hidden = false; $('#overlay-kicker').textContent = kicker; $('#overlay-title').textContent = title; $('#overlay-message').textContent = message; startButton.textContent = button;
     }
     function updateHud(force = false) {
+        syncMusic();
         const locked = pending || storageBlocked || !!authorizedCandidate;
         const signature = [game.state, game.levelIndex, game.wave, locked, replayGate.busy].join(':');
         if (force || signature !== uiSignature) {
@@ -163,7 +185,7 @@
     canvas.addEventListener('pointermove', pointerMove);
     canvas.addEventListener('pointerdown', event => {
         event.preventDefault(); if (pending || storageBlocked || replayGate.busy || game.state === 'paused') return;
-        sound.resume(); pointerMove(event); canvas.setPointerCapture(event.pointerId);
+        sound.resume(); music.wake(); pointerMove(event); canvas.setPointerCapture(event.pointerId);
         if (event.pointerType !== 'touch' && event.button === 0 && chargePointer === null) { chargePointer = event.pointerId; game.beginCharge(); processEvents(); }
     });
     canvas.addEventListener('pointerup', event => { if (event.pointerId === chargePointer) { chargePointer = null; game.releaseCharge(); processEvents(); } });
@@ -171,10 +193,11 @@
     canvas.addEventListener('contextmenu', event => { event.preventDefault(); if (!pending && !storageBlocked) handleStart(); });
     document.addEventListener('keydown', event => {
         const key = event.key.toLowerCase();
+        if (['input','textarea','select'].includes(event.target?.tagName?.toLowerCase())) return;
         if (['input','textarea','select','button','a'].includes(event.target?.tagName?.toLowerCase()) && [' ','enter'].includes(key)) return;
         if (!['arrowleft','arrowright','a','d',' ','enter','p','escape','r'].includes(key)) return;
         event.preventDefault(); if (event.repeat && [' ','enter','p','escape','r'].includes(key)) return;
-        sound.resume();
+        sound.resume(); music.wake();
         if (key === 'r') { requestNewGame(); return; }
         if (pending || storageBlocked || replayGate.busy) return;
         if (key === 'arrowleft' || key === 'a') keys.left = true;
@@ -183,10 +206,16 @@
         if (key === 'enter') handleStart();
         if (key === ' ') { if (['over','won'].includes(game.state)) requestNewGame(); else game.beginCharge(); processEvents(); }
     });
-    document.addEventListener('keyup', event => { const key = event.key.toLowerCase(); if (key === 'arrowleft' || key === 'a') keys.left = false; if (key === 'arrowright' || key === 'd') keys.right = false; if (key === ' ') { event.preventDefault(); game.releaseCharge(); processEvents(); } });
+    document.addEventListener('keyup', event => {
+        const key = event.key.toLowerCase();
+        if (key === 'arrowleft' || key === 'a') keys.left = false;
+        if (key === 'arrowright' || key === 'd') keys.right = false;
+        if (['input','textarea','select','button','a'].includes(event.target?.tagName?.toLowerCase())) return;
+        if (key === ' ') { event.preventDefault(); game.releaseCharge(); processEvents(); }
+    });
     window.addEventListener('blur', () => { if (game.state === 'running') togglePause(true); else clearInput(); });
     document.addEventListener('visibilitychange', () => { if (document.hidden && game.state === 'running') togglePause(true); });
-    window.addEventListener('pagehide', () => { game.pause(false); clearInput(); checkpoint(); });
+    window.addEventListener('pagehide', () => { music.pause(); musicRunning = false; game.pause(false); clearInput(); checkpoint(); });
     function loop(timestamp) {
         const delta = lastFrame ? Math.min(.1, Math.max(0, (timestamp - lastFrame) / 1000)) : 0; lastFrame = timestamp;
         if (!pending && !storageBlocked && !replayGate.busy) game.tick(delta, (keys.right ? 1 : 0) - (keys.left ? 1 : 0));

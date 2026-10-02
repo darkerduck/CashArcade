@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { musicStub } from './music-stub.mjs';
 
 const source = readFileSync(new URL('../snake/game.js', import.meta.url), 'utf8').replace(/\}\)\(\);\s*$/, `
     window.inspect = {
@@ -26,6 +27,7 @@ function harness() {
     let rejectUnlock;
     let unlockCalls = 0;
     const sounds = [];
+    const musicEvents = [];
     const elements = new Map();
     const documentEvents = new Map();
     const elementsFactory = () => {
@@ -42,6 +44,7 @@ function harness() {
         unlock() { unlockCalls += 1; return new Promise((resolve, reject) => { resolveUnlock = resolve; rejectUnlock = reject; }); },
     };
     const scope = {
+        ...musicStub(musicEvents),
         localStorage: { getItem: () => null, setItem() {} },
         CashArcadeAudio: { create: () => ({ play: (...args) => sounds.push(args), resume() {} }) },
         CashLinkArcade: { create: () => sdk },
@@ -64,7 +67,7 @@ function harness() {
     scope.window = scope;
     vm.runInNewContext(source, scope);
     return {
-        sounds, inspect: scope.inspect,
+        sounds, musicEvents, inspect: scope.inspect,
         el: selector => elements.get(selector),
         click: selector => elements.get(selector).click(),
         time: value => { now = value; },
@@ -75,6 +78,21 @@ function harness() {
         unlockCalls: () => unlockCalls,
     };
 }
+
+test('snake music follows food acceleration, pause and the existing paid restart gate',async()=>{
+    const h=harness(); assert.ok(h.musicEvents.every(e=>e[0]==='pause'));
+    h.click('#start-button'); assert.equal(h.musicEvents.at(-1)[0],'start');
+    h.inspect.set({food:{x:11,y:10},foodsEaten:4,bomb:null}); h.inspect.tick();
+    assert.ok(h.musicEvents.some(e=>e[0]==='phase'&&e[1]===1));
+    h.hide(); assert.equal(h.musicEvents.at(-1)[0],'pause'); h.show(); h.click('#pause-button');
+    assert.equal(h.musicEvents.at(-1)[0],'resume');
+    h.click('#restart-button'); assert.equal(h.musicEvents.at(-1)[0],'pause');
+    const starts=h.musicEvents.filter(e=>e[0]==='start').length;
+    h.rejectUnlock('cancelled'); await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(h.musicEvents.filter(e=>e[0]==='start').length,starts);
+    h.click('#restart-button'); h.unlock(); await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(h.musicEvents.filter(e=>e[0]==='start').length,starts+1);
+});
 
 const state = h => JSON.parse(JSON.stringify(h.inspect.state()));
 

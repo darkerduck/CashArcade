@@ -1,0 +1,8 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CashArcade · 三款原創配樂試聽</title>
+<style>body{max-width:980px;margin:30px auto;padding:0 16px;background:#0b1026;color:#e6fbff;font:15px/1.7 system-ui,sans-serif}button,select{font:inherit;padding:10px;background:#193544;color:#a4fff0;border:1px solid #558290;border-radius:8px;margin:4px}pre{white-space:pre-wrap;overflow-wrap:anywhere}audio{display:block;width:100%;margin:20px 0}a{color:#8ffff0}nav{display:flex;gap:12px;flex-wrap:wrap}</style></head><body>
+<h1>三款遊戲 · 原創配樂試聽</h1><p>使用正式樂譜、合成器及混音限制。只讀驗收，不載入付款 SDK、不保存遊戲進度。產生後按播放器試聽。</p>
+<label>遊戲 <select id="game"><option value="breakout">霓虹打磚塊</option><option value="snake">霓虹貪吃蛇</option><option value="flappy">霓虹飛行</option></select></label>
+<label>關卡 <select id="sector"></select></label><label>編曲階段 <select id="phase"><option value="0">初始</option><option value="1">強化一</option><option value="2">強化二</option><option value="3">強化三（蛇／飛行）</option></select></label>
+<button id="render">產生本曲試聽</button><button id="measure">量測全部曲目與混音峰值</button><audio id="preview" controls></audio><a id="download" hidden download="casharcade-original-chiptune.wav">下載本次合成試聽</a><pre id="result" role="status">等待操作</pre>
+<nav><a href="../breakout/">打磚塊</a><a href="../snake/">貪吃蛇</a><a href="../flappy/">霓虹飛行</a><a href="./missile-music.html">天盾配樂</a></nav>
+<script src="../audio.js?v=7"></script><script src="../music.js?v=1"></script><script src="../music-scores.js?v=1"></script><script src="./arcade-music-check.js"></script></body></html>

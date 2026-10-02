@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { musicStub } from './music-stub.mjs';
 
 function element() {
     const events = new Map();
@@ -17,8 +18,10 @@ function element() {
 function game(name, inspectSource) {
     const elements = new Map();
     const sounds = [];
+    const musicEvents = [];
     const source = readFileSync(new URL(`../${name}/game.js`, import.meta.url), 'utf8').replace(/\}\)\(\);\s*$/, `${inspectSource}\n})();`);
     const scope = {
+        ...musicStub(musicEvents),
         localStorage: { getItem: () => null, setItem() {} },
         CashArcadeAudio: { create: () => ({ play: sound => sounds.push(sound), resume() {} }) },
         CashLinkArcade: { create: () => ({ on() {}, handshake: async () => ({ price_satoshis: 1000 }) }) },
@@ -34,7 +37,7 @@ function game(name, inspectSource) {
     scope.window = scope;
     const context = vm.createContext(scope);
     vm.runInContext(source, context);
-    return { sounds, inspect: context.inspect, click: selector => elements.get(selector).click() };
+    return { sounds, musicEvents, inspect: context.inspect, click: selector => elements.get(selector).click() };
 }
 
 test('snake sounds follow food, speed, wrap, pause and self-collision', () => {
@@ -55,6 +58,18 @@ test('snake sounds follow food, speed, wrap, pause and self-collision', () => {
     h.inspect.setSnake([{ x: 2, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 3 }, { x: 2, y: 3 }]);
     h.inspect.setHeading({ x: 1, y: 0 }); h.inspect.tick();
     assert.deepEqual(h.sounds, ['start', 'food', 'food', 'speed', 'wrap', 'pause', 'resume', 'lose']);
+});
+
+test('flappy score milestones intensify music; pause, collision and restart do not stack clocks',()=>{
+    const h=game('flappy',`window.inspect={update,togglePause,endGame,setScore:value=>score=value,setGates:value=>gates=value};`);
+    assert.ok(h.musicEvents.every(e=>e[0]==='pause'));
+    h.click('#start-button'); assert.equal(h.musicEvents.at(-1)[0],'start');
+    h.inspect.setScore(9); h.inspect.setGates([{x:70,gapTop:100,gapBottom:400,scored:false}]); h.inspect.update(0);
+    assert.ok(h.musicEvents.some(e=>e[0]==='phase'&&e[1]===1));
+    h.inspect.togglePause(true); assert.equal(h.musicEvents.at(-1)[0],'pause');
+    h.click('#start-button'); assert.equal(h.musicEvents.at(-1)[0],'resume');
+    h.inspect.endGame(); assert.equal(h.musicEvents.at(-1)[0],'pause');
+    h.click('#restart-button'); assert.equal(h.musicEvents.filter(e=>e[0]==='start').length,2);
 });
 
 test('flappy starts with one flap, rewards a gate once and stays silent on auto-pause', () => {

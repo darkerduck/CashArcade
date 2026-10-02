@@ -35,7 +35,10 @@
     const statusElement = document.querySelector('#status-text');
     const liveRegion = document.querySelector('#live-region');
     const themeToggle = document.querySelector('#theme-toggle');
-    const sound = CashArcadeAudio.create({ storageKey: 'casharcade-snake-sound-muted', toggleButton: document.querySelector('#sound-toggle') });
+    const sound = CashArcadeAudio.create({ storageKey: 'casharcade-snake-sound-muted', toggleButton: document.querySelector('#sound-toggle'), musicMix: true });
+    const music = CashArcadeMusic.create({ score: CashArcadeScores.snake, storagePrefix: 'casharcade-snake-music',
+        toggleButton: document.querySelector('#music-toggle'), volumeInput: document.querySelector('#music-volume'),
+        volumeLabel: document.querySelector('#music-volume-value'), trackLabel: document.querySelector('#music-track'), audioOutput: sound.musicOutput });
 
     let snake;
     let food;
@@ -76,6 +79,7 @@
     }
 
     function resetGame() {
+        music.pause();
         window.clearTimeout(timer);
         snake = [
             { x: 10, y: 10 },
@@ -107,6 +111,7 @@
         if (gameState === 'running') return;
 
         sound.play(gameState === 'paused' ? 'resume' : 'start');
+        if (gameState === 'paused') music.resume(); else music.start(1);
         runStartedAt = performance.now();
         gameState = 'running';
         overlay.hidden = true;
@@ -130,6 +135,7 @@
 
     function pauseGame(automatic = false) {
         if (gameState !== 'running') return;
+        music.pause();
         if (!automatic) sound.play('pause');
         window.clearTimeout(timer);
         freezePlayClock();
@@ -200,6 +206,7 @@
             highScore = Math.max(highScore, score);
             saveValue('casharcade-high-score', highScore);
             sound.play(ateDessert ? 'dessert' : 'food');
+            music.duck(); music.phase(Math.floor(foodsEaten / 5));
             if (ateFood) food = null;
             if (ateDessert) {
                 dessert = null;
@@ -229,6 +236,7 @@
     }
 
     function finishGame(won, cause = 'self', soundDelay = 0) {
+        music.pause();
         window.clearTimeout(timer);
         freezePlayClock();
         sound.play(cause === 'bomb' ? 'bomb' : won ? 'win' : 'lose', soundDelay);
@@ -316,6 +324,7 @@
 
     function setDirection(nextDirection) {
         if (!nextDirection) return;
+        music.wake();
 
         const reversesCurrentDirection =
             nextDirection.x + direction.x === 0 && nextDirection.y + direction.y === 0;
@@ -340,6 +349,7 @@
 
         const needsPayment = roundStarted && (paymentRetryRequired || forceRestart || gameState === 'over' || gameState === 'won');
         if (needsPayment) {
+            music.pause();
             if (gameState === 'running') {
                 window.clearTimeout(timer);
                 freezePlayClock();
@@ -599,6 +609,8 @@
     }
 
     function handleKeydown(event) {
+        if (['INPUT','TEXTAREA','SELECT'].includes(event.target?.tagName)) return;
+        if (event.target?.id === 'music-toggle') return;
         const keyMap = {
             ArrowUp: DIRECTIONS.up,
             w: DIRECTIONS.up,
@@ -664,6 +676,8 @@
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) pauseGame(true);
     });
+    window.addEventListener('blur', () => pauseGame(true));
+    window.addEventListener('pagehide', () => music.pause());
 
     document.querySelectorAll('[data-direction]').forEach((button) => {
         button.addEventListener('click', () => setDirection(DIRECTIONS[button.dataset.direction]));

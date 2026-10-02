@@ -31,7 +31,10 @@
     const statusElement = document.querySelector('#status-text');
     const liveRegion = document.querySelector('#live-region');
     const themeToggle = document.querySelector('#theme-toggle');
-    const sound = CashArcadeAudio.create({ storageKey: 'casharcade-flappy-sound-muted', toggleButton: document.querySelector('#sound-toggle') });
+    const sound = CashArcadeAudio.create({ storageKey: 'casharcade-flappy-sound-muted', toggleButton: document.querySelector('#sound-toggle'), musicMix: true });
+    const music = CashArcadeMusic.create({ score: CashArcadeScores.flappy, storagePrefix: 'casharcade-flappy-music',
+        toggleButton: document.querySelector('#music-toggle'), volumeInput: document.querySelector('#music-volume'),
+        volumeLabel: document.querySelector('#music-volume-value'), trackLabel: document.querySelector('#music-track'), audioOutput: sound.musicOutput });
 
     let player;
     let gates;
@@ -61,6 +64,7 @@
     }
 
     function resetGame() {
+        music.pause();
         cancelAnimationFrame(animationFrame);
         player = { y: HEIGHT / 2, velocity: 0, rotation: 0 };
         gates = [];
@@ -84,6 +88,7 @@
         if (gameState === 'over') resetGame();
 
         sound.play('flap');
+        music.start(1);
         player.velocity = FLAP_VELOCITY;
         gameState = 'running';
         overlay.hidden = true;
@@ -102,12 +107,14 @@
             return;
         }
         if (gameState !== 'running') return;
+        music.wake();
         player.velocity = FLAP_VELOCITY;
         sound.play('flap');
     }
 
     function togglePause(automatic = false) {
         if (gameState === 'running') {
+            music.pause();
             if (!automatic) sound.play('pause');
             cancelAnimationFrame(animationFrame);
             gameState = 'paused';
@@ -122,6 +129,7 @@
     }
 
     function resumeGame() {
+        music.resume();
         sound.play('resume');
         gameState = 'running';
         overlay.hidden = true;
@@ -158,6 +166,7 @@
                 gate.scored = true;
                 score += 1;
                 sound.play('pass');
+                music.duck(); music.phase(Math.floor(score / 10));
                 if (score % 5 === 0) sound.play('speed');
                 highScore = Math.max(highScore, score);
                 saveHighScore();
@@ -205,6 +214,7 @@
     }
 
     function endGame() {
+        music.pause();
         cancelAnimationFrame(animationFrame);
         sound.play('lose');
         gameState = 'over';
@@ -368,6 +378,7 @@
     }
 
     function handleKeydown(event) {
+        if (['INPUT','TEXTAREA','SELECT'].includes(event.target?.tagName) || event.target?.id === 'music-toggle') return;
         if ([' ', 'Spacebar', 'ArrowUp', 'w', 'W', 'p', 'P', 'Escape'].includes(event.key)) event.preventDefault();
         if (event.repeat) return;
         if (event.key === ' ' || event.code === 'Space' || event.key === 'ArrowUp' || event.key === 'w' || event.key === 'W') flap();
@@ -398,6 +409,8 @@
     canvas.addEventListener('pointerdown', (event) => { event.preventDefault(); flap(); });
     document.addEventListener('keydown', handleKeydown);
     window.addEventListener('blur', () => { if (gameState === 'running') togglePause(true); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden && gameState === 'running') togglePause(true); });
+    window.addEventListener('pagehide', () => music.pause());
 
     applyTheme();
     resetGame();

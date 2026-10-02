@@ -41,7 +41,7 @@ function setup({ supported = true, initial = new Map(), storageFails = false } =
     const window = supported ? { AudioContext } : {};
     const sandbox = { window, localStorage: storage, Promise, Date, Math };
     vm.runInNewContext(source, sandbox);
-    return { create: (key = 'game-a') => window.CashArcadeAudio.create({ storageKey: key, toggleButton: button }), calls, button, attributes, initial };
+    return { create: (key = 'game-a', options = {}) => window.CashArcadeAudio.create({ storageKey: key, toggleButton: button, ...options }), calls, button, attributes, initial };
 }
 
 test('AudioContext starts only after an enabled sound and schedules bounded voices', () => {
@@ -65,6 +65,14 @@ test('rapid collision sounds are throttled while other effects still play', () =
     const h = setup(); const sound = h.create();
     sound.play('wall'); sound.play('wall'); sound.play('brick');
     assert.equal(h.calls.filter(([name]) => name === 'toneStart').length, 2);
+});
+
+test('opt-in music bus is lazy, reusable when SFX are muted and keeps unity gain below its safety knee',()=>{
+    const h=setup(),s=h.create('mix',{musicMix:true}); assert.equal(h.calls.length,0);
+    s.toggleMuted(); const bus=s.musicOutput(); assert.ok(bus.context); assert.notEqual(bus.destination,bus.context.destination);
+    assert.equal(s.musicOutput().context,bus.context); assert.equal(h.calls.filter(c=>c[0]==='context').length,1);
+    const curves=h.calls.filter(c=>c[0]==='limiterCurve').map(c=>c[1]); assert.equal(curves.length,2);
+    const safety=curves[0]; assert.ok(Math.max(...safety)<.98); assert.ok(Math.abs(safety[3072]-.5)<1e-6);
 });
 
 test('new breakout effects schedule audible-duration low-register voices and cap simultaneous mix',()=>{

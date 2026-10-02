@@ -7,6 +7,7 @@
     <meta name="description" content="30 個獨特關卡、16 種道具、重力蓄力、多球與三場首領戰的霓虹打磚塊。">
     <title>CashArcade — 霓虹打磚塊</title>
     <link rel="stylesheet" href="./style.css?v=30">
+    <link rel="stylesheet" href="../music.css?v=1">
 </head>
 <body>
     <main class="arcade-shell">
@@ -65,6 +66,12 @@
                 <button class="secondary-button" id="sound-test" type="button">試播音效</button>
             </div>
 
+            <div class="music-panel" aria-label="背景音樂控制">
+                <button class="music-toggle" id="music-toggle" type="button" aria-label="關閉背景音樂" aria-pressed="true">♫ 音樂：開</button>
+                <div class="music-info"><small>ORIGINAL CHIPTUNE / 關卡配樂</small><span id="music-track">稜光彈跳 · 待命</span></div>
+                <label class="music-volume" for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output><input id="music-volume" type="range" min="0" max="100" step="5" value="65"></label>
+                <p>三十關依機關切換配樂；三場頭目各有主題。暫停、待發球與付款時停樂；音樂與音效分別控制。</p>
+            </div>
             <div class="payment-panel" aria-label="再來一局付款">
                 <p>首次遊玩免費 · 付款用途：再來一局 · 價格以 CashLink 付款頁為準</p>
                 <p id="payment-status" role="status" aria-live="polite">正在連線 CashLink…</p>
@@ -95,13 +102,14 @@
         <footer><a href="../">← ALL GAMES</a><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
     </main>
 
-    <script src="../audio.js?v=4" defer></script>
+    <script src="../audio.js?v=7" defer></script>
+    <script src="../music.js?v=1" defer></script><script src="../music-scores.js?v=1" defer></script>
     <script src="https://linkincash.cc/arcade/sdk/v1.js" defer referrerpolicy="no-referrer"></script>
     <script src="./payment-gate.js" defer></script>
     <script src="./levels.js?v=30" defer></script>
     <script src="./engine.js?v=30" defer></script>
     <script src="./renderer.js?v=30" defer></script>
     <script src="./storage.js?v=30" defer></script>
-    <script src="./game.js?v=30" defer></script>
+    <script src="./game.js?v=31" defer></script>
 </body>
 </html>

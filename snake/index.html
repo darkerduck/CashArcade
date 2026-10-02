@@ -7,6 +7,7 @@
     <meta name="description" content="CashArcade：一款可以直接在瀏覽器遊玩的復古貪吃蛇遊戲。">
     <title>CashArcade — 貪吃蛇</title>
     <link rel="stylesheet" href="./style.css?v=2">
+    <link rel="stylesheet" href="../music.css?v=1">
 </head>
 <body>
     <main class="arcade-shell">
@@ -76,6 +77,12 @@
                 <button class="secondary-button" id="restart-button" type="button">重新開始</button>
             </div>
 
+            <div class="music-panel" aria-label="背景音樂控制">
+                <button class="music-toggle" id="music-toggle" type="button" aria-label="關閉背景音樂" aria-pressed="true">♫ 音樂：開</button>
+                <div class="music-info"><small>ORIGINAL CHIPTUNE / 循環配樂</small><span id="music-track">翠光迴路 · 待命</span></div>
+                <label class="music-volume" for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output><input id="music-volume" type="range" min="0" max="100" step="5" value="65"></label>
+                <p>開局後播放，暫停同步停樂；每吃五份食物增強節奏，最多三階。音樂與音效分別控制。</p>
+            </div>
             <p class="payment-note" id="payment-note">第一局免費；之後每局需透過 CashLink 支付 1,000 sat。</p>
 
             <div class="touch-controls" aria-label="方向控制">
@@ -99,8 +106,9 @@
         </footer>
     </main>
 
-    <script src="../audio.js?v=5" defer></script>
+    <script src="../audio.js?v=7" defer></script>
+    <script src="../music.js?v=1" defer></script><script src="../music-scores.js?v=1" defer></script>
     <script src="https://linkincash.cc/arcade/sdk/v1.js" defer></script>
-    <script src="./game.js?v=4" defer></script>
+    <script src="./game.js?v=5" defer></script>
 </body>
 </html>

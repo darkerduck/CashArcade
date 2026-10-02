@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { musicStub } from './music-stub.mjs';
 
 const gateSource = readFileSync(new URL('../breakout/payment-gate.js', import.meta.url), 'utf8');
 const gameSource = readFileSync(new URL('../breakout/game.js', import.meta.url), 'utf8').replace(/\}\)\(\);\s*$/, `
@@ -45,6 +46,7 @@ async function harness({ session = storage(), local = storage(), handshakeError 
     const sdkEvents = new Map();
     const attempts = [];
     const audioEvents = [];
+    const musicEvents = [];
     let failHandshake = handshakeError;
     const sdk = {
         on: (name, handler) => sdkEvents.set(name, handler),
@@ -53,6 +55,7 @@ async function harness({ session = storage(), local = storage(), handshakeError 
         cancel: () => attempts.at(-1)?.reject({ code: 'cancelled' }),
     };
     const sandbox = {
+        ...musicStub(musicEvents),
         sessionStorage: session, localStorage: local, URL,
         CashLinkArcade: { create: options => { assert.equal(options.publishableKey, KEY); return sdk; } },
         CashArcadeAudio: { create: () => ({ play: name => audioEvents.push(name), resume() {} }) },
@@ -73,7 +76,7 @@ async function harness({ session = storage(), local = storage(), handshakeError 
     vm.runInContext(gameSource, context);
     await flush();
     return {
-        context, session, local, attempts, sdkEvents, audioEvents,
+        context, session, local, attempts, sdkEvents, audioEvents, musicEvents,
         click: selector => elements.get(selector).click(),
         el: selector => elements.get(selector),
         key(key, code = '', repeat = false) { let prevented = false; events.get('keydown')({ key, code, repeat, preventDefault() { prevented = true; } }); return prevented; },
@@ -101,6 +104,25 @@ test('first play, pause/resume, lost-life relaunch and level transition are free
     assert.equal(h.state().charging, true);
     h.keyUp(' '); h.key('p');
     assert.equal(h.state().gameState, 'paused');
+});
+
+test('music follows committed stages and freezes through checkout, cancellation, storage failure and reload',async()=>{
+    const h=await harness(); assert.equal(h.musicEvents.length,0);
+    h.click('#start-button'); assert.equal(h.musicEvents.filter(e=>e[0]==='start').length,1);
+    assert.equal(h.musicEvents.find(e=>e[0]==='start')[1],1);
+    h.click('#pause-button'); assert.equal(h.musicEvents.at(-1)[0],'pause');
+    h.click('#start-button'); assert.ok(h.musicEvents.some(e=>e[0]==='resume'));
+    h.set('level-clear'); h.inspect.processEvents(); assert.equal(h.musicEvents.at(-1)[0],'pause');
+    h.click('#start-button'); assert.equal(h.musicEvents.filter(e=>e[0]==='start').at(-1)[1],2);
+    h.click('#restart-button'); assert.equal(h.musicEvents.at(-1)[0],'pause');
+    const starts=h.musicEvents.filter(e=>e[0]==='start').length;
+    h.click('#start-button'); h.key('r'); assert.equal(h.attempts.length,1);
+    h.attempts[0].reject({code:'cancelled'}); await flush();
+    assert.equal(h.musicEvents.filter(e=>e[0]==='start').length,starts);
+    const restored=await harness({local:h.local,session:h.session}); assert.equal(restored.musicEvents.length,0);
+    restored.click('#payment-retry'); restored.attempts[0].resolve({credit_status:'consumed'}); await flush();
+    assert.equal(restored.musicEvents.filter(e=>e[0]==='start').length,1);
+    restored.hidden(true); assert.equal(restored.musicEvents.at(-1)[0],'pause');
 });
 
 test('all new-game controls serialize one awaited unlock; events do not authorize play', async () => {

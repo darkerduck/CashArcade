@@ -39,9 +39,16 @@ function harness(options = {}) {
         localStorage: { getItem: k => { if (options.badStorage) throw Error(); return storage.get(k) ?? null; }, setItem: (k,v) => { if (options.badStorage) throw Error(); storage.set(k,v); } },
         setInterval: fn => { const id=++nextTimer; timers.set(id,fn); return id; }, clearInterval: id => timers.delete(id),
     });
+    scope.window=scope;
+    vm.runInContext(readFileSync(new URL('../music.js',import.meta.url),'utf8'),scope);
     for (const f of ['score','music']) vm.runInContext(source(f),scope);
-    const music=scope.NeonDefenseMusic.create({toggleButton,volumeInput,volumeLabel,trackLabel});
-    return { scope,music,storage,contexts,nodes,timers,toggleButton,volumeInput,trackLabel,
+    vm.runInContext(readFileSync(new URL('../music-scores.js',import.meta.url),'utf8'),scope);
+    vm.runInContext(readFileSync(new URL('../audio.js',import.meta.url),'utf8'),scope);
+    const sound=options.game ? scope.CashArcadeAudio.create({storageKey:`casharcade-${options.game}-sound-muted`,toggleButton:element(),musicMix:true}) : null;
+    const music=options.game ? scope.CashArcadeMusic.create({toggleButton,volumeInput,volumeLabel,trackLabel,
+        score:scope.CashArcadeScores[options.game],storagePrefix:`casharcade-${options.game}-music`,audioOutput:sound.musicOutput})
+        : scope.NeonDefenseMusic.create({toggleButton,volumeInput,volumeLabel,trackLabel});
+    return { scope,music,sound,storage,contexts,nodes,timers,toggleButton,volumeInput,trackLabel,
         advance(dt) { if (contexts[0]) contexts[0].currentTime+=dt; for (const fn of [...timers.values()]) fn(); },
         resolveResume(index=0) { resumeResolvers[index](); }, notes: () => nodes.filter(n => n.started !== undefined),
     };
@@ -133,4 +140,43 @@ test('stalled scheduling skips catch-up bursts, ducking recovers, unsupported an
         const broken=harness({[option]:true}); assert.doesNotThrow(()=> { broken.music.start(20); broken.music.pause(); broken.music.resume(); });
         assert.equal(broken.timers.size,0); assert.match(broken.trackLabel.textContent,/無法播放/);
     }
+});
+
+test('all thirty breakout stages map to authored themes and three distinct adaptive boss scores',()=>{
+    const {scope}=harness(), score=scope.CashArcadeScores.breakout;
+    const expected=['prism','prism','orbit','foundry','orbit','inferno','foundry','magnet','foundry','wing',
+        'prism','orbit','rift','foundry','orbit','inferno','inferno','magnet','foundry','warden',
+        'storm','foundry','prism','rift','orbit','foundry','rift','magnet','storm','nova'];
+    for(let level=1;level<=30;level++) {
+        const p=score.profile(level); assert.equal(p.id,expected[level-1]); assert.equal(p.level,level);
+        const notes=Array.from({length:128},(_,i)=>score.notesForStep(p,i)).flat();
+        assert.ok(notes.every(n=>Number.isFinite(n.note)&&n.length>0));
+        for(const voice of ['lead','bass','arp','kick','snare','hat'])assert.ok(notes.some(n=>n.voice===voice));
+    }
+    assert.equal(new Set([10,20,30].map(n=>score.profile(n).id)).size,3);
+    for(const n of [10,20,30])assert.equal(score.profile(n,2).bpm,score.profile(n).bpm+16);
+    assert.equal(score.profile(30,2).bpm,216); assert.equal(score.profile(29,2).intensity,2);
+    assert.equal(score.profile(28,2).intensity,0);
+});
+
+for(const game of ['breakout','snake','flappy'])test(`${game} music shares one context with SFX but not their mute preference`,()=>{
+    const storage=new Map([[`casharcade-${game}-sound-muted`,'1']]);
+    const h=harness({game,storage}); assert.equal(h.contexts.length,0);
+    h.music.start(1); assert.equal(h.contexts.length,1); assert.ok(h.notes().length>0); assert.equal(h.sound.isMuted(),true);
+    h.sound.toggleMuted(); h.sound.play('food'); assert.equal(h.contexts.length,1);
+    h.toggleButton.fire('click'); assert.equal(h.timers.size,0); assert.equal(h.sound.isMuted(),false);
+    const count=h.notes().length; h.sound.play('start'); assert.ok(h.notes().length>count);
+    const restored=harness({game,storage}); restored.music.start(1); assert.equal(restored.contexts.length,0);
+    const other=harness({game:game==='snake'?'flappy':'snake',storage}); other.music.start(1); assert.equal(other.contexts.length,1);
+});
+
+test('snake and flappy retain different original melodies and bounded acceleration arrangements',()=>{
+    const {scope}=harness();
+    for(const game of ['snake','flappy']) {
+        const score=scope.CashArcadeScores[game];
+        assert.equal(score.profile(1,999).intensity,3);
+        assert.equal(score.profile(1,3).bpm,score.profile(1).bpm+24);
+        assert.ok(score.notesForStep(score.profile(1,3),0).some(n=>n.voice==='echo'));
+    }
+    assert.notDeepEqual(JSON.parse(JSON.stringify(scope.CashArcadeScores.snake.profile(1).melody)),JSON.parse(JSON.stringify(scope.CashArcadeScores.flappy.profile(1).melody)));
 });

@@ -69,10 +69,11 @@
         return curve;
     }
 
-    function create({ storageKey, toggleButton, outputLevel = 1 }) {
+    function create({ storageKey, toggleButton, outputLevel = 1, musicMix = false }) {
         let muted = false;
         let context;
         let output;
+        let mix;
         let unavailable = false;
         const lastPlayed = new Map();
         let voiceEnds = [];
@@ -93,6 +94,19 @@
             if (!AudioContextClass) { unavailable = true; return null; }
             try {
                 context = new AudioContextClass();
+                // Opt-in final mix bus: preserve the existing SFX gain and limit only
+                // loud music+SFX sums. Unchanged games keep their original graph.
+                let destination = context.destination;
+                if (musicMix && typeof context.createWaveShaper === 'function') {
+                    mix = context.createGain();
+                    const safety = context.createWaveShaper(), curve = new Float32Array(4097);
+                    for (let i = 0; i < curve.length; i++) {
+                        const x = i * 2 / (curve.length - 1) - 1, a = Math.abs(x);
+                        curve[i] = Math.sign(x) * (a <= .88 ? a : .88 + .1 * (1 - Math.exp(-(a - .88) / .1)));
+                    }
+                    safety.curve = curve; safety.oversample = '4x';
+                    mix.connect(safety); safety.connect(context.destination); destination = mix;
+                }
                 output = context.createGain();
                 output.gain.value = MASTER_LEVEL;
                 if (typeof context.createWaveShaper === 'function') {
@@ -104,10 +118,10 @@
                         const headroom = context.createGain();
                         headroom.gain.value = Number.isFinite(outputLevel) ? Math.max(0, Math.min(1, outputLevel)) : 1;
                         limiter.connect(headroom);
-                        headroom.connect(context.destination);
-                    } else limiter.connect(context.destination);
+                        headroom.connect(destination);
+                    } else limiter.connect(destination);
                 } else {
-                    output.connect(context.destination);
+                    output.connect(destination);
                 }
                 return context;
             } catch {
@@ -197,7 +211,11 @@
 
         toggleButton.addEventListener('click', toggleMuted);
         updateButton();
-        return Object.freeze({ play, toggleMuted, isMuted: () => muted, resume });
+        function musicOutput() {
+            const audio = getContext();
+            return audio ? { context: audio, destination: mix || audio.destination } : null;
+        }
+        return Object.freeze({ play, toggleMuted, isMuted: () => muted, resume, musicOutput });
     }
 
     window.CashArcadeAudio = Object.freeze({ create });

@@ -67,6 +67,14 @@ test('rapid collision sounds are throttled while other effects still play', () =
     assert.equal(h.calls.filter(([name]) => name === 'toneStart').length, 2);
 });
 
+test('new breakout effects schedule audible-duration low-register voices and cap simultaneous mix',()=>{
+    const h=setup(),s=h.create();s.play('breakoutHeavy');
+    const start=h.calls.find(c=>c[0]==='toneStart')[1],end=h.calls.find(c=>c[0]==='toneStop')[1];assert.ok(end-start>=.24);assert.ok(h.calls.some(c=>c[0]==='freqSet'&&c[1]===145));
+    s.play('breakoutPower');s.play('breakoutPortal');s.play('breakoutStrong');s.play('breakoutExplosion');s.play('breakoutExplosion');
+    for(let i=0;i<100;i++)s.play('breakoutPower');
+    assert.ok(h.calls.filter(c=>c[0]==='toneStart'||c[0]==='noiseStart').length<=40);
+});
+
 test('missile launches and pickups never drop events while explosions merge their voices', () => {
     const h = setup(); const sound = h.create();
     for (let i = 0; i < 4; i++) sound.play('defenseLaunch');

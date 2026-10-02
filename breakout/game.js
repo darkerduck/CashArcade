@@ -1,603 +1,202 @@
 (() => {
     'use strict';
-
-    const WIDTH = 720;
-    const HEIGHT = 540;
-    const PADDLE_Y = 500;
-    const PADDLE_HEIGHT = 14;
-    const BALL_RADIUS = 8;
-    const TOTAL_LEVELS = 3;
-    const LEVELS = [
-        {
-            speed: 310,
-            layout: [
-                [1, 1, 1, 1, 1, 1, 1, 1, 1],
-                [1, 1, 1, 1, 1, 1, 1, 1, 1],
-                [1, 1, 1, 1, 1, 1, 1, 1, 1],
-                [1, 1, 1, 1, 1, 1, 1, 1, 1],
-            ],
-        },
-        {
-            speed: 355,
-            intro: '雙翼陣型展開。金色磚塊需擊中兩次，第一次會留下裂痕。',
-            layout: [
-                [0, 0, 2, 1, 0, 1, 2, 0, 0],
-                [0, 2, 1, 1, 0, 1, 1, 2, 0],
-                [2, 1, 1, 2, 0, 2, 1, 1, 2],
-                [1, 1, 2, 1, 2, 1, 2, 1, 1],
-                [0, 1, 1, 2, 2, 2, 1, 1, 0],
-                [0, 0, 1, 1, 2, 1, 1, 0, 0],
-            ],
-        },
-        {
-            speed: 405,
-            intro: '堡壘防線啟動。外牆與核心多為金色雙擊磚塊。',
-            layout: [
-                [2, 2, 2, 2, 2, 2, 2, 2, 2],
-                [2, 1, 1, 2, 1, 2, 1, 1, 2],
-                [2, 1, 2, 2, 2, 2, 2, 1, 2],
-                [2, 1, 2, 0, 1, 0, 2, 1, 2],
-                [2, 1, 2, 2, 2, 2, 2, 1, 2],
-                [2, 1, 1, 1, 2, 1, 1, 1, 2],
-                [2, 2, 2, 2, 2, 2, 2, 2, 2],
-            ],
-        },
-    ];
-
-    const canvas = document.querySelector('#game-canvas');
-    const context = canvas.getContext('2d');
-    const overlay = document.querySelector('#game-overlay');
-    const overlayKicker = document.querySelector('#overlay-kicker');
-    const overlayTitle = document.querySelector('#overlay-title');
-    const overlayMessage = document.querySelector('#overlay-message');
-    const startButton = document.querySelector('#start-button');
-    const pauseButton = document.querySelector('#pause-button');
-    const restartButton = document.querySelector('#restart-button');
-    const scoreElement = document.querySelector('#score');
-    const highScoreElement = document.querySelector('#high-score');
-    const levelElement = document.querySelector('#level');
-    const livesElement = document.querySelector('#lives');
-    const statusElement = document.querySelector('#status-text');
-    const liveRegion = document.querySelector('#live-region');
-    const themeToggle = document.querySelector('#theme-toggle');
-    const sound = CashArcadeAudio.create({ storageKey: 'casharcade-breakout-sound-muted', toggleButton: document.querySelector('#sound-toggle') });
-    const paymentStatus = document.querySelector('#payment-status');
-    const paymentRetry = document.querySelector('#payment-retry');
-    const paymentCancel = document.querySelector('#payment-cancel');
-    const paymentLink = document.querySelector('#payment-link');
-    const CHECKPOINT_KEY = 'casharcade.breakout.round.v1';
-    let lastCheckpoint = 0;
-    let paidReady = false;
+    const { Game, Renderer, Save, POWERS, W } = window.NeonBreakout;
+    const $ = selector => document.querySelector(selector);
+    const canvas = $('#game-canvas'), overlay = $('#game-overlay');
+    const startButton = $('#start-button'), pauseButton = $('#pause-button'), restartButton = $('#restart-button');
+    const paymentStatus = $('#payment-status'), paymentRetry = $('#payment-retry'), paymentCancel = $('#payment-cancel'), paymentLink = $('#payment-link');
+    const themeToggle = $('#theme-toggle'), liveRegion = $('#live-region');
+    // Keep the shared +18 dB synthesis gain; leave headroom for oversampling in dense multiball mixes.
+    const sound = CashArcadeAudio.create({ storageKey: 'casharcade-breakout-sound-muted', toggleButton: $('#sound-toggle'), outputLevel: .9 });
+    const renderer = new Renderer(canvas, { reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches });
+    const store = Save.create(localStorage, sessionStorage), loaded = store.load();
+    let game = loaded.envelope ? Game.restore(loaded.envelope.game) : new Game();
+    let played = loaded.envelope?.played === true, hasActive = !!loaded.envelope;
+    let pending = loaded.envelope?.pending === true, paidReady = loaded.envelope?.paidReady === true;
+    let storageBlocked = loaded.blocked === true, authorizedCandidate = null;
+    let lastFrame = 0, lastSave = 0, uiSignature = '', uiTick = 0, chargePointer = null, drawAverage = 0;
+    const keys = { left: false, right: false };
+    let highScore = 0;
+    try { highScore = Number.parseInt(localStorage.getItem('casharcade-breakout-high-score') || '0', 10) || 0; } catch { /* Optional score storage. */ }
     const replayGate = CashArcadeReplayGate.create({
         onStatus(message) { paymentStatus.textContent = message; },
-        onBusy(busy) {
-            startButton.disabled = busy;
-            restartButton.disabled = busy;
-            paymentRetry.disabled = busy;
-            paymentCancel.disabled = !busy;
-            pauseButton.disabled = busy || !['running', 'paused'].includes(gameState);
-            keys.left = false;
-            keys.right = false;
-        },
+        onBusy(busy) { clearInput(); startButton.disabled = busy; restartButton.disabled = busy; paymentRetry.disabled = busy; paymentCancel.disabled = !busy; updateHud(true); },
         onCheckout(value) {
-            paymentLink.hidden = true;
-            paymentLink.removeAttribute('href');
+            paymentLink.hidden = true; paymentLink.removeAttribute('href');
             if (!value) return;
             try {
                 const url = new URL(value);
                 if (url.origin !== 'https://linkincash.cc' || !/^\/arcade\/checkout\/[0-9a-f-]+$/i.test(url.pathname) || url.search || url.username || url.password) return;
-                paymentLink.href = url.href; // Fragment credentials go only to the player's checkout link.
-                paymentLink.hidden = false;
-            } catch { /* Never display an untrusted checkout URL. */ }
+                paymentLink.href = url.href; paymentLink.hidden = false;
+            } catch { /* Never log checkout credentials or send them to an untrusted origin. */ }
         },
     });
-
-    let paddle;
-    let ball;
-    let bricks;
-    let score;
-    let lives;
-    let levelIndex;
-    let gameState;
-    let animationFrame;
-    let previousTime;
-    let pointerActive = false;
-    const keys = { left: false, right: false };
-    let highScore = readHighScore();
-
-    function readHighScore() {
-        try {
-            return Number.parseInt(localStorage.getItem('casharcade-breakout-high-score') || '0', 10) || 0;
-        } catch {
-            return 0;
-        }
-    }
-
-    function saveHighScore() {
-        try {
-            localStorage.setItem('casharcade-breakout-high-score', String(highScore));
-        } catch {
-            // The game remains playable when storage is unavailable.
-        }
-    }
-
-    function resetGame() {
-        cancelAnimationFrame(animationFrame);
-        score = 0;
-        lives = 3;
-        levelIndex = 0;
-        paddle = { x: WIDTH / 2 - 58, width: 116, speed: 520 };
-        buildLevel();
-        prepareBall();
-        gameState = 'ready';
-        previousTime = 0;
-        pauseButton.disabled = true;
-        pauseButton.textContent = '暫停';
-        showOverlay('STAGE 01', '準備發球', '移動擋板，別讓能量球掉出畫面。', '開始遊戲');
-        updateHud();
-        draw();
-    }
-
-    function buildLevel() {
-        const config = LEVELS[levelIndex];
-        const columns = config.layout[0].length;
-        const brickWidth = 64;
-        const brickHeight = 22;
-        const gap = 8;
-        const startX = (WIDTH - (columns * brickWidth + (columns - 1) * gap)) / 2;
-        bricks = [];
-
-        for (let row = 0; row < config.layout.length; row += 1) {
-            for (let column = 0; column < columns; column += 1) {
-                const durability = config.layout[row][column];
-                if (durability === 0) continue;
-                bricks.push({
-                    x: startX + column * (brickWidth + gap),
-                    y: 74 + row * (brickHeight + gap),
-                    width: brickWidth,
-                    height: brickHeight,
-                    hp: durability,
-                    maxHp: durability,
-                    row,
-                });
-            }
-        }
-    }
-
-    function prepareBall() {
-        const speed = LEVELS[levelIndex].speed;
-        ball = {
-            x: paddle.x + paddle.width / 2,
-            y: PADDLE_Y - BALL_RADIUS - 3,
-            vx: speed * .58,
-            vy: -speed * .815,
-            speed,
-            attached: true,
-        };
-    }
-
-    function startRound() {
-        if (replayGate.busy || !['ready', 'paused', 'life-lost', 'level-clear'].includes(gameState)) return;
-        const continuing = gameState === 'paused' && !ball.attached;
-        if (gameState === 'ready') {
-            try { replayGate.markPlayed(); } catch {
-                paymentStatus.textContent = '瀏覽器儲存無法使用，無法安全恢復本局。請允許儲存後重試。';
-                return;
-            }
-        }
-
-        if (gameState === 'level-clear') {
-            levelIndex += 1;
-            buildLevel();
-            prepareBall();
-        }
-
-        ball.attached = false;
-        sound.play(continuing ? 'resume' : 'start');
-        gameState = 'running';
-        overlay.hidden = true;
-        pauseButton.disabled = false;
-        pauseButton.textContent = '暫停';
-        updateStatus('遊戲中');
-        updateHud();
-        checkpoint();
-        liveRegion.textContent = `第 ${levelIndex + 1} 關開始`;
-        previousTime = performance.now();
-        cancelAnimationFrame(animationFrame);
-        animationFrame = requestAnimationFrame(loop);
-    }
-
-    function togglePause({ silent = false } = {}) {
-        if (replayGate.busy) return;
-        if (gameState === 'running') {
-            if (!silent) sound.play('pause');
-            cancelAnimationFrame(animationFrame);
-            gameState = 'paused';
-            pauseButton.textContent = '繼續';
-            showOverlay('PAUSED', '遊戲暫停', '能量球已凍結，準備好再繼續。', '繼續遊戲');
-            updateStatus('已暫停');
-            liveRegion.textContent = '遊戲已暫停';
-            checkpoint();
-            return;
-        }
-
-        if (gameState === 'paused') startRound();
-    }
-
-    function loop(time) {
-        if (gameState !== 'running') return;
-        const delta = Math.min((time - previousTime) / 1000, .025);
-        previousTime = time;
-        update(delta);
-        draw();
-        if (time - lastCheckpoint > 250) { checkpoint(); lastCheckpoint = time; }
-        if (gameState === 'running') animationFrame = requestAnimationFrame(loop);
-    }
-
-    function update(delta) {
-        movePaddle(delta);
-        ball.x += ball.vx * delta;
-        ball.y += ball.vy * delta;
-
-        if (ball.x - BALL_RADIUS <= 0 && ball.vx < 0) {
-            ball.x = BALL_RADIUS;
-            ball.vx *= -1;
-            sound.play('wall');
-        } else if (ball.x + BALL_RADIUS >= WIDTH && ball.vx > 0) {
-            ball.x = WIDTH - BALL_RADIUS;
-            ball.vx *= -1;
-            sound.play('wall');
-        }
-
-        if (ball.y - BALL_RADIUS <= 0 && ball.vy < 0) {
-            ball.y = BALL_RADIUS;
-            ball.vy *= -1;
-            sound.play('wall');
-        }
-
-        collideWithPaddle();
-        collideWithBricks(delta);
-        if (ball.y - BALL_RADIUS > HEIGHT) loseLife();
-    }
-
-    function movePaddle(delta) {
-        if (keys.left !== keys.right) paddle.x += (keys.left ? -1 : 1) * paddle.speed * delta;
-        paddle.x = clamp(paddle.x, 0, WIDTH - paddle.width);
-    }
-
-    function collideWithPaddle() {
-        const touching = ball.vy > 0
-            && ball.y + BALL_RADIUS >= PADDLE_Y
-            && ball.y - BALL_RADIUS <= PADDLE_Y + PADDLE_HEIGHT
-            && ball.x + BALL_RADIUS >= paddle.x
-            && ball.x - BALL_RADIUS <= paddle.x + paddle.width;
-
-        if (!touching) return;
-        ball.y = PADDLE_Y - BALL_RADIUS;
-        const offset = clamp((ball.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2), -1, 1);
-        const angle = offset * (Math.PI / 3);
-        ball.vx = ball.speed * Math.sin(angle);
-        ball.vy = -Math.abs(ball.speed * Math.cos(angle));
-        sound.play('paddle');
-    }
-
-    function collideWithBricks(delta) {
-        const previousX = ball.x - ball.vx * delta;
-        const previousY = ball.y - ball.vy * delta;
-
-        for (let index = 0; index < bricks.length; index += 1) {
-            const brick = bricks[index];
-            const overlaps = ball.x + BALL_RADIUS >= brick.x
-                && ball.x - BALL_RADIUS <= brick.x + brick.width
-                && ball.y + BALL_RADIUS >= brick.y
-                && ball.y - BALL_RADIUS <= brick.y + brick.height;
-            if (!overlaps) continue;
-
-            const cameFromTop = previousY + BALL_RADIUS <= brick.y;
-            const cameFromBottom = previousY - BALL_RADIUS >= brick.y + brick.height;
-            const cameFromSide = previousX + BALL_RADIUS <= brick.x || previousX - BALL_RADIUS >= brick.x + brick.width;
-            if (cameFromTop || cameFromBottom || !cameFromSide) ball.vy *= -1;
-            else ball.vx *= -1;
-
-            brick.hp -= 1;
-            sound.play(brick.hp === 0 ? (brick.maxHp === 2 ? 'reinforced' : 'brick') : 'crack');
-            score += brick.hp === 0 ? 10 : 5;
-            highScore = Math.max(highScore, score);
-            saveHighScore();
-            if (brick.hp === 0) bricks.splice(index, 1);
-            updateHud();
-            break;
-        }
-
-        if (bricks.length === 0) completeLevel();
-    }
-
-    function completeLevel() {
-        cancelAnimationFrame(animationFrame);
-        if (levelIndex === TOTAL_LEVELS - 1) {
-            sound.play('win');
-            gameState = 'won';
-            pauseButton.disabled = true;
-            showOverlay('ALL CLEAR', '三道防線全數突破', `最終得分 ${score}，街機紀錄已更新。再來一局須付款解鎖。`, '再玩一次（付費）');
-            updateStatus('全關制霸');
-            liveRegion.textContent = `恭喜完成全部關卡，得分 ${score}`;
-            checkpoint();
-            return;
-        }
-
-        sound.play('level');
-        gameState = 'level-clear';
-        pauseButton.disabled = true;
-        showOverlay(`STAGE 0${levelIndex + 1} CLEAR`, '防線突破', LEVELS[levelIndex + 1].intro, '進入下一關');
-        updateStatus('關卡完成');
-        liveRegion.textContent = `第 ${levelIndex + 1} 關完成`;
-        checkpoint();
-    }
-
-    function loseLife() {
-        cancelAnimationFrame(animationFrame);
-        lives -= 1;
-        updateHud();
-
-        if (lives <= 0) {
-            sound.play('lose');
-            gameState = 'over';
-            pauseButton.disabled = true;
-            showOverlay('GAME OVER', `本局得分 ${score}`, `最高紀錄 ${highScore} 分。再來一局須付款解鎖。`, '再玩一次（付費）');
-            updateStatus('遊戲結束');
-            liveRegion.textContent = `遊戲結束，得分 ${score}`;
-            checkpoint();
-            return;
-        }
-
-        sound.play('life');
-        prepareBall();
-        gameState = 'life-lost';
-        pauseButton.disabled = true;
-        showOverlay('BALL LOST', '再守住一次', `剩餘 ${lives} 條生命，能量球已回到擋板。`, '重新發球');
-        updateStatus('等待發球');
-        liveRegion.textContent = `失去一條生命，剩餘 ${lives} 條`;
-        checkpoint();
-        draw();
-    }
-
-    function movePaddleTo(clientX) {
-        if (replayGate.busy) return;
-        const rect = canvas.getBoundingClientRect();
-        const canvasX = (clientX - rect.left) * (WIDTH / rect.width);
-        paddle.x = clamp(canvasX - paddle.width / 2, 0, WIDTH - paddle.width);
-        if (ball.attached) ball.x = paddle.x + paddle.width / 2;
-        if (gameState !== 'running') draw();
-    }
-
-    function draw() {
-        const styles = getComputedStyle(document.documentElement);
-        const background = styles.getPropertyValue('--bg').trim();
-        const grid = styles.getPropertyValue('--grid').trim();
-        const accent = styles.getPropertyValue('--accent').trim();
-        const violet = styles.getPropertyValue('--violet').trim();
-        const gold = styles.getPropertyValue('--gold').trim();
-        const damaged = styles.getPropertyValue('--damaged').trim();
-        const reinforcedEdge = styles.getPropertyValue('--reinforced-edge').trim();
-        const crack = styles.getPropertyValue('--crack').trim();
-
-        context.fillStyle = background;
-        context.fillRect(0, 0, WIDTH, HEIGHT);
-        context.strokeStyle = grid;
-        context.lineWidth = 1;
-        for (let x = 24; x < WIDTH; x += 24) {
-            context.beginPath(); context.moveTo(x, 0); context.lineTo(x, HEIGHT); context.stroke();
-        }
-        for (let y = 24; y < HEIGHT; y += 24) {
-            context.beginPath(); context.moveTo(0, y); context.lineTo(WIDTH, y); context.stroke();
-        }
-
-        bricks.forEach((brick) => {
-            context.save();
-            const reinforced = brick.maxHp === 2;
-            const cracked = reinforced && brick.hp === 1;
-            const color = reinforced ? (cracked ? damaged : gold) : brick.row % 2 === 0 ? accent : violet;
-            context.fillStyle = color;
-            context.shadowColor = color;
-            context.shadowBlur = 10;
-            roundedRect(brick.x, brick.y, brick.width, brick.height, 5);
-            context.fill();
-            if (reinforced) {
-                context.shadowBlur = 0;
-                context.strokeStyle = reinforcedEdge;
-                context.lineWidth = 2;
-                roundedRect(brick.x + 1, brick.y + 1, brick.width - 2, brick.height - 2, 4);
-                context.stroke();
-            }
-            if (cracked) drawCracks(brick, crack);
-            context.restore();
-        });
-
-        context.save();
-        context.fillStyle = accent;
-        context.shadowColor = accent;
-        context.shadowBlur = 14;
-        roundedRect(paddle.x, PADDLE_Y, paddle.width, PADDLE_HEIGHT, 8);
-        context.fill();
-        context.fillStyle = gold;
-        context.shadowColor = gold;
-        context.shadowBlur = 16;
-        context.beginPath();
-        context.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
-        context.fill();
-        context.restore();
-    }
-
-    function drawCracks(brick, color) {
-        const centerX = brick.x + brick.width / 2;
-        const centerY = brick.y + brick.height / 2;
-        context.strokeStyle = color;
-        context.lineWidth = 2.4;
-        context.lineCap = 'round';
-        context.lineJoin = 'round';
-
-        context.beginPath();
-        context.moveTo(centerX - 19, brick.y + 2);
-        context.lineTo(centerX - 9, centerY - 2);
-        context.lineTo(centerX - 13, centerY + 4);
-        context.lineTo(centerX, brick.y + brick.height - 2);
-        context.stroke();
-
-        context.beginPath();
-        context.moveTo(centerX - 9, centerY - 2);
-        context.lineTo(centerX + 1, centerY - 5);
-        context.lineTo(centerX + 10, brick.y + 3);
-        context.stroke();
-
-        context.beginPath();
-        context.moveTo(centerX - 1, centerY + 7);
-        context.lineTo(centerX + 9, centerY + 2);
-        context.lineTo(centerX + 20, brick.y + brick.height - 3);
-        context.stroke();
-    }
-
-    function roundedRect(x, y, width, height, radius) {
-        context.beginPath();
-        context.roundRect(x, y, width, height, radius);
-    }
-
-    function clamp(value, minimum, maximum) {
-        return Math.max(minimum, Math.min(maximum, value));
-    }
-
-    function showOverlay(kicker, title, message, buttonLabel) {
-        overlayKicker.textContent = kicker;
-        overlayTitle.textContent = title;
-        overlayMessage.textContent = message;
-        startButton.textContent = buttonLabel;
-        overlay.hidden = false;
-    }
-
-    function updateHud() {
-        scoreElement.textContent = String(score).padStart(4, '0');
-        highScoreElement.textContent = String(highScore).padStart(4, '0');
-        levelElement.textContent = `${levelIndex + 1} / ${TOTAL_LEVELS}`;
-        livesElement.textContent = Array.from({ length: 3 }, (_, index) => index < lives ? '●' : '○').join(' ');
-        if (gameState === 'ready') updateStatus('準備');
-    }
-
-    function updateStatus(status) {
-        statusElement.textContent = status;
-    }
-
-    function handleKeydown(event) {
-        if (['ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D', ' ', 'Spacebar'].includes(event.key)) event.preventDefault();
-        if (replayGate.busy) return;
-        if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') keys.left = true;
-        if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') keys.right = true;
-        if (event.code === 'Space') {
-            if (event.repeat) return;
-            if (gameState === 'running' || gameState === 'paused') togglePause();
-            else handleStart();
-        }
-        if (event.key === 'r' || event.key === 'R') {
-            event.preventDefault();
-            if (!event.repeat) requestNewGame();
-        }
-    }
-
+    if (paidReady && !pending && hasActive) replayGate.acknowledgeCheckpoint();
+    else if (replayGate.pending()) pending = true;
+    played ||= replayGate.hasPlayed();
+    function envelope(current = game, flags = {}) { return { version: 2, played, pending, paidReady, game: current.snapshot(), ...flags }; }
     function checkpoint() {
-        try {
-            sessionStorage.setItem(CHECKPOINT_KEY, JSON.stringify({ version: 1, gameState, paddle, ball, bricks, score, lives, levelIndex, paidReady }));
-            return true;
-        } catch { return false; }
+        if (authorizedCandidate || storageBlocked || !hasActive) return false;
+        try { store.write(envelope()); return true; }
+        catch {
+            game.pause(false); clearInput(); storageBlocked = true;
+            paymentStatus.textContent = '無法保存完整進度。本局已暫停；請恢復瀏覽器儲存後按「恢復／重試」，不要清除付款資料。'; return false;
+        }
     }
-
-    function restoreRound() {
-        try {
-            const saved = JSON.parse(sessionStorage.getItem(CHECKPOINT_KEY) || 'null');
-            if (!saved || saved.version !== 1 || !['running', 'paused', 'life-lost', 'level-clear', 'over', 'won', 'ready'].includes(saved.gameState)) return false;
-            if (!Number.isInteger(saved.score) || saved.score < 0 || !Number.isInteger(saved.lives) || saved.lives < 0 || saved.lives > 3 || !Number.isInteger(saved.levelIndex) || saved.levelIndex < 0 || saved.levelIndex >= TOTAL_LEVELS) return false;
-            if (saved.gameState === 'level-clear' && saved.levelIndex >= TOTAL_LEVELS - 1) return false;
-            if (!saved.paddle || !saved.ball || !Array.isArray(saved.bricks) || saved.bricks.length > 81) return false;
-            const values = [saved.paddle.x, saved.paddle.width, saved.paddle.speed, saved.ball.x, saved.ball.y, saved.ball.vx, saved.ball.vy, saved.ball.speed];
-            if (!values.every(Number.isFinite) || !saved.bricks.every(brick => [brick.x, brick.y, brick.width, brick.height, brick.row].every(Number.isFinite) && [1, 2].includes(brick.hp) && [1, 2].includes(brick.maxHp))) return false;
-            ({ paddle, ball, bricks, score, lives, levelIndex } = saved);
-            paidReady = saved.paidReady === true;
-            gameState = ['running', 'paused'].includes(saved.gameState) ? 'paused' : saved.gameState;
-            pauseButton.disabled = gameState !== 'paused';
-            pauseButton.textContent = gameState === 'paused' ? '繼續' : '暫停';
-            if (gameState === 'paused') showOverlay('ROUND RESTORED', '本局已恢復', '繼續同一局不會再次收費。', '繼續遊戲');
-            else if (gameState === 'life-lost') showOverlay('ROUND RESTORED', '等待重新發球', `剩餘 ${lives} 條生命；重新發球免費。`, '重新發球');
-            else if (gameState === 'level-clear') showOverlay('ROUND RESTORED', '防線突破', LEVELS[levelIndex + 1].intro, '進入下一關');
-            else if (gameState === 'over' || gameState === 'won') showOverlay('ROUND RESTORED', `本局得分 ${score}`, '再來一局須完成 CashLink 付款解鎖。', '再玩一次（付費）');
-            updateHud();
-            updateStatus(gameState === 'paused' ? '已恢復／暫停' : '本局已恢復');
-            draw();
-            return true;
-        } catch { return false; }
+    function clearInput() { keys.left = false; keys.right = false; chargePointer = null; game.cancelInput(); }
+    function unlockedCommit() {
+        // A consumed credit survives a failed durable write, without requesting another unlock.
+        if (!authorizedCandidate) { authorizedCandidate = new Game(); authorizedCandidate.launch(); authorizedCandidate.drainEvents(); }
+        const saved = envelope(authorizedCandidate, { paidReady: true, pending: false, played: true });
+        try { store.paidBackup(saved); } catch { /* The durable write below is still required. */ }
+        store.write(saved);
+        game = authorizedCandidate; authorizedCandidate = null; pending = false; paidReady = true; played = true; hasActive = true; storageBlocked = false;
+        try { store.clearPaidBackup(); } catch { /* A committed backup remains safe to restore. */ }
+        replayGate.acknowledgeCheckpoint(); sound.play('start'); uiSignature = ''; updateHud(true);
     }
-
-    function handleStart() {
-        if (replayGate.busy) return;
-        if (['over', 'won', 'replay-pending'].includes(gameState) || (gameState === 'ready' && (replayGate.hasPlayed() || replayGate.pending()))) requestNewGame();
-        else if (gameState === 'paused') togglePause();
-        else startRound();
-    }
-
     async function requestNewGame() {
         if (replayGate.busy) return;
         sound.resume();
-        if (gameState === 'running') togglePause({ silent: true });
-        paidReady = false;
-        checkpoint();
-        const unlocked = await replayGate.unlock(() => {
-            resetGame();
-            replayGate.markPlayed();
-            gameState = 'paused';
-            paidReady = true;
-            if (!checkpoint()) throw new Error('Checkpoint unavailable');
-        });
-        if (unlocked) startRound();
+        if (authorizedCandidate) {
+            try { unlockedCommit(); } catch { paymentStatus.textContent = '額度已消耗，但新局尚未安全保存。請恢復儲存後重試，不必再次付款。'; }
+            updateHud(true); return;
+        }
+        if (storageBlocked) {
+            const recovery = store.load();
+            if (recovery.blocked) { paymentStatus.textContent = '儲存仍不可用或存檔無法確認；不會建立訂單或覆蓋原進度。'; return; }
+            if (recovery.envelope?.paidReady && !recovery.envelope.pending) {
+                game = Game.restore(recovery.envelope.game); pending = false; paidReady = true; hasActive = true; played = true; storageBlocked = false; replayGate.acknowledgeCheckpoint(); updateHud(true); return;
+            }
+            storageBlocked = false;
+        }
+        game.pause(false); clearInput(); pending = true; paidReady = false;
+        try { store.write(envelope(game, { pending: true, paidReady: false, played: true })); hasActive = true; }
+        catch { storageBlocked = true; paymentStatus.textContent = '無法保存付款意圖，尚未開啟付款。請允許瀏覽器儲存後重試。'; updateHud(true); return; }
+        updateHud(true); await replayGate.unlock(unlockedCommit);
+        if (authorizedCandidate) paymentStatus.textContent = '額度已消耗，但新局尚未安全保存。請恢復儲存後重試，不必再次付款。';
+        updateHud(true);
     }
-
-    function handleKeyup(event) {
-        if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') keys.left = false;
-        if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') keys.right = false;
+    function handleStart() {
+        if (replayGate.busy) return;
+        sound.resume();
+        if (pending || storageBlocked || authorizedCandidate || ['over','won'].includes(game.state) || (!hasActive && played)) return requestNewGame();
+        if (game.state === 'level-clear') { game.nextLevel(); if (!checkpoint()) { updateHud(true); return; } }
+        if (game.state === 'paused') game.resume(true);
+        else {
+            if (!hasActive) {
+                try { replayGate.markPlayed(); played = true; hasActive = true; store.write(envelope()); }
+                catch { storageBlocked = true; paymentStatus.textContent = '無法安全保存首次遊玩狀態，請允許瀏覽器儲存後重試。'; updateHud(true); return; }
+            }
+            game.launch();
+        }
+        processEvents(); checkpoint(); updateHud(true); if(game.state==='running'&&!storageBlocked)canvas.focus({preventScroll:true});
     }
-
+    function togglePause(silent = false) {
+        if (pending || storageBlocked || replayGate.busy) return;
+        if (game.state === 'running') game.pause(!silent);
+        else if (game.state === 'paused' && !silent) game.resume(true);
+        clearInput(); processEvents(); checkpoint(); updateHud(true);
+    }
+    function processEvents() {
+        const events = game.drainEvents(); renderer.accept(events, game);
+        const names = { impulse:'breakoutImpulse', strong:'breakoutStrong', charge:'breakoutCharge', power:'breakoutPower', portal:'breakoutPortal', magnetic:'breakoutMagnetic', switch:'breakoutSwitch', explosion:'breakoutExplosion', fire:'breakoutExplosion', lightning:'breakoutLightning', laser:'breakoutLaser', boss:'breakoutBoss', bossDown:'breakoutBossDown', wave:'level', shield:'defenseShield' };
+        for (const e of events) {
+            if (e.name === 'brick') sound.play(e.size === 13 ? 'breakoutHeavy' : e.size === 5 ? 'breakoutTiny' : e.type === 'armor' || e.type === 'heavy' ? 'reinforced' : 'brick');
+            else if (e.name === 'paddle') sound.play(e.size === 13 ? 'breakoutHeavy' : e.size === 5 ? 'breakoutTiny' : 'paddle');
+            else sound.play(names[e.name] || e.name);
+            if (e.name === 'power') liveRegion.textContent = `取得${POWERS[e.power].name}`;
+            if (['level','win','life','lose','wave','boss'].includes(e.name)) { checkpoint(); liveRegion.textContent = e.name === 'life' ? `還有 ${game.lives} 命` : game.level.name; }
+        }
+        if (game.score > highScore) { highScore = game.score; try { localStorage.setItem('casharcade-breakout-high-score', String(highScore)); } catch { /* Optional. */ } }
+    }
+    function showOverlay(kicker, title, message, button) {
+        overlay.hidden = false; $('#overlay-kicker').textContent = kicker; $('#overlay-title').textContent = title; $('#overlay-message').textContent = message; startButton.textContent = button;
+    }
+    function updateHud(force = false) {
+        const locked = pending || storageBlocked || !!authorizedCandidate;
+        const signature = [game.state, game.levelIndex, game.wave, locked, replayGate.busy].join(':');
+        if (force || signature !== uiSignature) {
+            uiSignature = signature;
+            if (locked) showOverlay('REPLAY GATE', authorizedCandidate ? '解鎖已確認' : storageBlocked ? '儲存待恢復' : '再來一局待解鎖', '原局與訂單保留，不會自動重建訂單。請使用下方恢復按鈕。', authorizedCandidate ? '保存並開始已解鎖新局' : '恢復／重試再來一局');
+            else if (game.state === 'running') overlay.hidden = true;
+            else if (game.state === 'paused') showOverlay('PAUSED', '光流已凍結', '完整球群、機關與道具倒數已保存；繼續不收費。', '繼續遊戲');
+            else if (game.state === 'level-clear') showOverlay('STAGE CLEAR', `${game.level.name} · 完成`, `生命已補充（最多五命）。下一關：${window.NeonBreakout.TITLES[game.levelIndex + 1]}`, '部署下一關（免費）');
+            else if (game.state === 'life-lost') showOverlay('RELAUNCH', `還有 ${game.lives} 命`, '只有全部球都掉落才扣命。磚塊損壞保留；重新發球免費。', '重新發球（免費）');
+            else if (game.state === 'over' || game.state === 'won') showOverlay(game.state === 'won' ? 'CAMPAIGN COMPLETE' : 'GAME OVER', game.state === 'won' ? '超新星已崩解' : '能量耗盡', `本局 ${game.score} 分。再次開新局需要「再來一局」解鎖。`, '再玩一次（付費）');
+            else showOverlay(`STAGE ${String(game.levelIndex + 1).padStart(2,'0')}`, game.level.name, game.level.tip, '發射第一球');
+            $('#stage-name').textContent = game.level.name; $('#stage-tip').textContent = game.level.tip;
+        }
+        $('#score').textContent = String(game.score).padStart(4,'0'); $('#high-score').textContent = String(highScore).padStart(4,'0');
+        $('#level').textContent = `${game.levelIndex + 1} / 30`; $('#lives').textContent = '♥'.repeat(game.lives) || '—'; $('#ball-count').textContent = `${game.balls.length} / 24`;
+        $('#status-text').textContent = locked ? '待恢復' : ({ ready:'準備',running:'遊戲中',paused:'暫停','life-lost':'待發球','level-clear':'過關',over:'結束',won:'完成' })[game.state];
+        pauseButton.disabled = locked || replayGate.busy || !['running','paused'].includes(game.state); pauseButton.textContent = game.state === 'paused' ? '繼續' : '暫停';
+        $('#launch-button').disabled = locked || replayGate.busy || !['ready','life-lost','running'].includes(game.state) || !game.balls.some(b => b.attached);
+        $('#charge-button').disabled = locked || replayGate.busy || !['ready','life-lost','running'].includes(game.state);
+        const charge = game.paddle.charging ? Math.min(1, (game.time - game.paddle.chargeAt) / .45) : 0;
+        $('#charge-meter').value = charge; $('#charge-label').textContent = charge === 1 ? '滿蓄力 · 等待接球時放開' : '按住蓄力／放開回彈';
+        const effects = Object.entries(game.effects).filter(([,end]) => end > game.time).map(([name,end]) => `${POWERS[name].icon} ${POWERS[name].name} ${(end-game.time).toFixed(1)}s`);
+        if (game.shield) effects.push(`◇ 底盾 ×${game.shield}`);
+        $('#effects').textContent = effects.join('　') || '接取掉落道具可疊加強化 · 紅色為縮小道具';
+    }
     function applyTheme() {
-        let storedTheme = '';
-        try { storedTheme = localStorage.getItem('casharcade-theme') || ''; } catch { /* Use dark default. */ }
-        document.documentElement.dataset.theme = storedTheme || 'dark';
+        let saved; try { saved = localStorage.getItem('casharcade-theme'); } catch { /* Default dark regardless of OS. */ }
+        document.documentElement.dataset.theme = saved === 'light' ? 'light' : 'dark';
     }
-
-    function toggleTheme() {
-        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-        document.documentElement.dataset.theme = next;
-        try { localStorage.setItem('casharcade-theme', next); } catch { /* Current page still updates. */ }
-        requestAnimationFrame(draw);
-    }
-
-    startButton.addEventListener('click', handleStart);
-    pauseButton.addEventListener('click', togglePause);
-    restartButton.addEventListener('click', requestNewGame);
-    paymentRetry.addEventListener('click', requestNewGame);
-    paymentCancel.addEventListener('click', () => replayGate.cancel());
-    themeToggle.addEventListener('click', toggleTheme);
-    document.addEventListener('keydown', handleKeydown);
-    document.addEventListener('keyup', handleKeyup);
-    window.addEventListener('blur', () => { keys.left = false; keys.right = false; });
-    canvas.addEventListener('pointerdown', (event) => { pointerActive = true; canvas.setPointerCapture(event.pointerId); movePaddleTo(event.clientX); });
-    canvas.addEventListener('pointermove', (event) => { if (pointerActive || event.pointerType === 'mouse') movePaddleTo(event.clientX); });
-    canvas.addEventListener('pointerup', (event) => { pointerActive = false; canvas.releasePointerCapture(event.pointerId); });
-    canvas.addEventListener('pointercancel', () => { pointerActive = false; });
-
     applyTheme();
-    resetGame();
-    restoreRound();
-    if (paidReady) replayGate.acknowledgeCheckpoint();
-    if (replayGate.pending() || (gameState === 'ready' && replayGate.hasPlayed())) {
-        gameState = 'replay-pending';
-        pauseButton.disabled = true;
-        showOverlay('REPLAY RECOVERY', '恢復再來一局', '由 CashLink 恢復原訂單並確認解鎖；此頁不會自動付款。', '恢復／重試再來一局');
-        updateStatus('等待恢復');
+    themeToggle.addEventListener('click', () => { const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = theme; try { localStorage.setItem('casharcade-theme', theme); } catch { /* Current page. */ } });
+    startButton.addEventListener('click', handleStart); restartButton.addEventListener('click', requestNewGame); pauseButton.addEventListener('click', () => togglePause());
+    paymentRetry.addEventListener('click', requestNewGame); paymentCancel.addEventListener('click', () => replayGate.cancel());
+    $('#launch-button').addEventListener('click', () => { if (!pending && !storageBlocked) handleStart(); });
+    $('#sound-test').addEventListener('click', () => { sound.resume(); sound.play('breakoutStrong'); });
+    $('#fullscreen-button').addEventListener('click', async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else await $('#play-surface').requestFullscreen(); } catch { liveRegion.textContent = '此瀏覽器不支援全螢幕；可橫向持握裝置。'; } });
+    const chargeButton = $('#charge-button');
+    chargeButton.addEventListener('pointerdown', event => { event.preventDefault(); if (replayGate.busy || pending || storageBlocked) return; chargeButton.setPointerCapture(event.pointerId); sound.resume(); game.beginCharge(); processEvents(); });
+    chargeButton.addEventListener('pointerup', event => { event.preventDefault(); game.releaseCharge(); processEvents(); });
+    chargeButton.addEventListener('pointercancel', () => game.cancelInput());
+    chargeButton.addEventListener('keydown',event=>{if(event.key===' '){event.preventDefault();event.stopPropagation();if(!event.repeat&&!pending&&!storageBlocked){sound.resume();game.beginCharge();processEvents();}}});
+    chargeButton.addEventListener('keyup',event=>{if(event.key===' '){event.preventDefault();event.stopPropagation();game.releaseCharge();processEvents();}});
+    function pointerMove(event) {
+        if (pending || storageBlocked || replayGate.busy) return;
+        const rect = canvas.getBoundingClientRect(); game.movePaddle((event.clientX - rect.left) / rect.width * W);
+        for (const b of game.balls) if (b.attached) b.x = game.paddle.x + game.paddle.w / 2;
     }
-    replayGate.initialize();
-    window.addEventListener('pagehide', () => { if (gameState !== 'replay-pending') checkpoint(); });
+    canvas.addEventListener('pointermove', pointerMove);
+    canvas.addEventListener('pointerdown', event => {
+        event.preventDefault(); if (pending || storageBlocked || replayGate.busy || game.state === 'paused') return;
+        sound.resume(); pointerMove(event); canvas.setPointerCapture(event.pointerId);
+        if (event.pointerType !== 'touch' && event.button === 0 && chargePointer === null) { chargePointer = event.pointerId; game.beginCharge(); processEvents(); }
+    });
+    canvas.addEventListener('pointerup', event => { if (event.pointerId === chargePointer) { chargePointer = null; game.releaseCharge(); processEvents(); } });
+    canvas.addEventListener('pointercancel', () => { chargePointer = null; game.cancelInput(); });
+    canvas.addEventListener('contextmenu', event => { event.preventDefault(); if (!pending && !storageBlocked) handleStart(); });
+    document.addEventListener('keydown', event => {
+        const key = event.key.toLowerCase();
+        if (['input','textarea','select','button','a'].includes(event.target?.tagName?.toLowerCase()) && [' ','enter'].includes(key)) return;
+        if (!['arrowleft','arrowright','a','d',' ','enter','p','escape','r'].includes(key)) return;
+        event.preventDefault(); if (event.repeat && [' ','enter','p','escape','r'].includes(key)) return;
+        sound.resume();
+        if (key === 'r') { requestNewGame(); return; }
+        if (pending || storageBlocked || replayGate.busy) return;
+        if (key === 'arrowleft' || key === 'a') keys.left = true;
+        if (key === 'arrowright' || key === 'd') keys.right = true;
+        if (key === 'p' || key === 'escape') togglePause();
+        if (key === 'enter') handleStart();
+        if (key === ' ') { if (['over','won'].includes(game.state)) requestNewGame(); else game.beginCharge(); processEvents(); }
+    });
+    document.addEventListener('keyup', event => { const key = event.key.toLowerCase(); if (key === 'arrowleft' || key === 'a') keys.left = false; if (key === 'arrowright' || key === 'd') keys.right = false; if (key === ' ') { event.preventDefault(); game.releaseCharge(); processEvents(); } });
+    window.addEventListener('blur', () => { if (game.state === 'running') togglePause(true); else clearInput(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden && game.state === 'running') togglePause(true); });
+    window.addEventListener('pagehide', () => { game.pause(false); clearInput(); checkpoint(); });
+    function loop(timestamp) {
+        const delta = lastFrame ? Math.min(.1, Math.max(0, (timestamp - lastFrame) / 1000)) : 0; lastFrame = timestamp;
+        if (!pending && !storageBlocked && !replayGate.busy) game.tick(delta, (keys.right ? 1 : 0) - (keys.left ? 1 : 0));
+        processEvents(); const drawStart=performance.now(); renderer.draw(game, { light: document.documentElement.dataset.theme === 'light' });
+        drawAverage=drawAverage*.96+(performance.now()-drawStart)*.04;
+        if(drawAverage>18) renderer.lowFX=true; else if(drawAverage<7) renderer.lowFX=false;
+        if (timestamp - uiTick > 80) { updateHud(); uiTick = timestamp; }
+        if (timestamp - lastSave > 250 && game.state === 'running') { checkpoint(); lastSave = timestamp; }
+        requestAnimationFrame(loop);
+    }
+    updateHud(true); renderer.draw(game, { light: document.documentElement.dataset.theme === 'light' }); requestAnimationFrame(loop);
+    replayGate.initialize().then(() => { if (storageBlocked) paymentStatus.textContent = '存檔或瀏覽器儲存無法確認。進度不會被覆蓋，也不會自動建立付款訂單。'; });
 })();

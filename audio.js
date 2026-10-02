@@ -40,6 +40,20 @@
         level: { tones: [[523, 523, .10, 0, .09, 'triangle'], [784, 784, .10, .12, .09, 'triangle'], [1047, 1047, .18, .24, .10, 'triangle']] },
         flap: { tones: [[390, 570, .105, 0, .065, 'sine']], minGap: 55 },
         pass: { tones: [[740, 990, .11, 0, .085, 'sine']], minGap: 80 },
+        breakoutCharge: { tones: [[135, 280, .32, 0, .08, 'triangle', .10]], minGap: 200 },
+        breakoutImpulse: { tones: [[170, 360, .20, 0, .09, 'triangle', .07]], noise: [.09, .035, 1200], minGap: 120 },
+        breakoutStrong: { tones: [[150, 470, .26, 0, .12, 'triangle', .08], [310, 180, .22, .02, .07, 'sine']], noise: [.13, .05, 1600], minGap: 100 },
+        breakoutHeavy: { tones: [[145, 65, .24, 0, .11, 'triangle', .065]], noise: [.13, .055, 1000], minGap: 65 },
+        breakoutTiny: { tones: [[650, 440, .16, 0, .065, 'triangle', .04]], minGap: 70 },
+        breakoutPower: { tones: [[330, 660, .16, 0, .11, 'triangle', .05], [660, 880, .20, .12, .10, 'triangle', .05]] },
+        breakoutPortal: { tones: [[180, 980, .29, 0, .09, 'triangle', .04], [700, 260, .20, .08, .055, 'sine']], minGap: 110 },
+        breakoutMagnetic: { tones: [[110, 190, .22, 0, .08, 'sawtooth', .04]], minGap: 160 },
+        breakoutSwitch: { tones: [[160, 250, .18, 0, .10, 'square'], [330, 660, .18, .16, .09, 'triangle']], noise: [.12, .04, 1200] },
+        breakoutExplosion: { tones: [[170, 45, .32, 0, .12, 'triangle', .06]], noise: [.24, .085, 1100], minGap: 80 },
+        breakoutLightning: { tones: [[240, 100, .17, 0, .08, 'sawtooth']], noise: [.14, .065, 2600], minGap: 100 },
+        breakoutLaser: { tones: [[390, 180, .13, 0, .065, 'triangle']], minGap: 160 },
+        breakoutBoss: { tones: [[120, 220, .22, 0, .11, 'sawtooth', .08], [220, 120, .22, .23, .10, 'sawtooth', .08]] },
+        breakoutBossDown: { tones: [[190, 50, .45, 0, .13, 'triangle', .09], [440, 880, .22, .32, .09, 'triangle']], noise: [.40, .09, 1300], minGap: 250 },
     });
 
     function limiterCurve() {
@@ -61,6 +75,7 @@
         let output;
         let unavailable = false;
         const lastPlayed = new Map();
+        let voiceEnds = [];
 
         try { muted = localStorage.getItem(storageKey) === '1'; } catch { /* Current page still has a sound setting. */ }
 
@@ -162,8 +177,13 @@
             resume();
             try {
                 const start = audio.currentTime + .005 + (Number.isFinite(delay) ? Math.max(0, Math.min(delay, 1)) : 0);
+                voiceEnds = voiceEnds.filter(end => end > audio.currentTime);
+                const needed = effect.tones.length + (effect.noise ? 1 : 0);
+                if (voiceEnds.length + needed > 40) return; // Bound dense multiball/polyphonic bursts.
                 effect.tones.forEach(spec => tone(audio, spec, start));
                 if (effect.noise) noise(audio, effect.noise, start);
+                effect.tones.forEach(spec => voiceEnds.push(start + spec[3] + spec[2] + .015));
+                if (effect.noise) voiceEnds.push(start + effect.noise[0] + .015);
                 lastPlayed.set(name, now);
             } catch { /* Audio failure must never stop a game or payment flow. */ }
         }

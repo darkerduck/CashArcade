@@ -6,12 +6,17 @@ import vm from 'node:vm';
 const gateSource = readFileSync(new URL('../breakout/payment-gate.js', import.meta.url), 'utf8');
 const gameSource = readFileSync(new URL('../breakout/game.js', import.meta.url), 'utf8').replace(/\}\)\(\);\s*$/, `
 window.inspect = {
-    state: () => ({ gameState, score, lives, levelIndex, paidReady }),
-    set: (state, points = score) => { gameState = state; score = points; },
-    setBall: value => { ball = { ...ball, ...value }; },
-    setBricks: value => { bricks = value; },
-    setLevel: value => { levelIndex = value; },
-    checkpoint, handleStart, requestNewGame, update, collideWithBricks, completeLevel, loseLife
+    state: () => ({ gameState: pending ? 'replay-pending' : game.state, score: game.score, lives: game.lives, levelIndex: game.levelIndex, paidReady, storageBlocked, charging: game.paddle.charging }),
+    set: (state, points = game.score) => { pending = false; game.state = state; game.score = points; },
+    game: () => game,
+    setBall: value => { Object.assign(game.balls[0], value); },
+    setBricks: value => { game.bricks = value.map((b,i) => ({...b,id:i+1,bx:b.x,by:b.y,w:b.width,h:b.height,type:b.maxHp>1?'armor':'normal'})); },
+    setLevel: value => { game.levelIndex = value; },
+    checkpoint, handleStart, requestNewGame, processEvents,
+    update: dt => { game.tick(dt); processEvents(); },
+    collideWithBricks: () => { const b=game.balls[0]; const brick=game.bricks.find(x=>b.x>=x.x&&b.x<=x.x+x.w&&b.y>=x.y&&b.y<=x.y+x.h&&x.hp>0); game.hitBrick(brick,1,{ball:b}); game.checkComplete(); processEvents(); },
+    completeLevel: () => { game.levelIndex=29; game.level.boss=null; game.bricks.forEach(b=>b.hp=0); game.checkComplete(); processEvents(); },
+    loseLife: () => { game.loseLife(); processEvents(); }
 };
 })();`);
 const KEY = 'clgame_1B2urqXhsmgm1tz3HmqppmCd3VElMeIXOUDGV5HUpwmSTReR';
@@ -25,7 +30,7 @@ function storage() {
 function element() {
     const handlers = new Map();
     return {
-        handlers, textContent: '', disabled: false, hidden: true, dataset: {},
+        handlers, textContent: '', disabled: false, hidden: true, dataset: {}, focus() {},
         addEventListener: (name, handler) => handlers.set(name, handler),
         removeAttribute(name) { delete this[name]; },
         click() { if (!this.disabled) return handlers.get('click')?.({}); },
@@ -62,6 +67,8 @@ async function harness({ session = storage(), local = storage(), handshakeError 
     };
     sandbox.window = sandbox;
     const context = vm.createContext(sandbox);
+    for (const file of ['levels.js','engine.js','storage.js']) vm.runInContext(readFileSync(new URL(`../breakout/${file}`,import.meta.url),'utf8'),context);
+    context.NeonBreakout.Renderer = class { draw() {} accept() {} };
     vm.runInContext(gateSource, context);
     vm.runInContext(gameSource, context);
     await flush();
@@ -70,10 +77,12 @@ async function harness({ session = storage(), local = storage(), handshakeError 
         click: selector => elements.get(selector).click(),
         el: selector => elements.get(selector),
         key(key, code = '', repeat = false) { let prevented = false; events.get('keydown')({ key, code, repeat, preventDefault() { prevented = true; } }); return prevented; },
+        keyUp(key) { events.get('keyup')({ key, preventDefault() {} }); },
         state: () => context.inspect.state(), set: (...args) => context.inspect.set(...args),
         inspect: context.inspect,
         checkpoint: () => context.inspect.checkpoint(),
         connect: () => { failHandshake = false; },
+        hidden(value) { context.document.hidden=value; events.get('visibilitychange')(); },
     };
 }
 
@@ -89,6 +98,8 @@ test('first play, pause/resume, lost-life relaunch and level transition are free
     assert.equal(h.state().gameState, 'running');
     assert.equal(h.attempts.length, 0);
     assert.equal(h.key(' ', 'Space'), true);
+    assert.equal(h.state().charging, true);
+    h.keyUp(' '); h.key('p');
     assert.equal(h.state().gameState, 'paused');
 });
 
@@ -98,12 +109,12 @@ test('all new-game controls serialize one awaited unlock; events do not authoriz
     const restart = h.click('#restart-button');
     h.key('R'); h.click('#payment-retry'); h.click('#start-button');
     assert.equal(h.attempts.length, 1);
-    assert.equal(h.state().gameState, 'paused');
+    assert.equal(h.state().gameState, 'replay-pending');
     assert.equal(h.state().score, 125);
     assert.deepEqual(h.audioEvents, ['start']);
     h.sdkEvents.get('payment_status')({ credit_status: 'available' });
     h.sdkEvents.get('unlocked')({ credit_status: 'consumed' });
-    assert.equal(h.state().gameState, 'paused');
+    assert.equal(h.state().gameState, 'replay-pending');
     h.attempts[0].resolve({ credit_status: 'consumed' }); await restart;
     assert.equal(h.state().score, 0);
     assert.equal(h.state().gameState, 'running');
@@ -129,7 +140,7 @@ for (const code of ['cancelled', 'network_error', 'temporarily_unavailable', 'po
         const promise = h.click('#restart-button');
         h.attempts[0].reject({ code, checkoutUrl: 'https://linkincash.cc/arcade/checkout/12345678-abcd#secret=test-only' });
         await promise;
-        assert.equal(h.state().gameState, 'over');
+        assert.equal(h.state().gameState, 'replay-pending');
         assert.equal(h.state().score, 95);
         assert.equal(h.session.getItem(PENDING), '1');
         assert.equal(h.local.getItem(SDK_KEY), 'original-sdk-state');
@@ -192,7 +203,7 @@ test('wrong payment purpose, unavailable intent storage and unconsumed results f
     const invalid = await harness(); invalid.set('over', 44);
     const promise = invalid.click('#restart-button'); invalid.attempts[0].resolve({ credit_status: 'available' }); await promise;
     assert.equal(invalid.state().score, 44);
-    assert.equal(invalid.state().gameState, 'over');
+    assert.equal(invalid.state().gameState, 'replay-pending');
 });
 
 test('untrusted popup fallback URLs are never displayed', async () => {
@@ -214,12 +225,51 @@ test('breakout collision and transition sounds follow gameplay, not redraws', as
     h.inspect.setBall({ x: 220, y: 110, vx: 0, vy: 200 }); h.inspect.collideWithBricks(.016);
     assert.deepEqual(h.audioEvents.slice(0, 5), ['start', 'crack', 'reinforced', 'brick', 'level']);
     h.inspect.setBricks([{ x: 100, y: 100, width: 64, height: 22, hp: 1, maxHp: 1, row: 0 }]);
-    h.inspect.setBall({ x: 7, y: 320, vx: -100, vy: -100 }); h.inspect.update(.016);
-    h.inspect.setBall({ x: 360, y: 490, vx: 0, vy: 200 }); h.inspect.update(.016);
+    h.set('running'); h.inspect.setBall({ x: 9, y: 320, vx: -100, vy: -100 }); h.inspect.update(.025);
+    h.inspect.setBall({ x: 360, y: 490, vx: 0, vy: 200 }); h.inspect.update(.025);
     assert.ok(h.audioEvents.includes('wall'));
     assert.ok(h.audioEvents.includes('paddle'));
     h.inspect.loseLife();
     assert.ok(h.audioEvents.includes('life'));
-    h.inspect.setLevel(2); h.inspect.completeLevel();
+    h.set('running'); h.inspect.setLevel(29); h.inspect.completeLevel();
     assert.equal(h.audioEvents.at(-1), 'win');
+});
+
+test('denied durable intent storage never opens checkout or overwrites the active game', async () => {
+    const h=await harness();h.click('#start-button');h.set('running',88);h.checkpoint();
+    const original=h.local.getItem('casharcade.breakout.round.v2');h.local.setItem=()=>{throw Error('quota');};
+    await h.click('#restart-button');assert.equal(h.attempts.length,0);assert.equal(h.state().score,88);assert.equal(h.local.getItem('casharcade.breakout.round.v2'),original);assert.equal(h.state().storageBlocked,true);
+});
+
+test('consumed credit plus failed commit retains a candidate; retry and reload never charge twice', async () => {
+    for(const reload of [false,true]) {
+        const h=await harness();h.click('#start-button');h.set('over',123);
+        const promise=h.click('#restart-button'), write=h.local.setItem;
+        h.local.setItem=()=>{throw Error('quota');};h.attempts[0].resolve({credit_status:'consumed'});await promise;
+        assert.equal(h.state().score,123);assert.ok(h.session.getItem('casharcade.breakout.paid-backup.v2'));assert.equal(h.audioEvents.filter(n=>n==='start').length,1);
+        h.local.setItem=write;
+        if(reload){const r=await harness({session:h.session,local:h.local});assert.equal(r.state().gameState,'paused');assert.equal(r.state().score,0);assert.equal(r.audioEvents.length,0);r.click('#start-button');assert.equal(r.attempts.length,0);}
+        else {await h.click('#payment-retry');assert.equal(h.attempts.length,1);assert.equal(h.state().score,0);assert.equal(h.state().gameState,'running');}
+    }
+});
+
+test('reload with an old finished or payment-pending checkpoint cannot obtain a free upgraded round', async () => {
+    for(const state of ['over','won']) {
+        const session=storage();session.setItem('casharcade.breakout.round.v1',JSON.stringify({version:1,gameState:state,score:72,lives:state==='over'?0:2,levelIndex:2,paidReady:false,bricks:[{x:100,y:100,width:64,height:22,hp:1,maxHp:1}],ball:{x:200,y:300,vx:100,vy:100,attached:false},paddle:{x:280}}));
+        const h=await harness({session});assert.equal(h.state().gameState,state);const promise=h.click('#start-button');assert.equal(h.attempts.length,1);h.attempts[0].reject({code:'cancelled'});await promise;assert.equal(h.state().score,72);
+    }
+    const session=storage();session.setItem(PENDING,'1');const h=await harness({session});assert.equal(h.state().gameState,'replay-pending');assert.equal(h.attempts.length,0);
+});
+
+test('charge repeats, touch charge and sound test do not enter payment gate; hidden tab pauses silently', async () => {
+    const h=await harness();h.click('#start-button');h.key(' ','Space');h.key(' ','Space',true);assert.equal(h.audioEvents.filter(x=>x==='breakoutCharge').length,1);h.keyUp(' ');
+    const g=h.inspect.game();g.time=1;
+    const touch={pointerId:32,pointerType:'touch',button:0,clientX:610,preventDefault(){}};
+    h.el('#game-canvas').handlers.get('pointerdown')(touch);assert.equal(g.paddle.x+g.paddle.w/2,610);assert.equal(g.paddle.charging,false);
+    h.el('#game-canvas').handlers.get('pointermove')({...touch,clientX:470});assert.equal(g.paddle.x+g.paddle.w/2,470);
+    h.el('#charge-button').handlers.get('pointerdown')(touch);assert.equal(g.paddle.charging,true);g.time+=.45;
+    h.el('#charge-button').handlers.get('pointerup')(touch);assert.ok(g.paddle.releasePower>.99);assert.equal(g.paddle.charging,false);
+    h.click('#sound-test');assert.equal(h.attempts.length,0);assert.equal(h.audioEvents.at(-1),'breakoutStrong');
+    const before=h.audioEvents.length;h.hidden(true);assert.equal(g.state,'paused');assert.equal(h.audioEvents.length,before);
+    h.hidden(false);assert.equal(g.state,'paused');h.click('#start-button');assert.equal(g.state,'running');assert.equal(h.attempts.length,0);
 });

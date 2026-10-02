@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#080d19">
-    <meta name="description" content="CashArcade 霓虹打磚塊：突破三道防線的純前端街機遊戲。">
+    <meta name="description" content="30 個獨特關卡、16 種道具、重力蓄力、多球與三場首領戰的霓虹打磚塊。">
     <title>CashArcade — 霓虹打磚塊</title>
     <link rel="stylesheet" href="./style.css">
 </head>
@@ -30,12 +30,13 @@
             <div class="score-strip" aria-label="遊戲資訊">
                 <div><span>分數</span><strong id="score">0000</strong></div>
                 <div><span>最高分</span><strong id="high-score">0000</strong></div>
-                <div><span>關卡</span><strong id="level">1 / 3</strong></div>
+                <div><span>關卡</span><strong id="level">1 / 30</strong></div>
                 <div><span>生命</span><strong id="lives">● ● ●</strong></div>
             </div>
 
+            <div id="play-surface">
             <div class="canvas-frame">
-                <canvas id="game-canvas" width="720" height="540" aria-label="打磚塊遊戲區域"></canvas>
+                <canvas id="game-canvas" width="720" height="540" tabindex="0" aria-label="打磚塊遊戲區域"></canvas>
                 <div class="game-overlay" id="game-overlay">
                     <p class="overlay-kicker" id="overlay-kicker">STAGE 01</p>
                     <h2 id="overlay-title">準備發球</h2>
@@ -44,9 +45,24 @@
                 </div>
             </div>
 
+            <div class="play-controls">
+                <button class="secondary-button charge-button" id="charge-button" type="button">按住蓄力 · 放開回彈</button>
+                <button class="primary-button" id="launch-button" type="button">發球 ↗</button>
+            </div>
+            </div>
+            <div class="energy-strip">
+                <label for="charge-meter" id="charge-label">按住蓄力／放開回彈</label>
+                <meter id="charge-meter" min="0" max="1" value="0" aria-label="回彈蓄力"></meter>
+                <span>活動球 <strong id="ball-count">1 / 24</strong></span>
+            </div>
+            <p class="effects" id="effects" aria-label="目前強化效果">接取道具可疊加強化</p>
+            <div class="stage-brief"><p class="eyebrow">STAGE INTELLIGENCE</p><h2 id="stage-name">光波起點</h2><p id="stage-tip"></p></div>
+
             <div class="game-actions">
                 <button class="secondary-button" id="pause-button" type="button" disabled>暫停</button>
                 <button class="secondary-button" id="restart-button" type="button">重新開始（付費）</button>
+                <button class="secondary-button" id="fullscreen-button" type="button">全螢幕</button>
+                <button class="secondary-button" id="sound-test" type="button">試播音效</button>
             </div>
 
             <div class="payment-panel" aria-label="再來一局付款">
@@ -62,18 +78,30 @@
             <p class="instructions">
                 <span><kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> 移動</span>
                 <span>滑鼠或觸控拖曳擋板</span>
-                <span><kbd>Space</kbd> 發球／暫停</span>
+                <span>左鍵／<kbd>Space</kbd> 按住蓄力，接球時放開</span>
+                <span>右鍵／<kbd>Enter</kbd> 發球</span>
+                <span><kbd>P</kbd>／<kbd>Esc</kbd> 暫停</span>
                 <span><kbd>R</kbd> 付費再來一局</span>
             </p>
+            <details class="field-guide"><summary>磚塊與道具圖例 · 30 關戰術</summary>
+                <p>球受重力影響，強擊須在放開後 0.12 秒內接到球。金色光環能穿過斥力盾；微球／普通球／巨球傷害為 1／2／4。所有球掉落才扣命，過關補一命（最多五命）。</p>
+                <div class="legend"><span>三色流光：普通／脆弱</span><span>鉚釘／裂紋：裝甲／重甲</span><span>✦ 爆炸鏈</span><span>● 藏球</span><span>◉ 有限造球</span><span>⊕ 斥力盾（強擊突破）</span><span>▼ 上方弱點</span><span>灰色斜紋：不可破壞鋼牆</span><span>↔ 移動磚</span><span>⚿ 開關／連線門鎖</span></div>
+                <p>道具：● 巨球、• 微球、✣ 分裂、☄ 球雨、↔ 長板、↤ 短板、━ 全幅、♨ 火球、⇡ 穿透、Ⅱ 雷射、ϟ 閃電、◷ 緩速、∩ 磁鐵、↑ 反重力、◇ 底盾、♥ 加命。紅色道具是微球與短板；第 23 關的微球可走捷徑。</p>
+                <p>尺寸效果互斥，其他強化可以組合；相同道具刷新時間。傳送門依同色連線與出口箭頭移動；首領必須先破壞節點。進度自動保存，重新載入會先暫停，不重複領取獎勵。</p>
+            </details>
             <p class="sr-only" id="live-region" aria-live="polite"></p>
         </section>
 
         <footer><a href="../">← ALL GAMES</a><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
     </main>
 
-    <script src="../audio.js?v=3" defer></script>
+    <script src="../audio.js?v=4" defer></script>
     <script src="https://linkincash.cc/arcade/sdk/v1.js" defer referrerpolicy="no-referrer"></script>
     <script src="./payment-gate.js" defer></script>
-    <script src="./game.js?v=2" defer></script>
+    <script src="./levels.js?v=30" defer></script>
+    <script src="./engine.js?v=30" defer></script>
+    <script src="./renderer.js?v=30" defer></script>
+    <script src="./storage.js?v=30" defer></script>
+    <script src="./game.js?v=30" defer></script>
 </body>
 </html>

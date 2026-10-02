@@ -83,6 +83,24 @@ canvas { display: block; width: 100%; aspect-ratio: 4 / 3; touch-action: none; c
 .primary-button:active, .secondary-button:active { transform: translateY(2px); }
 .primary-button { padding: 12px 22px; border-color: var(--accent); color: var(--accent-ink); background: var(--accent); font-weight: 900; }
 .game-actions { gap: 10px; margin-top: 14px; }
+.game-actions { flex-wrap: wrap; }
+.game-actions .secondary-button { flex: 1 1 130px; }
+.play-controls { display: flex; gap: 10px; margin-top: 12px; }
+.charge-button { touch-action: none; user-select: none; }
+.play-controls .primary-button { min-width: 100px; }
+.energy-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 14px; color: var(--muted); font: .72rem system-ui, sans-serif; }
+.energy-strip meter { flex: 1; min-width: 80px; height: 14px; accent-color: var(--gold); }
+.energy-strip strong { color: var(--accent); }
+.effects { min-height: 32px; padding: 8px 0; margin: 6px 0; color: var(--gold); font: .74rem/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+.stage-brief { padding: 16px 0; border-block: 1px solid var(--line); }
+.stage-brief h2 { margin: 0 0 8px; font: 700 1.1rem system-ui, sans-serif; color: var(--ink); }
+.stage-brief > p:last-child { margin: 0; color: var(--muted); font: .82rem/1.7 system-ui, sans-serif; }
+.field-guide { margin-top: 22px; color: var(--muted); font: .78rem/1.75 system-ui, sans-serif; }
+.field-guide summary { cursor: pointer; color: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--ink); }
+#play-surface:fullscreen { display: flex; flex-direction: column; justify-content: center; width: 100%; height: 100%; padding: 10px; background: var(--bg); }
+#play-surface:fullscreen .canvas-frame { align-self: center; width: min(100%, calc((100dvh - 90px) * 4 / 3)); }
+#play-surface:fullscreen .play-controls { align-self: center; width: min(100%, 720px); }
 .secondary-button { flex: 1; padding: 11px 14px; color: var(--ink); background: var(--raised); }
 .secondary-button:disabled { cursor: not-allowed; opacity: .45; }
 .payment-panel { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-family: system-ui, sans-serif; font-size: .78rem; line-height: 1.6; overflow-wrap: anywhere; }
@@ -109,6 +127,13 @@ footer a { color: var(--accent); font-size: .65rem; letter-spacing: .09em; text-
     .score-strip div { padding-inline: 4px; }
     .score-strip span { font-size: .56rem; }
     .instructions { gap: 7px 12px; }
+    .game-card { padding: 14px; }
+    .game-overlay { padding: 15px; backdrop-filter: blur(2px); }
+    .game-overlay h2 { font-size: 1.25rem; }
+    .game-overlay p:not(.overlay-kicker) { font-size: .75rem; line-height: 1.45; margin: 8px 0 12px; }
+    .game-overlay .primary-button { padding: 9px 14px; font-size: .8rem; }
+    .play-controls { gap: 8px; }
+    .play-controls .secondary-button { font-size: .76rem; padding-inline: 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

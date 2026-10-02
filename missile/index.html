@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090c20"><meta name="description" content="霓虹天盾：二十關飛彈防禦戰役、華麗霓虹特效、五種強化道具與雙頭目決戰。">
-    <title>CashArcade — 霓虹天盾</title><link rel="stylesheet" href="./style.css">
+    <title>CashArcade — 霓虹天盾</title><link rel="stylesheet" href="./style.css?v=21">
 </head>
 <body>
 <main class="shell">
@@ -22,6 +22,12 @@
         </div>
         <div id="effects" class="effects" aria-live="polite">攔截空中金色道具以啟動強化</div>
         <div class="actions"><button id="pause" disabled>暫停</button><button id="retry" disabled>重試本關</button><button id="new">新戰役</button><button id="preview-sound">試播音效</button><button id="fullscreen">全螢幕</button></div>
+        <div class="music-panel" aria-label="背景音樂控制">
+            <button id="music-toggle" aria-label="關閉背景音樂" aria-pressed="true">♫ 音樂：開</button>
+            <div class="music-info"><small>ORIGINAL CHIPTUNE / 關卡配樂</small><span id="music-track">曙光防線 · 待命</span></div>
+            <label class="music-volume" for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output><input id="music-volume" type="range" min="0" max="100" step="5" value="65"></label>
+            <p>開始防守後播放；暫停時音樂同步停止。音樂與右上角音效開關分別控制。</p>
+        </div>
         <div class="payment-panel" aria-label="再來一局付款">
             <p>首次遊玩免費 · 只有六座城市全毀後再次開局才需解鎖「再來一局」 · 價格以 CashLink 付款頁為準</p>
             <p id="payment-status" role="status" aria-live="polite">正在連線 CashLink…</p>
@@ -35,5 +41,6 @@
     <footer><a href="../">← ALL GAMES</a><span>20 SECTORS · ONE SKY</span><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
 </main>
 <script src="../audio.js?v=6" defer></script><script src="https://linkincash.cc/arcade/sdk/v1.js" defer referrerpolicy="no-referrer"></script>
-<script src="./engine.js?v=20" defer></script><script src="./renderer.js?v=20" defer></script><script src="./payment-gate.js" defer></script><script src="./game.js?v=20" defer></script>
+<script src="./engine.js?v=20" defer></script><script src="./renderer.js?v=20" defer></script><script src="./payment-gate.js" defer></script>
+<script src="./score.js?v=1" defer></script><script src="./music.js?v=1" defer></script><script src="./game.js?v=21" defer></script>
 </body></html>

@@ -5,6 +5,8 @@
     const KEY = 'casharcade-missile-checkpoint', BEST = 'casharcade-missile-high-score';
     const LOSS_BACKUP = 'casharcade.missile.loss-lock.v1', PAID_BACKUP = 'casharcade.missile.paid-recovery.v1';
     const sound = CashArcadeAudio.create({ storageKey: 'casharcade-missile-sound-muted', toggleButton: $('sound-toggle'), outputLevel: .8 });
+    const music = NeonDefenseMusic.create({ toggleButton: $('music-toggle'), volumeInput: $('music-volume'),
+        volumeLabel: $('music-volume-value'), trackLabel: $('music-track') });
     const renderer = new NeonDefenseRenderer($('game-canvas'));
     const names = { rapid: '» 急速裝填', wide: '✦ 超載爆破', slow: '◷ 時間緩速', shield: '◇ 城市護盾', emp: 'ϟ 電磁脈衝' };
     let checkpoint = null, replay = { state: 'open', intent: null, score: 0 };
@@ -81,6 +83,7 @@
         $('choices').hidden = true; $('live').textContent = title;
     }
     function showUpgrade() {
+        music.pause();
         mode = 'upgrade'; clearInput();
         overlay('SECTOR SECURED', `第 ${checkpoint.level} 關完成`, '選擇一項本局升級，部署下一道防線。');
         $('start').hidden = true; $('choices').hidden = false; $('status').textContent = '選擇升級'; syncControls();
@@ -97,6 +100,7 @@
     function begin() {
         sound.resume(); clearInput();
         game = new Game(checkpoint); mode = 'running';
+        music.start(game.level, game.boss?.phase);
         settleTime=0;
         renderer.reset?.();
         $('overlay').hidden = true; $('pause').textContent = '暫停';
@@ -104,16 +108,19 @@
     }
     function pause(automatic = false) {
         if (mode !== 'running') return;
+        music.pause();
         mode = 'paused'; clearInput(); $('pause').textContent = '繼續'; $('status').textContent = '已暫停';
         overlay('DEFENSE ON HOLD', '戰線暫停', '時間、飛彈與道具倒數都已停止。'); syncControls();
         if (!automatic) sound.play('pause');
     }
     function resume() {
         if (mode !== 'paused') return;
+        music.resume();
         mode = 'running'; clearInput(); $('overlay').hidden = true; $('pause').textContent = '暫停'; $('status').textContent = '防守中';
         previous = performance.now(); sound.play('resume'); syncControls();
     }
     function showPaymentOverlay() {
+        music.pause();
         mode = 'payment-pending'; clearInput();
         overlay('REPLAY RECOVERY', '恢復再來一局', '防線失守後的下一局須由 CashLink 確認解鎖；此頁不會在載入時自動付款。', '恢復付款');
         $('status').textContent = '等待付款'; syncControls();
@@ -175,6 +182,9 @@
     function events() {
         for (const e of game.drain()) {
             renderer.event(e); if (audio[e.type]) sound.play(audio[e.type]);
+            if (['damage', 'alarm', 'bossDeath', 'pickup', 'launch', 'explosion'].includes(e.type)) music.duck();
+            if (e.type === 'bossPhase') music.phase(e.phase);
+            if (e.type === 'bossDeath') music.pause();
             if (e.type === 'pickup') { toast = `${names[e.power]} 啟動`; toastUntil = game.time + 2; $('live').textContent = toast; }
         }
         if (game.score > best) { best = game.score; save(BEST, String(best)); }
@@ -184,6 +194,7 @@
             showUpgrade();
         }
         if (game.state === 'lost' && mode === 'running') {
+            music.pause();
             sessionSave(LOSS_BACKUP, { level: checkpoint.level, score: game.score });
             if (!saveRecord(checkpoint, 'lost', null, game.score)) {
                 replay = { state: 'lost', intent: null, score: game.score };
@@ -194,6 +205,7 @@
             syncControls();
         }
         if (game.state === 'won' && mode === 'running') {
+            music.pause();
             mode = 'won'; clearInput(); checkpoint = null; replay = { state: 'open', intent: null, score: 0 }; save(KEY, null);
             sessionClear(LOSS_BACKUP); sessionClear(PAID_BACKUP);
             $('status').textContent = '戰役完成'; overlay('ALL SECTORS SECURED', '天空，重回我們手中', `${LEVELS.length} 關戰役完成！總分 ${game.score}，${game.cities.filter(c => c.hp).length} 座城市存活。`, '開始新戰役（免費）');
@@ -220,17 +232,17 @@
     $('game-canvas').addEventListener('pointerdown', e => {
         if (mode !== 'running' || (e.pointerType === 'mouse' && e.button !== 0)) return;
         e.preventDefault(); if (pressedPointers.has(e.pointerId)) return;
-        pressedPointers.add(e.pointerId); sound.resume(); point(e);
+        pressedPointers.add(e.pointerId); sound.resume(); music.wake(); point(e);
         $('game-canvas').setPointerCapture(e.pointerId); $('game-canvas').focus();
         game.fire(aim.x, aim.y);
     });
     $('game-canvas').addEventListener('pointermove', point);
     for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) $('game-canvas').addEventListener(name, e => { pressedPointers.delete(e.pointerId); });
     document.addEventListener('keydown', e => {
-        if (e.target instanceof HTMLButtonElement && (e.key.startsWith('Arrow') || e.code === 'Space')) return;
+        if (e.target instanceof HTMLInputElement || (e.target instanceof HTMLButtonElement && (e.key.startsWith('Arrow') || e.code === 'Space'))) return;
         if (e.key.startsWith('Arrow') || e.code === 'Space') {
             e.preventDefault(); if (mode !== 'running') return;
-            sound.resume(); if (e.code === 'Space') {
+            sound.resume(); music.wake(); if (e.code === 'Space') {
                 if (!e.repeat && !space) { space = true; game.fire(aim.x, aim.y); }
             } else keys.add(e.key);
         }

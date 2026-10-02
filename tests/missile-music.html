@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>霓虹天盾 · 原創配樂驗收</title>
+<style>body{max-width:980px;margin:30px auto;padding:0 16px;background:#0b1026;color:#e6fbff;font:15px/1.7 system-ui,sans-serif}button,select{font:inherit;padding:10px;background:#193544;color:#a4fff0;border:1px solid #558290;border-radius:8px;margin:4px}pre{white-space:pre-wrap;overflow-wrap:anywhere}audio{display:block;width:100%;margin:20px 0}a{color:#8ffff0}</style></head><body>
+<h1>霓虹天盾 · 原創配樂驗收</h1><p>正式樂譜與合成器的 OfflineAudioContext 輸出。只讀測試，不載入付款 SDK、不存遊戲進度。預設65%音量；瀏覽器播放器可試聽選定關卡的完整八小節。</p>
+<label>關卡 <select id="sector"></select></label><label>頭目階段 <select id="phase"><option value="shield">護盾</option><option value="core">核心</option><option value="rage">狂暴</option></select></label>
+<button id="render">產生本關試聽</button><button id="measure">量測20關＋頭目階段＋混音峰值</button>
+<audio id="preview" controls></audio><a id="download" hidden download="neon-aegis-original-chiptune.wav">下載本次合成試聽</a><pre id="result" role="status">等待操作</pre>
+<script src="../audio.js?v=6"></script><script src="../missile/score.js?v=1"></script><script src="../missile/music.js?v=1"></script><script src="./missile-music-check.js"></script>
+</body></html>

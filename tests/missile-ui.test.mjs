@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
 function harness(storage = new Map(), options = {}) {
-    const elements = new Map(), events = new Map(), audio = [], attempts = [], sdkEvents = new Map();
+    const elements = new Map(), events = new Map(), audio = [], music = [], attempts = [], sdkEvents = new Map();
     const session = options.session || new Map();
     let frame, now = 0, latest, visualDt=0, resets=0;
     const element = id => {
@@ -30,6 +30,7 @@ function harness(storage = new Map(), options = {}) {
         sessionStorage: { getItem: key => session.get(key) ?? null,
             setItem: (key, value) => session.set(key, value), removeItem: key => session.delete(key) },
         CashArcadeAudio: { create: () => ({ play: name => audio.push(name), resume() {}, isMuted: () => false }) },
+        NeonDefenseMusic: { create: () => Object.fromEntries(['start','pause','resume','phase','duck','wake'].map(name => [name, (...args) => music.push([name, ...args])])) },
         CashLinkArcade: { create: ({ publishableKey }) => {
             assert.equal(publishableKey, 'clgame_ODUJZzp6UAAZFIWqreRHWOGQuQHhuwj6ESOzo9UYWX5V14Z8');
             return { on: (name, fn) => sdkEvents.set(name, fn),
@@ -42,14 +43,14 @@ function harness(storage = new Map(), options = {}) {
         } }, URL,
         NeonDefenseRenderer: class { draw(game,aim,dt) { latest = game; visualDt=dt; } event() {} reset() { resets++; } },
         performance: { now: () => now }, requestAnimationFrame: fn => { frame = fn; },
-        HTMLButtonElement: class {}, confirm: () => true,
+        HTMLButtonElement: class {}, HTMLInputElement: class {}, confirm: () => true,
         addEventListener: (type, fn) => events.set(type, fn),
     });
     scope.window = scope;
     for (const file of ['engine.js', 'payment-gate.js', 'game.js']) vm.runInContext(readFileSync(new URL(`../missile/${file}`, import.meta.url), 'utf8'), scope);
     function tick(count = 1) { for (let i = 0; i < count; i++) { now += 25; frame(now); } }
     tick();
-    return { storage, session, audio, attempts, sdkEvents, element, scope, tick, get game() { return latest; },
+    return { storage, session, audio, music, attempts, sdkEvents, element, scope, tick, get game() { return latest; },
         get visualDt() { return visualDt; }, get resets() { return resets; },
         record: () => JSON.parse(storage.get('casharcade-missile-checkpoint') || 'null'),
         setFailWrites: value => { options.failWrites = value; },
@@ -282,4 +283,25 @@ test('visual clocks freeze in pause/upgrade/payment; final city settles briefly 
     lose(h); assert.ok(h.visualDt > 0); h.tick(50); assert.equal(h.visualDt,0);
     h.click('retry'); h.tick(10); assert.equal(h.visualDt,0);
     h.attempts[0].resolve({credit_status:'consumed'}); await flush(); h.tick(); assert.equal(h.resets,3);
+});
+
+test('music follows sector, boss phases and pause without altering replay authorization', async () => {
+    const h=harness(); await flush(); assert.equal(h.music.length,0);
+    h.click('start'); assert.deepEqual(h.music.at(-1),['start',1,undefined]); h.tick();
+    h.click('pause'); assert.equal(h.music.at(-1)[0],'pause');
+    h.click('start'); assert.equal(h.music.at(-1)[0],'resume');
+    h.blur(); assert.equal(h.music.at(-1)[0],'pause'); h.click('start');
+    h.game.events.push({type:'bossPhase',phase:'rage'}); h.tick(); assert.ok(h.music.some(e=>e[0]==='phase'&&e[1]==='rage'));
+    h.game.state='upgrade'; h.tick(); assert.equal(h.music.at(-1)[0],'pause');
+    h.click('repair'); assert.deepEqual(h.music.at(-1),['start',2,undefined]); h.tick();
+    lose(h); assert.equal(h.music.at(-1)[0],'pause');
+    const starts=h.music.filter(e=>e[0]==='start').length;
+    h.click('retry'); h.key('r'); h.click('start'); assert.equal(h.attempts.length,1);
+    assert.equal(h.music.filter(e=>e[0]==='start').length,starts);
+    h.attempts[0].reject({code:'cancelled'}); await flush();
+    assert.equal(h.music.filter(e=>e[0]==='start').length,starts);
+    const restored=harness(h.storage); await flush(); assert.ok(restored.music.every(e=>e[0]==='pause'));
+    restored.click('retry'); restored.attempts[0].resolve({credit_status:'consumed'}); await flush();
+    assert.deepEqual(restored.music.at(-1),['start',2,undefined]);
+    restored.tick(); restored.game.state='won'; restored.tick(); assert.equal(restored.music.at(-1)[0],'pause');
 });

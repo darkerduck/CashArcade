@@ -5,8 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root=fileURLToPath(new URL('../',import.meta.url)), origin='https://darkerduck.github.io';
-const pages=['index.html','snake/index.html','breakout/index.html','flappy/index.html','missile/index.html',
-    'tests/arcade-music.html','tests/missile-music.html','tests/breakout-gallery.html'];
+const pages=['index.html','snake/index.html','breakout/index.html','flappy/index.html','missile/index.html','assault/index.html',
+    'tests/arcade-music.html','tests/missile-music.html','tests/breakout-gallery.html','tests/assault-gallery.html'];
 const attrs=tag=>Object.fromEntries([...tag.matchAll(/([\w-]+)="([^"]*)"/g)].map(m=>[m[1],m[2]]));
 function png(data) {
     assert.equal(data.subarray(0,8).toString('hex'),'89504e470d0a1a0a');

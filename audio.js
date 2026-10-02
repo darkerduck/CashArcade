@@ -9,6 +9,15 @@
     const LIMIT_KNEE = .9;
     const LIMIT_HEADROOM = .09;
     const EFFECTS = Object.freeze({
+        assaultStart: { tones: [[220, 440, .12, 0, .07, 'triangle'], [440, 880, .2, .12, .07, 'square']] },
+        assaultShot: { tones: [[840, 290, .07, 0, .027, 'square']], minGap: 130 },
+        assaultLaser: { tones: [[360, 180, .10, 0, .035, 'sawtooth']], minGap: 170 },
+        assaultExplosion: { tones: [[130, 40, .22, 0, .06, 'triangle']], noise: [.18, .04, 1500], minGap: 70 },
+        assaultHurt: { tones: [[170, 50, .3, 0, .08, 'sawtooth']], noise: [.24, .045, 850], minGap: 150 },
+        assaultPickup: { tones: [[523, 784, .10, 0, .065, 'square'], [784, 1047, .13, .10, .065, 'triangle']] },
+        assaultBomb: { tones: [[95, 38, .6, 0, .09, 'triangle'], [220, 880, .28, .06, .04, 'square']], noise: [.5, .06, 1100], minGap: 450 },
+        assaultPart: { tones: [[190, 60, .36, 0, .07, 'triangle']], noise: [.28, .05, 1900], minGap: 110 },
+        assaultBossDown: { tones: [[145, 36, .7, 0, .08, 'triangle'], [523, 1047, .3, .35, .05, 'square']], noise: [.65, .06, 1100], minGap: 450 },
         defenseStart: { tones: [[220, 440, .22, 0, .12, 'triangle', .06]] },
         defenseLaunch: { tones: [[300, 760, .17, 0, .11, 'triangle', .045]], noise: [.08, .04, 2300] },
         defenseBlast: { tones: [[170, 60, .34, 0, .1, 'triangle', .08]], noise: [.28, .08, 1700], minGap: 65 },

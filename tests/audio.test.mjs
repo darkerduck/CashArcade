@@ -67,6 +67,16 @@ test('rapid collision sounds are throttled while other effects still play', () =
     assert.equal(h.calls.filter(([name]) => name === 'toneStart').length, 2);
 });
 
+test('all assault combat effects synthesize finite voices, with rapid gunfire throttled', () => {
+    for (const name of ['assaultStart','assaultShot','assaultLaser','assaultExplosion','assaultHurt','assaultPickup','assaultBomb','assaultPart','assaultBossDown']) {
+        const h = setup(), sound = h.create(); sound.play(name);
+        assert.ok(h.calls.some(c => c[0] === 'toneStart'), name);
+        assert.ok(h.calls.every(([, value]) => typeof value !== 'number' || Number.isFinite(value)));
+    }
+    const h = setup(), sound = h.create(); sound.play('assaultShot'); sound.play('assaultShot');
+    assert.equal(h.calls.filter(c => c[0] === 'toneStart').length, 1);
+});
+
 test('opt-in music bus is lazy, reusable when SFX are muted and keeps unity gain below its safety knee',()=>{
     const h=setup(),s=h.create('mix',{musicMix:true}); assert.equal(h.calls.length,0);
     s.toggleMuted(); const bus=s.musicOutput(); assert.ok(bus.context); assert.notEqual(bus.destination,bus.context.destination);

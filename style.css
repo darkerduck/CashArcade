@@ -73,6 +73,7 @@ h1 span { color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--
 .tags span { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: .62rem; }
 .play-link { justify-content: space-between; margin-top: 25px; padding: 13px 15px; border: 1px solid currentColor; border-radius: 10px; color: var(--green); text-decoration: none; font-size: .78rem; font-weight: 900; }
 .breakout-card .play-link { color: var(--cyan); }
+.assault-card .play-link { color: var(--violet); }
 .flappy-card .play-link { color: var(--green); }
 .play-link span { font-size: 1.25rem; transition: transform 130ms ease; }
 footer { justify-content: space-between; gap: 16px; padding: 28px 4px 0; color: var(--muted); font-size: .63rem; letter-spacing: .08em; }

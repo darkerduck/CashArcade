@@ -1,0 +1,54 @@
+:root { color-scheme: dark; --bg:#070d18; --surface:#0d1728; --raised:#121f34; --ink:#eef6ff; --muted:#8fa6bd; --line:#263a53; --cyan:#5ceaff; --violet:#b68cff; --gold:#ffd46c; --danger:#ff758c; --button-ink:#071726; --shadow:0 25px 70px #0005; }
+:root[data-theme="light"] { color-scheme:light; --bg:#edf3f8; --surface:#fbfdff; --raised:#e7eff7; --ink:#102033; --muted:#5c7187; --line:#b8c9da; --cyan:#007f9d; --violet:#743fd0; --gold:#996400; --danger:#c92e49; --button-ink:#fff; --shadow:0 24px 70px #203b591a; }
+* { box-sizing:border-box; }
+html { min-width:320px; background:var(--bg); }
+body { margin:0; color:var(--ink); background:radial-gradient(ellipse at 12% 0%,color-mix(in srgb,var(--cyan) 9%,transparent),transparent 40rem),radial-gradient(ellipse at 100% 55%,color-mix(in srgb,var(--violet) 8%,transparent),transparent 35rem),var(--bg); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; }
+button,a,input { -webkit-tap-highlight-color:transparent; }
+button { min-height:42px; padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--raised); color:var(--ink); font:inherit; font-size:.75rem; cursor:pointer; }
+button:disabled { opacity:.4; cursor:default; }
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
+[hidden] { display:none !important; }
+.shell { width:min(100% - 40px,1000px); margin:0 auto; padding:22px 0 28px; }
+.site-header,.brand,.heading,.header-controls,.mission-title,.music-top,footer { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.brand { justify-content:flex-start; color:inherit; text-decoration:none; }
+.brand strong,.brand small { display:block; }
+.brand strong { letter-spacing:.06em; }.brand small { margin-top:4px; font-size:.6rem; color:var(--muted); letter-spacing:.14em; }
+.icon-button { width:42px; border-radius:50%; font-size:1.1rem; }
+.heading { margin:28px 0 20px; }
+.eyebrow { margin:0 0 9px; color:var(--cyan); font-size:.62rem; font-weight:700; letter-spacing:.16em; }
+h1 { margin:0; font-size:clamp(1.7rem,4vw,2.45rem); letter-spacing:-.06em; }
+h1 span { display:inline-block; margin-left:10px; color:var(--muted); font-size:.62rem; letter-spacing:.14em; vertical-align:middle; }
+.online { color:var(--muted); font-size:.6rem; letter-spacing:.07em; }.online i { display:inline-block; width:6px; height:6px; margin-right:7px; border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan); }
+.layout { display:grid; grid-template-columns:minmax(0,570px) minmax(0,1fr); gap:26px; align-items:start; }
+.machine { overflow:hidden; border:1px solid var(--line); border-radius:17px; background:var(--surface); box-shadow:var(--shadow); }
+.hud { display:grid; grid-template-columns:1fr 1fr 1fr; padding:14px 0; }
+.hud>div { padding:0 12px; }.hud>div+div { border-left:1px solid var(--line); }
+.hud small { display:block; color:var(--muted); font-size:.55rem; letter-spacing:.06em; }
+.hud strong { display:block; margin-top:5px; font-size:1.1rem; font-variant-numeric:tabular-nums; letter-spacing:.04em; }
+#score { color:var(--cyan); }#health { color:var(--cyan); letter-spacing:0; font-size:1rem; }
+.arena { position:relative; width:min(100%,calc((100svh - 268px)*.692308)); min-width:min(100%,280px); margin:0 auto; aspect-ratio:9/13; border-block:1px solid var(--line); overflow:hidden; background:#070c1c; }
+#game-canvas { display:block; width:100%; height:100%; touch-action:none; cursor:crosshair; outline-offset:-3px; }
+.overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 40%,transparent),color-mix(in srgb,var(--bg) 92%,transparent)); }
+.overlay .eyebrow { font-size:.55rem; }.overlay h2 { margin:16px 0 0; font-size:clamp(1.1rem,2.4vw,1.6rem); letter-spacing:-.03em; }
+.overlay p:not(.eyebrow) { max-width:29ch; margin:14px 0 22px; color:var(--muted); font: .86rem/1.8 system-ui,sans-serif; }
+.flight-emblem { width:95px; height:100px; filter:drop-shadow(0 0 15px color-mix(in srgb,var(--cyan) 40%,transparent)); }.flight-emblem svg { width:100%; height:100%; fill:var(--raised); stroke:var(--cyan); stroke-width:1.4; }.flight-emblem path+path { fill:var(--violet); stroke:var(--violet); }
+.primary { min-width:190px; padding:14px 21px; border-color:var(--cyan); color:var(--button-ink); background:var(--cyan); font-size:.9rem; font-weight:800; }.primary span { margin-left:26px; }
+.overlay-hint { margin-top:20px; font-size:.56rem; color:var(--muted); line-height:1.7; }
+.combat-bar { display:flex; align-items:center; gap:8px; padding:9px 12px; font-size:.67rem; color:var(--cyan); border-bottom:1px solid var(--line); }.combat-bar b { color:var(--ink); }.combat-bar>span:nth-child(2) { margin-left:auto; color:var(--muted); font-size:.6rem; }.combat-bar button { margin-left:auto; border-color:color-mix(in srgb,var(--gold) 40%,var(--line)); color:var(--gold); min-height:42px; }
+.actions { display:flex; gap:7px; padding:10px; }.actions button { flex:1; min-width:0; font-size:.67rem; padding-inline:5px; }
+.flight-deck { display:grid; gap:22px; }.flight-deck h2 { margin:0; font-size:1.1rem; letter-spacing:-.035em; }
+.mission-panel { padding:20px; border:1px solid var(--line); border-radius:13px; background:var(--surface); }.mission-title>span { color:var(--cyan); font-size:.8rem; }.mission-panel #status { color:var(--muted); font-size:.7rem; margin:12px 0; }
+.progress { height:3px; overflow:hidden; background:var(--line); }.progress span { display:block; height:100%; width:0; background:var(--cyan); }
+.route { margin:18px 0 0; padding:0; list-style:none; }.route li { display:flex; align-items:center; gap:16px; padding:12px 0; color:var(--muted); font-size:.77rem; }.route li+li { border-top:1px solid var(--line); }.route li>span { font-size:.65rem; }.route li b { margin-left:auto; font-size:1rem; font-weight:400; }.route small { display:block; margin-top:5px; font-size:.5rem; letter-spacing:.09em; }.route .current { color:var(--cyan); }.route .complete { color:var(--violet); }
+.armory { padding-inline:2px; }.armory h2 { margin-bottom:17px; }.equipment { display:flex; gap:13px; align-items:center; margin-top:13px; }.equipment b { font-size:.77rem; }.equipment p { margin:5px 0 0; color:var(--muted); font:.75rem/1.5 system-ui,sans-serif; }
+.item-badge { display:grid; place-items:center; width:34px; height:34px; flex-shrink:0; border:1px solid var(--cyan); border-radius:8px; color:var(--cyan); background:color-mix(in srgb,var(--cyan) 6%,transparent); }.item-badge.violet { border-color:var(--violet); color:var(--violet); }
+.armory-note { color:var(--muted); font:.72rem/1.7 system-ui,sans-serif; margin:16px 0 0; }
+.music-panel { padding:17px; border:1px solid var(--line); border-radius:13px; background:var(--surface); }.music-top { flex-wrap:wrap; gap:6px; }.music-top .eyebrow { margin:0; font-size:.51rem; color:var(--violet); }.music-top button { font-size:.63rem; min-height:35px; padding:5px 8px; }.music-panel>p { color:var(--muted); font-size:.68rem; line-height:1.6; }.music-panel label { display:flex; justify-content:space-between; font-size:.64rem; color:var(--muted); }.music-panel input { width:100%; height:30px; margin:2px 0 7px; accent-color:var(--violet); }.sound-preview { width:100%; font-size:.65rem; }
+.guide { border-top:1px solid var(--line); padding-top:16px; }.guide summary { cursor:pointer; list-style:none; font-size:.73rem; }.guide summary span { float:right; color:var(--cyan); }.guide p { color:var(--muted); font:.76rem/1.9 system-ui,sans-serif; }kbd { padding:2px 4px; border:1px solid var(--line); border-radius:3px; color:var(--ink); font-size:.67rem; }
+.notice { color:var(--gold); font:.75rem/1.6 system-ui,sans-serif; }.notice:empty { display:none; }footer { padding-top:27px; color:var(--muted); font-size:.56rem; letter-spacing:.08em; }footer a { color:var(--cyan); text-decoration:none; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.fullscreen-bar { display:none; }.arena:fullscreen { min-width:0; width:100vw; height:100dvh; max-height:none; display:flex; justify-content:center; border:0; }.arena:fullscreen canvas { width:auto; max-width:100%; height:100%; object-fit:contain; }.arena:fullscreen .overlay { margin:auto; width:min(100%,69.23dvh); }.arena:fullscreen .fullscreen-bar { position:absolute; bottom:7px; display:flex; gap:6px; opacity:.8; }.fullscreen-bar button { font-size:.65rem; background:#101e35; color:#eefbff; }
+@media (hover:hover) { button:not(:disabled):hover { border-color:var(--cyan); filter:brightness(1.12); } }
+@media (max-width:760px) { .shell { width:min(100% - 22px,540px); padding-top:12px; }.layout { grid-template-columns:1fr; gap:22px; }.heading { margin:18px 0 14px; }.heading h1 span { display:block; margin:6px 0 0; font-size:.53rem; }.online { display:none; }.flight-deck { grid-template-columns:1fr 1fr; gap:18px; }.mission-panel { grid-column:1/-1; }.route { display:flex; gap:15px; }.route li { flex:1; gap:8px; }.route li+li { border-top:0; }.route li b { display:none; }.route small { font-size:.43rem; }.armory,.music-panel,.guide { grid-column:1/-1; }.arena { width:min(100%,calc((100svh - 250px)*.692308)); }.brand small { font-size:.5rem; }.hud { padding:10px 0; }.hud strong { font-size:1rem; }.flight-emblem { width:66px; height:70px; }.overlay { padding:18px; }.overlay h2 { margin-top:10px; font-size:1.2rem; }.overlay p:not(.eyebrow) { font-size:.76rem; margin:10px 0 16px; }.overlay-hint { margin-top:14px; font-size:.5rem; }footer span { display:none; } }
+@media (max-width:370px) { .brand small { display:none; }.hud>div { padding-inline:8px; }.hud small { font-size:.48rem; }.combat-bar { padding-inline:8px; font-size:.6rem; }.combat-bar>span:nth-child(2) { font-size:.5rem; }.combat-bar button { padding-inline:7px; font-size:.65rem; }.route li { font-size:.65rem; }.route { gap:7px; } }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; }.flight-emblem { filter:none; } }

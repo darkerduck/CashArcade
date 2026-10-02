@@ -8,6 +8,7 @@ const pages = [
     ['snake', '../snake/game.js', 'applyStoredTheme'],
     ['breakout', '../breakout/game.js', 'applyTheme'],
     ['flappy', '../flappy/game.js', 'applyTheme'],
+    ['assault', '../assault/game.js', 'applyTheme'],
 ];
 
 function selectedTheme(path, initializer, storedTheme, storageFails = false) {

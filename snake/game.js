@@ -2,7 +2,7 @@ import { SnakeGame, LEVELS, POWERS } from './engine.mjs?v=3';
 import { Campaign, CampaignStore, BEST_KEY, SAVE_KEY } from './storage.mjs?v=3';
 import { ReplayGate, sdkFactory } from './payment.mjs';
 import { playEvents } from './audio-events.mjs';
-import { Tutorial, LESSONS, shouldOfferTutorial, canEnterTutorial } from './tutorial.mjs?v=2';
+import { Tutorial, LESSONS, shouldOfferTutorial, canEnterTutorial } from './tutorial.mjs?v=3';
 
 const $ = id => document.getElementById(id);
 const canvas = $('game-canvas'), overlay = $('game-overlay');
@@ -43,7 +43,7 @@ function showState() {
             message('TRAINING / TACTICAL VIEW', lesson.name, tutorial.waiting ? lesson.detail : tutorial.observed ? '已改變鏡頭。按繼續復原標準視角，再前往出口。' : '拖曳或縮放鏡頭，或按下方「旋轉視角」；實際觀察後才能繼續。', tutorial.waiting ? '開始觀察' : '繼續教學', { survey: !tutorial.waiting, disabled: !tutorial.waiting && !tutorial.observed });
         } else if (tutorial.waiting && !tutorial.completed) message(`TRAINING ${tutorial.lesson + 1} / ${LESSONS.length}`, lesson.name, lesson.detail, lesson.kind === 'reverse' ? '請按 Q／降，試試反向' : `開始練習 · ${lesson.direction === 'rise' ? 'E／升' : lesson.direction === 'dive' ? 'Q／降' : ({ right: 'D／→', left: 'A／←', forward: 'W／↑', back: 'S／↓' })[lesson.direction]}`, { disabled: lesson.kind === 'reverse' });
         else if (game.state === 'paused') message('TRAINING / FREE PRACTICE', '暫停 · 自由觀察', '繼續時恢復標準視角；練習與重試皆免費。', '繼續練習', { survey: true });
-        else if (game.state === 'ready') message('TRAINING COMPLETE', '教學完成 · 自由練習', '全部目標已完成。可繼續慢速練習，或自行進入戰役；本頁不會自動開始正式第一關。', '開始自由練習');
+        else if (game.state === 'ready') message('TRAINING COMPLETE', '教學完成 · 自由練習', '按合法方向、WASD、E／Q 或 Space，倒數一秒後開始。立即反向仍不可用；不會自動進入正式戰役。', '開始自由練習');
         else overlay.hidden = true;
         return;
     }
@@ -189,7 +189,7 @@ function input(direction) {
         const reverse = tutorial.current.kind === 'reverse';
         if (!tutorial.input(direction)) return;
         if (reverse) { save(); showState(); controls(); updateHUD(); }
-        else if (tutorial.waiting) requestTutorial();
+        else if (tutorial.waiting || tutorial.completed && game.state === 'ready') requestTutorial();
         else save();
         return;
     }
@@ -245,7 +245,7 @@ function updateHUD() {
     const stateText = { ready: '準備部署', running: '遊戲中', paused: '暫停觀察', failed: '本局結束', 'level-clear': '關卡完成', won: '戰役完成' };
     $('status-text').textContent = unavailable ? '場景中斷' : inTutorial ? tutorial.completed ? '免費自由練習' : '免費教學' : campaign?.record.replay === 'pending' ? '等待解鎖' : storageError ? '等待存檔' : stateText[game.state];
     $('view-mode').textContent = game.state === 'paused' && !countdown ? '自由觀察' : '固定視角'; drawMap();
-    document.querySelector('.control-note').innerHTML = `Space / P 暫停 · R ${inTutorial ? '免費' : '付費'}重試<br>暫停時拖曳旋轉、滾輪縮放`;
+    document.querySelector('.control-note').innerHTML = `${inTutorial && tutorial.completed ? '方向／E／Q／Space 開始練習<br>' : ''}Space / P / Esc 暫停或繼續 · R ${inTutorial ? '免費' : '付費'}重試<br>暫停時拖曳旋轉、滾輪縮放`;
     document.querySelectorAll('[data-direction]').forEach(b => { const highlighted = inTutorial && !tutorial.completed && b.dataset.direction === tutorial.current.direction; b.classList.toggle('tutorial-target', highlighted); b.setAttribute('aria-describedby', highlighted ? 'tutorial-instructions' : 'mission-hint'); });
     navigationPanel.classList.toggle('tutorial-focus', inTutorial && !!tutorial.current.focus);
     if (inTutorial) {
@@ -307,15 +307,33 @@ $('fullscreen-button').addEventListener('click', async () => {
     try { if (document.fullscreenElement) await document.exitFullscreen(); else if ($('game-card').requestFullscreen) await $('game-card').requestFullscreen(); else $('storage-note').textContent = '此瀏覽器不支援全螢幕；仍可使用目前的響應式版面。'; } catch { $('storage-note').textContent = '瀏覽器未允許全螢幕，遊戲仍可正常操作。'; }
 });
 const keyDirections = { ArrowUp: 'forward', w: 'forward', ArrowDown: 'back', s: 'back', ArrowLeft: 'left', a: 'left', ArrowRight: 'right', d: 'right', e: 'rise', q: 'dive' };
+let rangePointer = null;
+for (const id of ['tutorial-speed', 'music-volume']) {
+    const range = $(id);
+    range.addEventListener('pointerdown', event => { rangePointer = { range, id: event.pointerId, previousFocus: document.activeElement }; });
+}
+function returnRangeFocus(event) {
+    if (!rangePointer || event.pointerId !== rangePointer.id) return;
+    const { range, previousFocus } = rangePointer; rangePointer = null;
+    // Touch browsers may not focus range inputs; still return focus, unless the user tabbed elsewhere.
+    if (document.activeElement === range || document.activeElement === previousFocus) canvas.focus({ preventScroll: true });
+}
+window.addEventListener('pointerup', returnRangeFocus, { capture: true });
+window.addEventListener('pointercancel', returnRangeFocus, { capture: true });
 window.addEventListener('keydown', event => {
-    if (event.target?.closest?.('input,textarea,select,[contenteditable="true"]') || ['music-toggle', 'sound-toggle', 'theme-toggle'].includes(event.target?.id)) return;
-    // Let focused tutorial/action buttons keep native Space activation (one click).
-    if (event.key === ' ' && ['start-button', 'tutorial-button', 'tutorial-return', 'tutorial-restart', 'tutorial-rotate'].includes(event.target?.id)) return;
+    if (event.ctrlKey || event.altKey || event.metaKey) return;
+    const range = event.target?.closest?.('input[type="range"]');
+    if (!range && event.target?.closest?.('input,textarea,select,[contenteditable="true"]')) return;
+    // Native slider navigation stays available; letter shortcuts still control the game.
+    if (range && (event.key.startsWith('Arrow') || ['Home', 'End', 'Tab'].includes(event.key))) return;
+    // Space/Enter on buttons remain native: one key produces exactly one click.
+    if (event.key === ' ' && event.target?.closest?.('button,a[href],[role="button"]')) return;
     const k = event.key.length === 1 ? event.key.toLowerCase() : event.key;
     if (keyDirections[k] || [' ', 'p', 'Escape', 'r'].includes(k)) event.preventDefault(); else return;
     if (event.repeat) return;
     if (keyDirections[k]) input(keyDirections[k]);
     else if (k === 'r') requestRound('retry');
+    else if (k === ' ' && inTutorial && tutorial.completed && game.state === 'ready') requestTutorial();
     else if (game.state === 'running' || countdown || inTutorial && tutorial.current.kind === 'observe' && tutorial.waiting) pause();
     else if (game.state === 'paused') requestRound('continue');
 });

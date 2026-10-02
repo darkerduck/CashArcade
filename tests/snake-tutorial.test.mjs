@@ -159,3 +159,12 @@ test('all tutorial routes work at half/full/double speeds and preferences surviv
     const offline = new Tutorial(); assert.equal(offline.setSpeed(1.75), true);
     offline.retry(); assert.equal(offline.game.tutorialSpeed, 1.75); assert.equal(offline.persistent, false);
 });
+
+test('completed practice accepts ready-direction input but not reversal, paused input or unknown controls', () => {
+    const t = new Tutorial(); while (!t.completed) playLesson(t);
+    assert.equal(t.game.state, 'ready'); assert.equal(t.input('unknown'), false); assert.equal(t.input('left'), false);
+    assert.equal(t.input('right'), true); assert.equal(t.game.state, 'ready'); assert.equal(t.game.queue.length, 0);
+    assert.equal(t.input('rise'), true); assert.equal(t.begin(), true); t.advance(800);
+    assert.equal(t.game.snake[0].y, 1); t.pause();
+    const before = t.game.snapshot(); assert.equal(t.input('back'), false); assert.deepEqual(t.game.snapshot(), before);
+});

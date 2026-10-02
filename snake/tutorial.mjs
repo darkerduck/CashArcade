@@ -45,7 +45,7 @@ export class Tutorial {
             if (!local) this.persistent = false;
         } catch { this.persistent = false; }
     }
-    get current() { return LESSONS[this.lesson] || { name: '自由練習', detail: '慢速練習六方向。死亡、R 與重試皆免費；可隨時進入或返回正式戰役。' }; }
+    get current() { return LESSONS[this.lesson] || { name: '自由練習', detail: '按合法方向、E／Q 或 Space 開始練習。暫停後用 Space／P／Esc 繼續；死亡、R 與重試皆免費。' }; }
     setSpeed(multiplier) {
         if (!this.game.setTutorialSpeed(multiplier)) return false;
         this.entry.tutorialSpeed = multiplier; this.revision++; this.save(); return true;
@@ -80,6 +80,7 @@ export class Tutorial {
     }
     input(direction) {
         if (this.game.state === 'failed') return false;
+        if (this.completed && this.game.state === 'ready') return equal(DIRECTIONS[direction], this.game.direction) || this.game.input(direction);
         if (this.waiting && !this.completed) {
             if (direction !== this.current.direction) return false;
             if (this.current.kind === 'reverse') {

@@ -11,7 +11,7 @@
     <link rel="icon" href="../assets/brand/favicon-32.png?v=1" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="../assets/brand/apple-touch-icon.png?v=1" sizes="180x180">
     <link rel="manifest" href="../site.webmanifest?v=1">
-    <link rel="stylesheet" href="./style.css?v=5">
+    <link rel="stylesheet" href="./style.css?v=6">
     <link rel="stylesheet" href="../music.css?v=1">
     <link rel="stylesheet" href="../brand.css?v=1">
     <script type="importmap">{"imports":{"three":"../vendor/three-r186/build/three.module.js","three/addons/":"../vendor/three-r186/examples/jsm/"}}</script>
@@ -42,12 +42,12 @@
                     <section class="tutorial-panel" id="tutorial-panel" hidden aria-label="免費教學指引">
                         <p class="eyebrow">SECTOR 00 / ALWAYS FREE</p><h2 id="tutorial-heading">光域訓練</h2>
                         <p id="tutorial-instructions" aria-live="polite">可跳過、可反覆練習；死亡與 R 不收費。</p>
-                        <div class="tutorial-speed"><label for="tutorial-speed">練習速度 <output id="tutorial-speed-value" for="tutorial-speed">0.5×</output></label><input id="tutorial-speed" type="range" min="0.5" max="2" step="0.25" value="0.5" aria-describedby="tutorial-speed-help tutorial-speed-detail"><small id="tutorial-speed-detail">每格 800ms · 1.25 格／秒</small><small id="tutorial-speed-help">預設半速，可加快至 2×；只影響第 0 關。</small></div>
+                        <div class="tutorial-speed"><label for="tutorial-speed">練習速度 <output id="tutorial-speed-value" for="tutorial-speed">0.5×</output></label><input id="tutorial-speed" type="range" min="0.5" max="2" step="0.25" value="0.5" aria-describedby="tutorial-speed-help tutorial-speed-detail"><small id="tutorial-speed-detail">每格 800ms · 1.25 格／秒</small><small id="tutorial-speed-help">預設半速，可加快至 2×；只影響第 0 關。滑桿可用方向鍵／Home／End 調整，Tab 離開；WASD／E／Q 仍可操作遊戲。</small></div>
                         <div class="tutorial-actions"><button class="secondary-button" id="tutorial-return" type="button">跳過教學／進入戰役</button><button class="text-button" id="tutorial-restart" type="button">重跑教學</button><button class="secondary-button" id="tutorial-rotate" type="button" hidden>旋轉視角 ↻</button></div>
                     </section>
                     <div class="arena-caption"><span id="sector-label">CHAPTER 01 · 立方覺醒</span><span id="clock-label">00:00</span></div>
                     <div class="canvas-frame" id="canvas-frame">
-                        <canvas id="game-canvas" width="900" height="760" aria-label="三維貪吃蛇戰場：WASD 或方向鍵水平移動，E 上升，Q 下降"></canvas>
+                        <canvas id="game-canvas" width="900" height="760" tabindex="0" aria-label="三維貪吃蛇戰場：WASD 或方向鍵水平移動，E 上升，Q 下降"></canvas>
                         <span class="view-label">ISOMETRIC / <span id="view-mode">固定視角</span></span>
                         <div class="game-overlay" id="game-overlay">
                             <p class="overlay-kicker" id="overlay-kicker">INITIALIZING</p><h2 id="overlay-title">正在建立霓虹世界</h2>
@@ -71,7 +71,7 @@
             </div>
             <div class="item-guide"><span><i class="food-mark"></i>能量 +1 節／10 分</span><span><i class="dessert-mark"></i>甜點 +2 節／20 分</span><span><i class="bomb-mark"></i>炸彈每 30 秒換位</span><strong id="dessert-status">本關沒有甜點</strong></div>
             <details class="power-guide"><summary>五種道具 · 十二關戰役說明</summary><div id="power-guide-list"></div><p>集滿能量後進入綠色出口。每關重新部署四節蛇身；牆壁、自身、炸彈及啟動中的雷射具有碰撞。關卡進度自動保存；重載恢復同一局，不會重置本關。重試會還原本關起點分數。</p></details>
-            <div class="music-panel" aria-label="背景音樂控制"><button class="music-toggle" id="music-toggle" type="button" aria-label="關閉背景音樂" aria-pressed="true">♫ 音樂：開</button><div class="music-info"><small>ORIGINAL CHIPTUNE / 四階段編曲</small><span id="music-track">翠光迴路 · 待命</span></div><label class="music-volume" for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output><input id="music-volume" type="range" min="0" max="100" step="5" value="65"></label><p>沿用原創配樂與音效音量；每三關提升編曲強度，取食時配樂降低音量。</p></div>
+            <div class="music-panel" aria-label="背景音樂控制"><button class="music-toggle" id="music-toggle" type="button" aria-label="關閉背景音樂" aria-pressed="true">♫ 音樂：開</button><div class="music-info"><small>ORIGINAL CHIPTUNE / 四階段編曲</small><span id="music-track">翠光迴路 · 待命</span></div><label class="music-volume" for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output><input id="music-volume" type="range" min="0" max="100" step="5" value="65" aria-describedby="music-keyboard-help"></label><p id="music-keyboard-help">滑桿可用方向鍵／Home／End 調整，Tab 離開；WASD 與遊戲快捷鍵仍有效。每三關提升編曲強度，取食時配樂降低音量。</p></div>
             <div class="payment-panel"><p id="payment-note">第 0 關教學與重試永久免費。首個正式戰役免費；之後重試、R 或新戰役需以 CashLink 解鎖「再來一局」。過關、暫停與恢復同一局免費。</p><a id="payment-fallback" class="payment-link" href="#" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" hidden>開啟 CashLink 完整付款頁 ↗</a><button class="text-button" id="cancel-payment" type="button" hidden>取消等待</button></div>
             <p class="storage-note" id="storage-note">自動保存於此瀏覽器 · 舊版最高分保留，不混入 3D 戰役</p><p class="sr-only" id="live-region" aria-live="polite"></p>
             <noscript>這款 Three.js 遊戲需要啟用 JavaScript 與 WebGL2。尚未開始遊戲或付款。</noscript>
@@ -79,6 +79,6 @@
         <footer><span>12 SECTORS · SIX AXES · NO TRACKING</span><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
     </main>
     <script src="../audio.js?v=8" defer></script><script src="../music.js?v=1" defer></script><script src="../music-scores.js?v=1" defer></script>
-    <script type="module" src="./game.js?v=8"></script>
+    <script type="module" src="./game.js?v=9"></script>
 </body>
 </html>

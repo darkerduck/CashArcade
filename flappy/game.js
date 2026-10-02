@@ -17,7 +17,7 @@
     const STORAGE_KEY = 'casharcade-flappy-high-score';
 
     const canvas = document.querySelector('#game-canvas');
-    const context = canvas.getContext('2d');
+    const renderer = new NeonFlightRenderer(canvas, document.querySelector('#bird-preview'));
     const overlay = document.querySelector('#game-overlay');
     const overlayKicker = document.querySelector('#overlay-kicker');
     const overlayTitle = document.querySelector('#overlay-title');
@@ -64,6 +64,7 @@
     }
 
     function resetGame() {
+        renderer.reset();
         music.pause();
         cancelAnimationFrame(animationFrame);
         player = { y: HEIGHT / 2, velocity: 0, rotation: 0 };
@@ -88,6 +89,7 @@
         if (gameState === 'over') resetGame();
 
         sound.play('flap');
+        renderer.flap(player.y);
         music.start(1);
         player.velocity = FLAP_VELOCITY;
         gameState = 'running';
@@ -110,6 +112,7 @@
         music.wake();
         player.velocity = FLAP_VELOCITY;
         sound.play('flap');
+        renderer.flap(player.y);
     }
 
     function togglePause(automatic = false) {
@@ -119,9 +122,10 @@
             cancelAnimationFrame(animationFrame);
             gameState = 'paused';
             pauseButton.textContent = '繼續';
-            showOverlay(automatic ? 'FOCUS LOST' : 'PAUSED', automatic ? '已自動暫停' : '飛行暫停', automatic ? '回到頁面後再繼續，飛行器不會在背景墜落。' : '航線已凍結，準備好再繼續。', '繼續飛行');
+            showOverlay(automatic ? 'FOCUS LOST' : 'PAUSED', automatic ? '已自動暫停' : '飛行暫停', automatic ? '回到頁面後再繼續，小鳥不會在背景墜落。' : '航線已凍結，準備好再繼續。', '繼續飛行');
             updateStatus('已暫停');
             liveRegion.textContent = automatic ? '視窗失焦，遊戲已自動暫停' : '遊戲已暫停';
+            draw();
             return;
         }
 
@@ -150,6 +154,7 @@
     }
 
     function update(delta) {
+        renderer.advance(delta);
         worldTime += delta;
         player.velocity += GRAVITY * delta;
         player.y += player.velocity * delta;
@@ -166,6 +171,7 @@
                 gate.scored = true;
                 score += 1;
                 sound.play('pass');
+                renderer.pass(gate.x + GATE_WIDTH / 2, (gate.gapTop + gate.gapBottom) / 2);
                 music.duck(); music.phase(Math.floor(score / 10));
                 if (score % 5 === 0) sound.play('speed');
                 highScore = Math.max(highScore, score);
@@ -217,6 +223,7 @@
         music.pause();
         cancelAnimationFrame(animationFrame);
         sound.play('lose');
+        renderer.lose(player.y);
         gameState = 'over';
         pauseButton.disabled = true;
         showOverlay('FLIGHT ENDED', `本局穿越 ${score} 道閘門`, `最高紀錄 ${highScore} 分。再試一次，飛得更遠。`, '再飛一次');
@@ -225,134 +232,8 @@
     }
 
     function draw() {
-        const styles = getComputedStyle(document.documentElement);
-        const background = styles.getPropertyValue('--bg').trim();
-        const grid = styles.getPropertyValue('--grid').trim();
-        const accent = styles.getPropertyValue('--accent').trim();
-        const accentStrong = styles.getPropertyValue('--accent-strong').trim();
-        const cyan = styles.getPropertyValue('--cyan').trim();
-        const violet = styles.getPropertyValue('--violet').trim();
-        const gold = styles.getPropertyValue('--gold').trim();
-        const line = styles.getPropertyValue('--line').trim();
-
-        context.fillStyle = background;
-        context.fillRect(0, 0, WIDTH, HEIGHT);
-        drawGrid(grid);
-        drawStars(cyan, violet);
-        gates.forEach((gate) => drawGate(gate, accent, accentStrong, line));
-        drawGround(accent, line);
-        drawPlayer(cyan, violet, gold);
-    }
-
-    function drawGrid(color) {
-        context.save();
-        context.strokeStyle = color;
-        context.lineWidth = 1;
-        const offset = (worldTime * gateSpeed * .16) % 28;
-        for (let x = -offset; x < WIDTH; x += 28) {
-            context.beginPath(); context.moveTo(x, 0); context.lineTo(x, GROUND_Y); context.stroke();
-        }
-        for (let y = 28; y < GROUND_Y; y += 28) {
-            context.beginPath(); context.moveTo(0, y); context.lineTo(WIDTH, y); context.stroke();
-        }
-        context.restore();
-    }
-
-    function drawStars(cyan, violet) {
-        context.save();
-        for (let index = 0; index < 24; index += 1) {
-            const speed = 10 + (index % 4) * 7;
-            const x = ((index * 97 - worldTime * speed) % (WIDTH + 40) + WIDTH + 40) % (WIDTH + 40) - 20;
-            const y = 28 + (index * 71) % 430;
-            context.fillStyle = index % 3 === 0 ? violet : cyan;
-            context.globalAlpha = .18 + (index % 4) * .08;
-            context.fillRect(x, y, index % 5 === 0 ? 3 : 2, 2);
-        }
-        context.restore();
-    }
-
-    function drawGate(gate, accent, accentStrong, line) {
-        context.save();
-        context.fillStyle = accentStrong;
-        context.shadowColor = accent;
-        context.shadowBlur = 15;
-        roundedRect(gate.x, -12, GATE_WIDTH, gate.gapTop + 12, 9);
-        context.fill();
-        roundedRect(gate.x, gate.gapBottom, GATE_WIDTH, GROUND_Y - gate.gapBottom + 12, 9);
-        context.fill();
-
-        context.shadowBlur = 0;
-        context.fillStyle = accent;
-        roundedRect(gate.x - 8, gate.gapTop - 20, GATE_WIDTH + 16, 20, 6);
-        context.fill();
-        roundedRect(gate.x - 8, gate.gapBottom, GATE_WIDTH + 16, 20, 6);
-        context.fill();
-
-        context.strokeStyle = line;
-        context.lineWidth = 2;
-        for (let y = 24; y < gate.gapTop - 24; y += 34) {
-            context.beginPath(); context.moveTo(gate.x + 12, y); context.lineTo(gate.x + GATE_WIDTH - 12, y); context.stroke();
-        }
-        for (let y = gate.gapBottom + 34; y < GROUND_Y; y += 34) {
-            context.beginPath(); context.moveTo(gate.x + 12, y); context.lineTo(gate.x + GATE_WIDTH - 12, y); context.stroke();
-        }
-        context.restore();
-    }
-
-    function drawGround(accent, line) {
-        context.save();
-        context.fillStyle = line;
-        context.fillRect(0, GROUND_Y, WIDTH, HEIGHT - GROUND_Y);
-        context.fillStyle = accent;
-        context.shadowColor = accent;
-        context.shadowBlur = 12;
-        context.fillRect(0, GROUND_Y, WIDTH, 3);
-        context.restore();
-    }
-
-    function drawPlayer(cyan, violet, gold) {
-        context.save();
-        context.translate(PLAYER_X, player.y);
-        context.rotate(player.rotation);
-        context.shadowColor = cyan;
-        context.shadowBlur = 17;
-
-        context.fillStyle = violet;
-        context.beginPath();
-        context.moveTo(-22, 2);
-        context.lineTo(-39, 13 + Math.sin(worldTime * 15) * 5);
-        context.lineTo(-11, 13);
-        context.closePath();
-        context.fill();
-
-        context.fillStyle = cyan;
-        context.beginPath();
-        context.ellipse(0, 0, 27, 17, 0, 0, Math.PI * 2);
-        context.fill();
-
-        context.fillStyle = gold;
-        context.beginPath();
-        context.moveTo(22, -7);
-        context.lineTo(37, 0);
-        context.lineTo(22, 7);
-        context.closePath();
-        context.fill();
-
-        context.shadowBlur = 0;
-        context.fillStyle = '#07131d';
-        context.beginPath();
-        context.arc(8, -5, 4, 0, Math.PI * 2);
-        context.fill();
-        context.fillStyle = '#ffffff';
-        context.beginPath();
-        context.arc(9, -6, 1.5, 0, Math.PI * 2);
-        context.fill();
-        context.restore();
-    }
-
-    function roundedRect(x, y, width, height, radius) {
-        context.beginPath();
-        context.roundRect(x, y, width, height, radius);
+        renderer.draw({ player, gates, time: worldTime, speed: gateSpeed, state: gameState,
+            light: document.documentElement.dataset.theme === 'light' });
     }
 
     function clamp(value, minimum, maximum) {
@@ -411,6 +292,7 @@
     window.addEventListener('blur', () => { if (gameState === 'running') togglePause(true); });
     document.addEventListener('visibilitychange', () => { if (document.hidden && gameState === 'running') togglePause(true); });
     window.addEventListener('pagehide', () => music.pause());
+    window.addEventListener('resize', draw);
 
     applyTheme();
     resetGame();

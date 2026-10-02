@@ -19,9 +19,15 @@ function game(name, inspectSource) {
     const elements = new Map();
     const sounds = [];
     const musicEvents = [];
+    const visualEvents = [];
     const source = readFileSync(new URL(`../${name}/game.js`, import.meta.url), 'utf8').replace(/\}\)\(\);\s*$/, `${inspectSource}\n})();`);
     const scope = {
         ...musicStub(musicEvents),
+        NeonFlightRenderer: class {
+            reset() { visualEvents.push(['reset']); } advance(delta) { visualEvents.push(['advance',delta]); }
+            flap(y) { visualEvents.push(['flap',y]); } pass(x,y) { visualEvents.push(['pass',x,y]); }
+            lose(y) { visualEvents.push(['lose',y]); } draw() {}
+        },
         localStorage: { getItem: () => null, setItem() {} },
         CashArcadeAudio: { create: () => ({ play: sound => sounds.push(sound), resume() {} }) },
         CashLinkArcade: { create: () => ({ on() {}, handshake: async () => ({ price_satoshis: 1000 }) }) },
@@ -37,7 +43,7 @@ function game(name, inspectSource) {
     scope.window = scope;
     const context = vm.createContext(scope);
     vm.runInContext(source, context);
-    return { sounds, musicEvents, inspect: context.inspect, click: selector => elements.get(selector).click() };
+    return { sounds, musicEvents, visualEvents, inspect: context.inspect, click: selector => elements.get(selector).click() };
 }
 
 test('snake sounds follow food, speed, wrap, pause and self-collision', () => {
@@ -92,4 +98,23 @@ test('flappy starts with one flap, rewards a gate once and stays silent on auto-
     h.inspect.flap();
     h.inspect.endGame();
     assert.deepEqual(h.sounds.slice(-3), ['resume', 'flap', 'lose']);
+    assert.equal(h.visualEvents.filter(e=>e[0]==='flap').length,2);
+    assert.equal(h.visualEvents.filter(e=>e[0]==='pass').length,1);
+    assert.equal(h.visualEvents.filter(e=>e[0]==='lose').length,1);
+});
+
+test('flappy artwork preserves gravity, flap strength, capped difficulty and the original 16px collision circle',()=>{
+    const h=game('flappy',`window.inspect={update,flap,hasCollision,updateDifficulty,
+        setPlayer:(y,velocity=0)=>{player.y=y;player.velocity=velocity;},setGates:value=>gates=value,
+        setScore:value=>score=value,state:()=>({y:player.y,velocity:player.velocity,speed:gateSpeed,gap:gateGap})};`);
+    h.click('#start-button');h.inspect.setGates([]);h.inspect.setPlayer(270);h.inspect.update(.01);
+    assert.equal(h.inspect.state().velocity,15);assert.equal(h.inspect.state().y,270.15);
+    h.inspect.flap();assert.equal(h.inspect.state().velocity,-460);
+    h.inspect.setScore(5);h.inspect.updateDifficulty();assert.equal(h.inspect.state().speed,202);assert.equal(h.inspect.state().gap,155);
+    h.inspect.setScore(100);h.inspect.updateDifficulty();assert.equal(h.inspect.state().speed,286);assert.equal(h.inspect.state().gap,125);
+    for(const y of [16,494]){h.inspect.setPlayer(y);assert.equal(h.inspect.hasCollision(),true);}
+    h.inspect.setPlayer(270);assert.equal(h.inspect.hasCollision(),false);
+    h.inspect.setPlayer(205);h.inspect.setGates([{x:184,gapTop:220,gapBottom:380,scored:false}]);assert.equal(h.inspect.hasCollision(),false);
+    h.inspect.setGates([{x:183,gapTop:220,gapBottom:380,scored:false}]);assert.equal(h.inspect.hasCollision(),true);
+    h.click('#restart-button');assert.equal(h.visualEvents.filter(e=>e[0]==='reset').length,2);
 });

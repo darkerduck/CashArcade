@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { musicStub } from './music-stub.mjs';
+import { SnakeGame } from '../snake/engine.mjs';
+import { playEvents } from '../snake/audio-events.mjs';
 
 function element() {
     const events = new Map();
@@ -46,24 +48,23 @@ function game(name, inspectSource) {
     return { sounds, musicEvents, visualEvents, inspect: context.inspect, click: selector => elements.get(selector).click() };
 }
 
-test('snake sounds follow food, speed, wrap, pause and self-collision', () => {
-    const h = game('snake', `window.inspect = {
-        tick,
-        setFood: (x, y) => { food = { x, y }; },
-        setFoodsEaten: value => { foodsEaten = value; },
-        setSnake: value => { snake = value; },
-        setHeading: value => { direction = value; queuedDirection = value; }
-    };`);
-    assert.deepEqual(h.sounds, []);
-    h.click('#start-button');
-    h.inspect.setFood(11, 10); h.inspect.tick();
-    h.inspect.setFoodsEaten(4); h.inspect.setFood(12, 10); h.inspect.tick();
-    h.inspect.setSnake([{ x: 19, y: 10 }, { x: 18, y: 10 }, { x: 17, y: 10 }]);
-    h.inspect.setFood(5, 5); h.inspect.setHeading({ x: 1, y: 0 }); h.inspect.tick();
-    h.click('#pause-button'); h.click('#pause-button');
-    h.inspect.setSnake([{ x: 2, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 3 }, { x: 2, y: 3 }]);
-    h.inspect.setHeading({ x: 1, y: 0 }); h.inspect.tick();
-    assert.deepEqual(h.sounds, ['start', 'food', 'food', 'speed', 'wrap', 'pause', 'resume', 'lose']);
+test('3D snake plays every food once, before exit cues, and restores silently', () => {
+    const game = new SnakeGame(), sounds = [], music = [];
+    const audio = { play: (name, delay = 0) => sounds.push([name, delay]) };
+    const soundtrack = { duck: () => music.push('duck'), pause: () => music.push('pause') };
+    playEvents(game.drain(), audio, soundtrack); assert.deepEqual(sounds, []);
+    game.start(); game.collected = 5; game.food = { x: 4, y: 0, z: 1 }; game.move();
+    playEvents(game.drain(), audio, soundtrack);
+    assert.deepEqual(sounds, [['food', 0], ['level', .28]]);
+    game.pause(); playEvents(game.drain(), audio, soundtrack);
+    playEvents(SnakeGame.restore(game.snapshot()).drain(), audio, soundtrack); assert.equal(sounds.length, 2);
+    game.start(); game.dessert = { x: 5, y: 0, z: 1 }; game.move(); playEvents(game.drain(), audio, soundtrack);
+    assert.equal(sounds.filter(s => s[0] === 'dessert').length, 1);
+    for (const kind of ['shield', 'slow', 'shrink', 'magnet', 'emp']) game.collectPower(kind, game.snake[0]);
+    playEvents(game.drain(), audio, soundtrack);
+    assert.deepEqual(sounds.slice(-5).map(s => s[0]), ['snakeShield', 'snakeSlow', 'snakeShrink', 'snakeMagnet', 'snakeEmp']);
+    game.effects.shield = false; game.bombs = [{ x: 6, y: 0, z: 1 }]; game.move(); playEvents(game.drain(), audio, soundtrack);
+    assert.equal(sounds.at(-1)[0], 'bomb'); assert.equal(music.at(-1), 'pause');
 });
 
 test('flappy score milestones intensify music; pause, collision and restart do not stack clocks',()=>{

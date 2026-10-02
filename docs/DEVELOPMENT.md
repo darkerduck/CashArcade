@@ -4,7 +4,7 @@
 
 ## 執行環境
 
-這是獨立的靜態網站，遊玩使用現代瀏覽器的 Canvas 2D、Pointer Events、Web Audio、Web Storage 與 `requestAnimationFrame`。沒有框架、套件管理、編譯、後端或環境變數。CashLink 只透過外部 SDK 接入部分重開流程，不需要把 CashLink 原始碼複製進來。
+這是獨立的靜態網站，遊玩使用現代瀏覽器的 Canvas 2D、WebGL2、Pointer Events、Web Audio、Web Storage 與 `requestAnimationFrame`。貪吃蛇使用 vendored Three.js r186，其餘使用原生 Canvas；沒有前端框架、套件安裝、編譯、後端或環境變數。CashLink 只透過外部 SDK 接入部分重開流程，不需要把 CashLink 原始碼複製進來。
 
 本機預覽方法見 [README](../README.md)。伺服器的網站根目錄必須是 CashArcade repository 根目錄，才能解析 `../audio.js`、封面與共用素材。遊玩不需 Node.js；開發測試請準備 Node.js 22 或更新版本，使用內建 `node:test`，不用 `npm install`。Python 3 只是 README 範例使用的靜態伺服器，也可替換為既有 HTTP 預覽工具。
 
@@ -15,7 +15,10 @@
 | [index.html](../index.html)、[style.css](../style.css)、[app.js](../app.js) | 首頁四張遊戲卡、版面、共用主題偏好 |
 | [audio.js](../audio.js) | 四款遊戲共用的短音效合成、音效靜音、聲部上限與峰值限制 |
 | [music.js](../music.js)、[music-scores.js](../music-scores.js)、[music.css](../music.css) | 配樂合成／排程與控制；蛇、飛行、打磚塊的原創樂譜 |
-| [snake/game.js](../snake/game.js) | 棋盤、遊玩時鐘、食物／炸彈、Canvas、輸入及舊版付款整合 |
+| [snake/game.js](../snake/game.js)、[snake/audio-events.mjs](../snake/audio-events.mjs) | 六方向輸入、介面、保存協調、音效與四階段配樂 |
+| [snake/levels.mjs](../snake/levels.mjs)、[snake/engine.mjs](../snake/engine.mjs) | 十二關地形／種子、純三維規則、機關／道具、固定步進及 snapshot |
+| [snake/renderer.mjs](../snake/renderer.mjs)、[vendor/three-r186](../vendor/three-r186) | Three.js 立體場景、插值、實例化、反射／光暈、固定與觀察鏡頭 |
+| [snake/storage.mjs](../snake/storage.mjs)、[snake/payment.mjs](../snake/payment.mjs) | 完整戰役存檔、已解鎖備援、單一重試 gate 與 SDK 恢復 |
 | [flappy/game.js](../flappy/game.js)、[flappy/renderer.js](../flappy/renderer.js) | 飛行規則／輸入與獨立的小鳥、閘門、視差場景繪製 |
 | [breakout/levels.js](../breakout/levels.js) | 30 個固定關卡、陣型、提示、配色、磚塊耐久、16 種道具 |
 | [breakout/engine.js](../breakout/engine.js) | 純遊戲狀態、重力、多球、掃掠碰撞、機關、事件與 snapshot |
@@ -35,7 +38,7 @@
 
 | 遊戲 | 邏輯畫布 | 遊戲更新 |
 | --- | --- | --- |
-| 貪吃蛇 | 600 × 600、20 × 20 格 | `setTimeout` 依速度移動；實際遊玩時鐘管理甜點與炸彈 |
+| 貪吃蛇 | 10 × 10 × 3 至 14 × 14 × 5 三維格點 | 10 ms 固定模擬；每格 250–160 ms，渲染獨立插值 |
 | 打磚塊 | 720 × 540 | 引擎 120 Hz 固定物理步進、掃掠碰撞；控制器安排畫格 |
 | 霓虹飛行 | 720 × 540 | 畫格 delta 更新重力／閘門；renderer 與碰撞圈分離 |
 | 霓虹天盾 | 960 × 720 | 引擎按 delta 更新戰役；控制器處理畫格與單次按壓 |
@@ -46,11 +49,13 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 
 ## 維護關卡與機關
 
+貪吃蛇使用 ES modules 與相對路徑 import map。`snake/levels.mjs` 的十二關包含三維牆體、出口、傳送門、雷射、炸彈數、配樂章節與種子；`engine.mjs` 不依賴 DOM／WebGL。改關卡時要用完整移動回放驗證可通關，不能只測連通性。每步 snapshot 包含蛇身、方向、物件、遊玩時鐘、道具和隨機種子；恢復後一律先暫停。Three.js 固定版與 MIT 授權位於 `vendor/three-r186/`，不使用執行期 CDN。
+
 打磚塊在 `createLevel(index, wave)` 逐關定義，index 為 0–29；`TITLES`、`TIPS`、`PALETTES`、`PATTERNS` 要保持對應。新增機關要同步碰撞、snapshot／restore、存檔驗證與 renderer；不可破壞物不能算清關目標。第 29 關三幕與第 30 關核心分段都有進度旗標，不能只改初始陣型。道具機率／保證掉落以該關資料為準。
 
 天盾的 `LEVELS` 在 `missile/engine.js`，包含名稱、敵人數、基速、間隔、波數、齊射數、陣型與敵人種類；畫面關卡為 1–20。調整關數時，也要檢查 checkpoint 驗證、最後關勝利、升級上限、頭目邏輯與樂譜對應。
 
-打磚塊引擎提供 CommonJS 匯出供 Node 測試使用；天盾測試則以 `node:vm` 載入並讀取 `scope.NeonDefense`，沒有 CommonJS 匯出。瀏覽器分別使用 `NeonBreakout`／`NeonDefense` 全域介面。現有 HTML 使用有順序的 `defer` script，新增檔案時保留資料／引擎／渲染／存檔先於頁面控制器，音效／配樂引擎先於呼叫端。不要把這些 script 隨意改成 `async`。
+打磚塊引擎提供 CommonJS 匯出供 Node 測試使用；天盾測試則以 `node:vm` 載入並讀取 `scope.NeonDefense`，沒有 CommonJS 匯出。瀏覽器分別使用 `NeonBreakout`／`NeonDefense` 全域介面。除蛇的 module 控制器外，現有 HTML 使用有順序的 `defer` script，新增檔案時保留資料／引擎／渲染／存檔先於頁面控制器，音效／配樂引擎先於呼叫端。不要把這些 script 隨意改成 `async`。
 
 ## 音效與配樂介面
 
@@ -81,4 +86,4 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 3. 依[測試對照表](TESTING_AND_DEPLOYMENT.md)執行直接受影響測試，再做相應桌面／390px、亮暗版驗收。
 4. 提交與發布後記錄 commit、執行過的驗證及未驗項目。不要把假 SDK 通過寫成真實付款成功。
 
-目前 repository 沒有 `LICENSE` 檔案；公開可讀不等於已授予任意再散布授權。若要對外宣告授權，先由擁有者決定並補上正式檔案。
+目前 repository 根目錄沒有 `LICENSE` 檔案；公開可讀不等於已授予任意再散布授權。若要對外宣告授權，先由擁有者決定並補上正式檔案。第三方 Three.js 的 MIT 授權另保留於其 vendor 目錄，不代表本專案其餘內容的授權。

@@ -9,6 +9,14 @@
     const LIMIT_KNEE = .9;
     const LIMIT_HEADROOM = .09;
     const EFFECTS = Object.freeze({
+        snakeShield: { tones: [[260, 660, .3, 0, .1, 'triangle', .07]] },
+        snakeSlow: { tones: [[480, 150, .42, 0, .10, 'triangle', .06]] },
+        snakeShrink: { tones: [[650, 250, .24, 0, .10, 'triangle'], [420, 160, .2, .12, .08, 'sine']] },
+        snakeMagnet: { tones: [[180, 380, .22, 0, .10, 'triangle'], [380, 760, .22, .18, .085, 'triangle']] },
+        snakeEmp: { tones: [[180, 55, .38, 0, .11, 'triangle', .08]], noise: [.25, .07, 2100] },
+        snakePortal: { tones: [[180, 880, .25, 0, .09, 'triangle'], [660, 220, .2, .12, .07, 'sine']], minGap: 120 },
+        snakeShieldHit: { tones: [[780, 270, .24, 0, .09, 'triangle']], noise: [.12, .035, 2200], minGap: 100 },
+        snakeWarning: { tones: [[360, 460, .14, 0, .045, 'triangle']], minGap: 450 },
         assaultStart: { tones: [[220, 440, .12, 0, .07, 'triangle'], [440, 880, .2, .12, .07, 'square']] },
         assaultShot: { tones: [[840, 290, .07, 0, .027, 'square']], minGap: 130 },
         assaultLaser: { tones: [[360, 180, .10, 0, .035, 'sawtooth']], minGap: 170 },

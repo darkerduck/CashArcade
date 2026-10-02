@@ -1,0 +1,11 @@
+Tool: built-in image_gen (imagegen skill); generated 2026-10-02.
+Only size/format exports were applied to the generated artwork; alpha is preserved.
+
+Use case: logo-brand
+Asset type: Production website logo and browser favicon for CashArcade, a neon browser arcade with snake, breakout, bird flight and missile defense games.
+Primary request: Design ONE original compact CA monogram as a professional polished arcade app icon, optimized for legibility at 16 and 32 pixels. Use custom bold angular geometric letterforms with very thick solid strokes and clear open counters; the letters must read CA, not a complex illustration.
+Scene/backdrop: One dark midnight navy rounded-square tile, filling almost the entire square image with just 3% outside margin. Actual transparent background outside the rounded tile; the tile itself is opaque. No scene.
+Composition: Center a single large CA symbol occupying about 78% of the tile width, optically balanced with generous internal separation. Crisp, flat, vector-like edges. The C and A feel like one coherent arcade monogram, with a little stepped/chamfered geometry that suggests a retro game cabinet. Keep the A counter large and open.
+Color palette: The current CashArcade brand is midnight navy #070d18, electric cyan #5ceaff, mint green #65ff9a and a restrained violet #ab84ff accent. Use luminous cyan-to-mint solid letter faces and a small violet offset edge; minimal restrained neon edge light, not hazy bloom.
+Text (verbatim): "CA" only. No CashArcade wordmark, no slogan, no other letters.
+Constraints: one icon only, square artwork, unmistakable strong silhouette at tiny size, broad strokes, no hairlines, no extra icons, no currency signs or coins, no characters, no game scenes, no 3D perspective, no mockups, no contact sheet, no watermark. Preserve genuine transparency outside the rounded tile.

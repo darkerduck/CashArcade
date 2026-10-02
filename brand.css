@@ -1,0 +1,8 @@
+/* One imagegen identity, shared by the arcade and all four machines. */
+.brand .brand-logo {
+    display: block;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+}

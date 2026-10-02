@@ -2,6 +2,12 @@
 
 一座純前端的瀏覽器街機。
 
+## Logo 與網站圖示
+
+首頁、四款遊戲與試聽／驗收頁皆宣告 CashArcade 圖示，使用相對路徑支援 GitHub Pages 的 `/CashArcade/` 子目錄。`favicon.ico` 是包含16、32、48、64、128、256px影像的真正ICO容器；另提供16／32px PNG、180px Apple touch icon與192／512px manifest圖示。頁首共用 `assets/brand/casharcade-logo.png`。Manifest使用一般瀏覽器模式，不加入Service Worker或離線快取。
+
+Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母與紫色邊緣。保留[原始PNG](assets/brand/casharcade-logo-source.png)及[完整生成提示](assets/brand/logo-prompt.txt)，輸出僅做尺寸／格式轉換，保留透明邊角。更新圖示時需同步提高各頁圖示URL的版本，以避開瀏覽器舊圖示快取。
+
 🎮 **選擇遊戲：** <https://darkerduck.github.io/CashArcade/>
 
 ## 遊戲

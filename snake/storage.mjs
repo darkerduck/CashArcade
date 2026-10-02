@@ -1,4 +1,4 @@
-import { SnakeGame } from './engine.mjs?v=2';
+import { SnakeGame } from './engine.mjs?v=3';
 export const SAVE_KEY = 'casharcade-snake-3d-campaign-v1';
 export const PAID_KEY = 'casharcade-snake-3d-paid-backup-v1';
 export const BEST_KEY = 'casharcade-snake-3d-high-score';

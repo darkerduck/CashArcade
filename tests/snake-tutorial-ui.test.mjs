@@ -22,6 +22,7 @@ async function harness(record = null, { unavailable = false, initialData = [], o
             elements.set(id, { id, dataset: {}, textContent: '', innerHTML: '', hidden: false, disabled: false, href: '#',
                 classList: { add: k => classes.add(k), remove: k => classes.delete(k), toggle(k, on) { if (on ?? !classes.has(k)) classes.add(k); else classes.delete(k); } },
                 addEventListener: (k, fn) => handlers.set(k, fn), click() { if (!this.disabled) return handlers.get('click')?.(); },
+                input(value) { this.value = String(value); if (!this.disabled) return handlers.get('input')?.({ target: this }); },
                 setAttribute: (k, v) => attrs.set(k, v), getAttribute(k) { return k === 'href' ? this.href : attrs.get(k) ?? null; },
                 append() {}, closest() { return null; }, scrollIntoView() {}, setPointerCapture() {},
                 getContext: () => Object.fromEntries(['clearRect', 'fillRect', 'beginPath', 'moveTo', 'lineTo', 'stroke', 'strokeRect'].map(k => [k, () => {}])),
@@ -123,4 +124,21 @@ test('storage unavailable leaves tutorial playable and never overwrites or opens
     await h.click('tutorial-button'); assert.equal(h.read('inTutorial'), true); await h.click('start-button'); h.tick(1001); h.tick(100);
     assert.equal(h.read('game.state'), 'running'); assert.equal(h.calls.length, 0); assert.match(h.element('storage-note').textContent, /儲存不可用/);
     await h.click('tutorial-return'); assert.equal(h.read('storageError'), true); assert.equal(h.calls.length, 0); assert.equal(h.data.has(SAVE_KEY), false);
+});
+
+test('practice speed slider applies immediately, persists across reload/retry, and never touches formal saves or unlock', async () => {
+    const h = await harness(); assert.equal(h.read('game.delay()'), 800); assert.equal(h.element('tutorial-speed').value, '0.5');
+    assert.equal(h.element('tutorial-speed-value').textContent, '0.5×');
+    h.element('tutorial-speed').input(2); assert.equal(h.read('game.delay()'), 200);
+    assert.equal(h.element('tutorial-speed-value').textContent, '2×'); assert.match(h.element('tutorial-speed-detail').textContent, /200ms/);
+    await h.click('start-button'); assert.equal(h.element('tutorial-speed').disabled, true); h.tick(1001);
+    assert.equal(h.element('tutorial-speed').disabled, false);
+    for (let i = 0; i < 6; i++) h.tick(100);
+    assert.equal(h.read('tutorial.lesson'), 1); assert.equal(h.read('game.delay()'), 200);
+    const reload = await harness(null, { initialData: h.data }); assert.equal(reload.read('game.delay()'), 200);
+    assert.equal(reload.element('tutorial-speed').value, '2'); await reload.key('r'); reload.tick(1001);
+    assert.equal(reload.read('game.delay()'), 200); assert.equal(reload.calls.length, 0);
+    assert.equal(reload.data.has(SAVE_KEY), false); assert.equal(reload.data.has(BEST_KEY), false);
+    await reload.click('tutorial-return'); assert.equal(reload.read('game.delay()'), 250);
+    assert.equal(reload.element('tutorial-panel').hidden, true); assert.equal(reload.read('campaign.record.played'), false);
 });

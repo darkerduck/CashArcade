@@ -4,11 +4,14 @@ const clone = value => JSON.parse(JSON.stringify(value));
 const vectors = Object.values(DIRECTIONS);
 const CELL_FIELDS = ['x', 'y', 'z'];
 export const STATES = ['ready', 'running', 'paused', 'failed', 'level-clear', 'won'];
+export const TUTORIAL_SPEED = Object.freeze({ min: .5, max: 2, step: .25, default: .5 });
+const validTutorialSpeed = n => Number.isFinite(n) && n >= TUTORIAL_SPEED.min && n <= TUTORIAL_SPEED.max && Number.isInteger(n / TUTORIAL_SPEED.step);
 
 export class SnakeGame {
     constructor(levelIndex = 0, score = 0, mode = 'campaign') {
         if (!['campaign', 'tutorial'].includes(mode) || (mode === 'tutorial' ? levelIndex !== -1 : !LEVELS[levelIndex])) throw new Error('Unknown level');
         this.mode = mode; this.tutorialExitOpen = false; this.tutorialPractice = false;
+        if (mode === 'tutorial') this.tutorialSpeed = TUTORIAL_SPEED.default;
         this.levelIndex = levelIndex; this.level = mode === 'tutorial' ? TUTORIAL_LEVEL : LEVELS[levelIndex];
         this.walls = new Set(this.level.walls.map(key));
         this.state = 'ready'; this.score = score; this.startScore = score; this.seed = this.level.seed;
@@ -30,7 +33,14 @@ export class SnakeGame {
     random() { this.seed = (Math.imul(this.seed, 1664525) + 1013904223) >>> 0; return this.seed / 4294967296; }
     start() { if (this.state === 'ready' || this.state === 'paused') { this.state = 'running'; this.revision++; } }
     pause() { if (this.state === 'running') { this.state = 'paused'; this.queue = []; this.revision++; } }
-    delay() { return this.level.delay / (this.effects.slow > this.time ? .65 : 1); }
+    delay() { return this.level.delay / (this.effects.slow > this.time ? .65 : 1) / (this.mode === 'tutorial' ? this.tutorialSpeed : 1); }
+    setTutorialSpeed(multiplier) {
+        if (this.mode !== 'tutorial' || !validTutorialSpeed(multiplier)) return false;
+        // Keep interpolation progress: adjusting a slider never causes an extra move.
+        const progress = this.moveElapsed / this.delay();
+        this.tutorialSpeed = multiplier; this.moveElapsed = progress * this.delay(); this.revision++;
+        return true;
+    }
     input(name) {
         if (!['ready', 'running', 'paused'].includes(this.state) || !DIRECTIONS[name] || this.queue.length >= 2) return false;
         const d = DIRECTIONS[name], last = this.queue.at(-1) || this.direction;
@@ -185,15 +195,18 @@ export class SnakeGame {
         return !this.inside(two) || this.walls.has(key(two)) ? '兩格內接近牆面' : '';
     }
     snapshot() {
-        return clone(Object.fromEntries(['mode', 'tutorialExitOpen', 'tutorialPractice', 'levelIndex', 'state', 'score', 'startScore', 'seed', 'snake', 'previous', 'direction', 'queue',
+        const snapshot = clone(Object.fromEntries(['mode', 'tutorialExitOpen', 'tutorialPractice', 'levelIndex', 'state', 'score', 'startScore', 'seed', 'snake', 'previous', 'direction', 'queue',
             'growth', 'collected', 'time', 'moveElapsed', 'remainder', 'dessertCycle', 'bombCycle', 'powerCycle', 'food', 'dessert', 'power',
             'bombs', 'bombsRetired', 'effects', 'gates', 'steps', 'reason'].map(k => [k, this[k]])));
+        if (this.mode === 'tutorial') snapshot.tutorialSpeed = this.tutorialSpeed;
+        return snapshot;
     }
     static valid(s) {
         if (!s || !Number.isInteger(s.levelIndex) || !STATES.includes(s.state)) return false;
         const mode = s.mode ?? 'campaign';
         if (!['campaign', 'tutorial'].includes(mode) || (mode === 'tutorial' ? s.levelIndex !== -1 : !LEVELS[s.levelIndex])) return false;
         if (mode === 'tutorial' && (typeof s.tutorialExitOpen !== 'boolean' || typeof s.tutorialPractice !== 'boolean')) return false;
+        if (mode === 'tutorial' && s.tutorialSpeed !== undefined && !validTutorialSpeed(s.tutorialSpeed)) return false;
         const l = mode === 'tutorial' ? TUTORIAL_LEVEL : LEVELS[s.levelIndex];
         const cell = p => p && CELL_FIELDS.every(k => Number.isInteger(p[k])) && p.x >= 0 && p.x < l.width && p.y >= 0 && p.y < l.height && p.z >= 0 && p.z < l.depth;
         const dir = d => d && vectors.some(v => equal(v, d));

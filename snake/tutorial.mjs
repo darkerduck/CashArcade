@@ -1,4 +1,4 @@
-import { SnakeGame, DIRECTIONS, equal } from './engine.mjs?v=2';
+import { SnakeGame, DIRECTIONS, equal } from './engine.mjs?v=3';
 
 export const TUTORIAL_KEY = 'casharcade-snake-3d-tutorial-v1';
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -46,6 +46,10 @@ export class Tutorial {
         } catch { this.persistent = false; }
     }
     get current() { return LESSONS[this.lesson] || { name: '自由練習', detail: '慢速練習六方向。死亡、R 與重試皆免費；可隨時進入或返回正式戰役。' }; }
+    setSpeed(multiplier) {
+        if (!this.game.setTutorialSpeed(multiplier)) return false;
+        this.entry.tutorialSpeed = multiplier; this.revision++; this.save(); return true;
+    }
     prepare() {
         const lesson = this.current;
         this.waiting = true; this.observed = false; this.viewStart = null;
@@ -59,7 +63,9 @@ export class Tutorial {
     finishLesson() {
         this.lesson++;
         if (this.lesson === LESSONS.length) {
+            const speed = this.game.tutorialSpeed;
             this.completed = true; this.game = SnakeGame.tutorial(); this.game.tutorialPractice = true;
+            this.game.setTutorialSpeed(speed);
             this.waiting = true; this.entry = this.game.snapshot(); this.revision++;
         } else this.prepare();
     }
@@ -107,7 +113,9 @@ export class Tutorial {
         this.waiting = true; this.observed = false; this.viewStart = null; this.revision++; this.save();
     }
     restartLessons() {
-        this.lesson = 0; this.completed = false; this.game = SnakeGame.tutorial(); this.events = []; this.prepare(); this.save();
+        const speed = this.game.tutorialSpeed;
+        this.lesson = 0; this.completed = false; this.game = SnakeGame.tutorial(); this.game.setTutorialSpeed(speed);
+        this.events = []; this.prepare(); this.save();
     }
     advance(milliseconds) {
         let left = milliseconds;

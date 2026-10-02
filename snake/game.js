@@ -1,8 +1,8 @@
-import { SnakeGame, LEVELS, POWERS } from './engine.mjs?v=2';
-import { Campaign, CampaignStore, BEST_KEY, SAVE_KEY } from './storage.mjs?v=2';
+import { SnakeGame, LEVELS, POWERS } from './engine.mjs?v=3';
+import { Campaign, CampaignStore, BEST_KEY, SAVE_KEY } from './storage.mjs?v=3';
 import { ReplayGate, sdkFactory } from './payment.mjs';
 import { playEvents } from './audio-events.mjs';
-import { Tutorial, LESSONS, shouldOfferTutorial, canEnterTutorial } from './tutorial.mjs';
+import { Tutorial, LESSONS, shouldOfferTutorial, canEnterTutorial } from './tutorial.mjs?v=2';
 
 const $ = id => document.getElementById(id);
 const canvas = $('game-canvas'), overlay = $('game-overlay');
@@ -68,6 +68,7 @@ function controls() {
     $('tutorial-panel').hidden = !inTutorial;
     $('tutorial-return').disabled = locked || !!countdown;
     $('tutorial-restart').disabled = locked || !!countdown;
+    $('tutorial-speed').disabled = locked || !!countdown;
     $('tutorial-rotate').hidden = !inTutorial || game.state !== 'paused';
     $('cancel-payment').hidden = inTutorial || !gate.busy;
     $('payment-fallback').hidden = inTutorial || !$('payment-fallback').getAttribute('href')?.startsWith('https:');
@@ -221,7 +222,7 @@ function drawMap() {
 function updateHUD() {
     $('level-number').innerHTML = inTutorial ? '00 <small>/ 教學</small>' : `${String(game.levelIndex + 1).padStart(2, '0')} <small>/ ${LEVELS.length}</small>`;
     $('score').textContent = String(game.score).padStart(5, '0'); $('high-score').textContent = String(highScore).padStart(5, '0');
-    $('speed').innerHTML = `${(1000 / game.delay()).toFixed(1)} <small>格／秒</small>`;
+    $('speed').innerHTML = `${inTutorial ? Number((1000 / game.delay()).toFixed(2)) : (1000 / game.delay()).toFixed(1)} <small>格／秒</small>`;
     $('score-label').textContent = inTutorial ? 'SCORE / 練習分數' : 'SCORE / 戰役分數';
     $('sector-label').textContent = inTutorial ? 'SECTOR 00 · 光域訓練 · 永久免費' : `CHAPTER ${String(game.level.chapter + 1).padStart(2, '0')} · ${game.level.name}`;
     $('clock-label').textContent = `${String(Math.floor(game.time / 60000)).padStart(2, '0')}:${String(Math.floor(game.time / 1000) % 60).padStart(2, '0')}`;
@@ -248,6 +249,11 @@ function updateHUD() {
     document.querySelectorAll('[data-direction]').forEach(b => { const highlighted = inTutorial && !tutorial.completed && b.dataset.direction === tutorial.current.direction; b.classList.toggle('tutorial-target', highlighted); b.setAttribute('aria-describedby', highlighted ? 'tutorial-instructions' : 'mission-hint'); });
     navigationPanel.classList.toggle('tutorial-focus', inTutorial && !!tutorial.current.focus);
     if (inTutorial) {
+        const multiplier = `${Number(game.tutorialSpeed.toFixed(2))}×`;
+        $('tutorial-speed').value = String(game.tutorialSpeed);
+        $('tutorial-speed').setAttribute('aria-valuetext', `${multiplier}，每格 ${Math.round(game.delay())} 毫秒`);
+        $('tutorial-speed-value').textContent = multiplier;
+        $('tutorial-speed-detail').textContent = `每格 ${Math.round(game.delay())}ms · ${Number((1000 / game.delay()).toFixed(2))} 格／秒`;
         $('tutorial-heading').textContent = tutorial.completed ? '教學完成 · 自由練習' : `步驟 ${tutorial.lesson + 1} / ${LESSONS.length} · ${tutorial.current.name}`;
         $('tutorial-instructions').textContent = tutorial.current.detail;
         $('tutorial-return').textContent = campaign?.record.played ? '返回正式戰役' : tutorial.completed ? '進入第一關' : '跳過教學／進入戰役';
@@ -290,6 +296,10 @@ $('new-button').addEventListener('click', () => {
 $('tutorial-button').addEventListener('click', enterTutorial);
 $('tutorial-return').addEventListener('click', leaveTutorial);
 $('tutorial-restart').addEventListener('click', () => requestTutorial('lessons'));
+$('tutorial-speed').addEventListener('input', event => {
+    if (!inTutorial || !initialized || unavailable || conflict || busy || countdown) return;
+    if (tutorial.setSpeed(Number(event.target.value))) { save(); updateHUD(); }
+});
 $('tutorial-rotate').addEventListener('click', () => { if (!inTutorial) return; renderer.rotateSurvey(); tutorial.observe(renderer.camera.position.toArray()); save(); showState(); controls(); });
 $('cancel-payment').addEventListener('click', () => gate.cancel());
 $('theme-toggle').addEventListener('click', () => { const theme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = theme; try { localStorage.setItem('casharcade-theme', theme); } catch { /* Page preference still works. */ } });

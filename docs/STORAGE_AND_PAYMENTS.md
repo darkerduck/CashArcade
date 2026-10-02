@@ -26,7 +26,7 @@
 | localStorage | `casharcade-theme` | 四款遊戲與首頁共用亮暗偏好；無偏好預設暗版 |
 | localStorage | `casharcade-high-score` | 舊平面貪吃蛇最高分，保留但不混入 3D 戰役 |
 | localStorage | `casharcade-snake-3d-high-score` | 三維貪吃蛇戰役最高分 |
-| localStorage | `casharcade-snake-3d-tutorial-v1` | 第0關步驟、完成／跳過標記、當前練習局與步驟起點；不影響正式存檔或付費資格 |
+| localStorage | `casharcade-snake-3d-tutorial-v1` | 第0關步驟、完成／跳過標記、當前練習局、步驟起點與速度偏好；不影響正式存檔或付費資格 |
 | localStorage | `casharcade-snake-3d-campaign-v1` | 三維完整本局、played、replay、intent 與 paidSerial |
 | sessionStorage | `casharcade-snake-3d-paid-backup-v1` | 貪吃蛇已消耗額度後、尚待提交的新局備援 |
 | localStorage | `casharcade-breakout-high-score` | 打磚塊最高分 |
@@ -50,6 +50,8 @@
 ### 霓虹貪吃蛇 3D
 
 第0關使用獨立教學模式與存檔；正式存檔不接受教學快照，舊快照缺少模式欄位時仍視為正式戰役。教學不呼叫unlock、不寫正式最高分，也不修改played、replay、paidSerial或訂單。進入前保存並暫停正式原局；付款中或已消耗額度尚未可靠保存時禁止切換。完成／跳過教學仍保留首次免費正式戰役；返回失敗／待付款原局不免費重置。教學儲存失敗可在當頁練習，正式付款的儲存保護不放寬。
+
+教學快照的 `tutorialSpeed` 保存0.5–2倍速度偏好；缺少此欄位的舊教學存檔預設為0.5倍。即時調速保留格間移動進度，不額外移動或計分；偏好延續至自由練習、免費重試及重新教學，不寫入正式戰役快照。
 
 [storage.mjs](../snake/storage.mjs) 的 v1 記錄包含 `game.snapshot()`、`played`、`replay`、`intent` 與 `paidSerial`。每個邏輯步及重要轉換保存，遊玩計時約每 250 ms 補存；重載完整恢復蛇身、方向、物件、計時、道具與種子，以暫停狀態等玩家繼續。異常關閉最多回到最近成功保存的位置。
 

@@ -30,7 +30,7 @@ function playLesson(t) {
 
 test('all guided goals complete through real six-axis moves, rejected reversal, changed camera and exit', () => {
     const local = storage(), t = new Tutorial(local), sounds = [];
-    assert.equal(t.game.mode, 'tutorial'); assert.equal(t.game.delay(), 400); assert.equal(LEVELS.length, 12);
+    assert.equal(t.game.mode, 'tutorial'); assert.equal(t.game.delay(), 800); assert.equal(LEVELS.length, 12);
     assert.deepEqual([t.game.level.width, t.game.level.depth, t.game.level.height], [10, 10, 3]);
     const paths = [];
     while (!t.completed) {
@@ -42,14 +42,14 @@ test('all guided goals complete through real six-axis moves, rejected reversal, 
     assert.equal(t.game.tutorialPractice, true); assert.equal(t.game.snake.length, 4);
     assert.equal(t.game.exitOpen(), false); assert.equal(t.game.state, 'ready');
     assert.ok(paths.some(p => p.route.some(s => s.head.y === 2)));
-    assert.equal(t.begin(), true); t.advance(1200); assert.equal(t.game.score, 10); assert.ok(t.game.food);
+    assert.equal(t.begin(), true); t.advance(2400); assert.equal(t.game.score, 10); assert.ok(t.game.food);
     assert.deepEqual([...new Set(local.writes)], [TUTORIAL_KEY]);
 });
 
 test('checkpoint stops exactly on each target, rejects skipping and needs a real camera change', () => {
     const t = new Tutorial(storage()); assert.equal(t.input('rise'), false); assert.equal(t.lesson, 0);
     t.begin(); t.advance(10000); assert.equal(t.lesson, 1); assert.ok(equal(t.game.snake[0], LESSONS[0].target));
-    assert.equal(t.game.time, 1200); assert.equal(t.game.state, 'ready');
+    assert.equal(t.game.time, 2400); assert.equal(t.game.state, 'ready');
     while (t.current.kind !== 'observe') playLesson(t);
     assert.equal(t.prepareStart(), false); t.startObservation(); t.observe([0, 1, 2]);
     t.observe([0, 1, 2]); assert.equal(t.resumeObservation(), false);
@@ -59,7 +59,7 @@ test('checkpoint stops exactly on each target, rejects skipping and needs a real
 test('free practice still dies on a real wall, remains practice after retry, and never spawns advanced hazards', () => {
     const t = new Tutorial(storage()); while (!t.completed) playLesson(t);
     t.begin(); t.advance(10000); assert.equal(t.game.state, 'failed'); assert.equal(t.game.reason, 'wall');
-    assert.equal(t.game.time, 2800); assert.equal(t.lesson, LESSONS.length); assert.equal(t.game.dessert, null);
+    assert.equal(t.game.time, 5600); assert.equal(t.lesson, LESSONS.length); assert.equal(t.game.dessert, null);
     assert.equal(t.game.power, null); assert.deepEqual(t.game.bombs, []); t.retry();
     assert.equal(t.game.state, 'ready'); assert.equal(t.game.tutorialPractice, true); assert.equal(t.game.score, 0);
 });
@@ -125,4 +125,37 @@ test('pending/paid-ready/legacy SDK state survives tutorial; unsafe settlement p
     const options = { busy: false, countdown: 0, gate: { busy: false }, campaign: { busy: false, consumed: null } };
     assert.equal(canEnterTutorial(options), true);
     for (const changed of [{ busy: true }, { countdown: 1 }, { gate: { busy: true } }, { campaign: { consumed: {} } }]) assert.equal(canEnterTutorial({ ...options, ...changed }), false);
+});
+
+test('practice speed defaults to half speed, preserves fractional progress, and never changes formal speed', () => {
+    const g = SnakeGame.tutorial(); g.start(); g.advance(400);
+    assert.equal(g.tutorialSpeed, .5); assert.equal(g.steps, 0); assert.equal(g.moveElapsed, 400);
+    assert.equal(g.setTutorialSpeed(2), true); assert.equal(g.delay(), 200); assert.equal(g.moveElapsed, 100);
+    assert.equal(g.steps, 0); g.advance(90); assert.equal(g.steps, 0); g.advance(10); assert.equal(g.steps, 1);
+    const before = g.snapshot();
+    for (const value of [0, -.5, .6, 2.25, NaN, Infinity, '1']) assert.equal(g.setTutorialSpeed(value), false);
+    assert.deepEqual(g.snapshot(), before);
+    for (const level of LEVELS) {
+        const formal = new SnakeGame(level.index);
+        assert.equal(formal.setTutorialSpeed(2), false); assert.equal(formal.delay(), level.delay);
+        assert.equal(Object.hasOwn(formal.snapshot(), 'tutorialSpeed'), false);
+    }
+    const old = SnakeGame.tutorial().snapshot(); delete old.tutorialSpeed;
+    assert.equal(SnakeGame.valid(old), true); assert.equal(SnakeGame.restore(old).delay(), 800);
+    for (const value of [.25, .6, 2.25, '1']) assert.equal(SnakeGame.valid({ ...old, tutorialSpeed: value }), false);
+});
+
+test('all tutorial routes work at half/full/double speeds and preferences survive completion, retry, reload and rerun', () => {
+    for (const multiplier of [.5, 1, 2]) {
+        const local = storage(), t = new Tutorial(local);
+        assert.equal(t.setSpeed(multiplier), true);
+        while (!t.completed) { playLesson(t); assert.equal(t.game.delay(), 400 / multiplier); }
+        assert.equal(t.game.tutorialPractice, true); t.begin(); t.advance(10); t.save();
+        const reload = new Tutorial(local); assert.equal(reload.game.state, 'paused'); assert.equal(reload.game.delay(), 400 / multiplier);
+        reload.retry(); assert.equal(reload.game.delay(), 400 / multiplier);
+        reload.restartLessons(); assert.equal(reload.lesson, 0); assert.equal(reload.game.delay(), 400 / multiplier);
+        assert.deepEqual([...new Set(local.writes)], [TUTORIAL_KEY]);
+    }
+    const offline = new Tutorial(); assert.equal(offline.setSpeed(1.75), true);
+    offline.retry(); assert.equal(offline.game.tutorialSpeed, 1.75); assert.equal(offline.persistent, false);
 });

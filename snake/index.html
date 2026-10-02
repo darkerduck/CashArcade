@@ -11,7 +11,7 @@
     <link rel="icon" href="../assets/brand/favicon-32.png?v=1" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="../assets/brand/apple-touch-icon.png?v=1" sizes="180x180">
     <link rel="manifest" href="../site.webmanifest?v=1">
-    <link rel="stylesheet" href="./style.css?v=4">
+    <link rel="stylesheet" href="./style.css?v=5">
     <link rel="stylesheet" href="../music.css?v=1">
     <link rel="stylesheet" href="../brand.css?v=1">
     <script type="importmap">{"imports":{"three":"../vendor/three-r186/build/three.module.js","three/addons/":"../vendor/three-r186/examples/jsm/"}}</script>
@@ -42,6 +42,7 @@
                     <section class="tutorial-panel" id="tutorial-panel" hidden aria-label="免費教學指引">
                         <p class="eyebrow">SECTOR 00 / ALWAYS FREE</p><h2 id="tutorial-heading">光域訓練</h2>
                         <p id="tutorial-instructions" aria-live="polite">可跳過、可反覆練習；死亡與 R 不收費。</p>
+                        <div class="tutorial-speed"><label for="tutorial-speed">練習速度 <output id="tutorial-speed-value" for="tutorial-speed">0.5×</output></label><input id="tutorial-speed" type="range" min="0.5" max="2" step="0.25" value="0.5" aria-describedby="tutorial-speed-help tutorial-speed-detail"><small id="tutorial-speed-detail">每格 800ms · 1.25 格／秒</small><small id="tutorial-speed-help">預設半速，可加快至 2×；只影響第 0 關。</small></div>
                         <div class="tutorial-actions"><button class="secondary-button" id="tutorial-return" type="button">跳過教學／進入戰役</button><button class="text-button" id="tutorial-restart" type="button">重跑教學</button><button class="secondary-button" id="tutorial-rotate" type="button" hidden>旋轉視角 ↻</button></div>
                     </section>
                     <div class="arena-caption"><span id="sector-label">CHAPTER 01 · 立方覺醒</span><span id="clock-label">00:00</span></div>
@@ -78,6 +79,6 @@
         <footer><span>12 SECTORS · SIX AXES · NO TRACKING</span><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
     </main>
     <script src="../audio.js?v=8" defer></script><script src="../music.js?v=1" defer></script><script src="../music-scores.js?v=1" defer></script>
-    <script type="module" src="./game.js?v=7"></script>
+    <script type="module" src="./game.js?v=8"></script>
 </body>
 </html>

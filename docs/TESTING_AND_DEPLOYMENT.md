@@ -34,7 +34,7 @@ node --test tests/*.test.mjs
 | 打磚塊規則／存檔 | [breakout-engine.test.mjs](../tests/breakout-engine.test.mjs) | 30 關、蓄力、多球、道具、首領與 snapshot／遷移 |
 | 打磚塊空間路線 | [breakout-routes.test.mjs](../tests/breakout-routes.test.mjs) | 必要目標碰撞面可抵達、門、傳送與多幕 |
 | 打磚塊畫面 | [breakout-renderer.test.mjs](../tests/breakout-renderer.test.mjs) | 三色霓虹、特殊磚辨識、主題／特效上限 |
-| 打磚塊付款／頁面控制 | [breakout-payment.test.mjs](../tests/breakout-payment.test.mjs) | 免費與付費入口、快速連按、取消／錯誤、存檔失敗及重載 |
+| 打磚塊付款／頁面控制 | [breakout-payment.test.mjs](../tests/breakout-payment.test.mjs) | 免費與付費入口、死亡關卡重試、快速連按、取消／錯誤、存檔失敗及重載 |
 | 天盾規則 | [missile.test.mjs](../tests/missile.test.mjs) | 20 關、最近可用砲台、裝甲命中去重、城市、升級／頭目 |
 | 天盾輸入／付款／存檔 | [missile-ui.test.mjs](../tests/missile-ui.test.mjs) | 單次發射、失敗 gate、checkpoint、重載、升級與配樂 |
 | 天盾畫面 | [missile-renderer.test.mjs](../tests/missile-renderer.test.mjs) | 城市損壞、道具、頭目、震動與粒子生命週期 |

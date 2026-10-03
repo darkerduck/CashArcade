@@ -89,6 +89,126 @@ async function harness({ session = storage(), local = storage(), handshakeError 
     };
 }
 
+function failStage(h, levelIndex) {
+    h.click('#start-button');
+    const game = h.inspect.game();
+    game.levelIndex = levelIndex;
+    game.wave = levelIndex === 28 ? 2 : 0;
+    game.bossPhase = levelIndex === 29 ? 2 : 0;
+    game.loadLevel();
+    game.bricks.find(b => b.hp > 0).hp = 0;
+    game.score = 345;
+    game.lives = 1;
+    game.loseLife();
+    h.inspect.processEvents();
+    assert.equal(h.state().gameState, 'over');
+}
+
+function replayControl(h, control) {
+    if (control === 'space') return h.key(' ', 'Space');
+    if (control === 'enter') return h.key('Enter');
+    if (control === 'r') return h.key('r');
+    return h.click(control);
+}
+
+function assertFreshStage(h, levelIndex) {
+    const game = h.inspect.game();
+    assert.equal(game.levelIndex, levelIndex);
+    assert.equal(game.state, 'running');
+    assert.equal(game.lives, 3);
+    assert.equal(game.score, 0);
+    assert.equal(game.wave, 0);
+    assert.equal(game.bossPhase, 0);
+    assert.equal(game.items.length, 0);
+    assert.equal(Object.keys(game.effects).length, 0);
+    assert.equal(game.balls.length, 1);
+    const expected = h.context.NeonBreakout.createLevel(levelIndex);
+    const layout = bricks => JSON.stringify(bricks.map(b => [b.id, b.bx, b.by, b.w, b.h, b.type, b.hp, b.maxHp]));
+    assert.equal(layout(game.bricks), layout(expected.bricks));
+    assert.equal(h.musicEvents.filter(e => e[0] === 'start').at(-1)[1], levelIndex + 1);
+}
+
+for (const levelIndex of [6, 9, 19, 28, 29]) {
+    for (const control of ['#start-button', '#restart-button', '#payment-retry', 'space', 'enter', 'r']) {
+        test(`paid ${control} retries failed stage ${levelIndex + 1} with fresh lives, layout and music`, async () => {
+            const h = await harness();
+            failStage(h, levelIndex);
+            replayControl(h, control);
+            assert.equal(h.attempts.length, 1);
+            assert.equal(h.state().levelIndex, levelIndex);
+            assert.equal(h.state().score, 345);
+            assert.match(h.el('#payment-retry').textContent, new RegExp(`第 ${levelIndex + 1} 關`));
+            assert.match(h.el('#overlay-message').textContent, new RegExp(`第 ${levelIndex + 1} 關`));
+            h.attempts[0].resolve({ credit_status: 'consumed' });
+            await flush();
+            assertFreshStage(h, levelIndex);
+        });
+    }
+}
+
+test('cancelled replay retains the failed stage through reload and serializes the resumed unlock', async () => {
+    const h = await harness();
+    failStage(h, 18);
+    h.key('r');
+    h.attempts[0].reject({ code: 'cancelled' });
+    await flush();
+    const reload = await harness({ session: h.session, local: h.local });
+    assert.equal(reload.state().levelIndex, 18);
+    assert.equal(reload.attempts.length, 0);
+    reload.click('#payment-retry');
+    reload.key('r'); reload.click('#start-button');
+    assert.equal(reload.attempts.length, 1);
+    reload.attempts[0].resolve({ credit_status: 'consumed' });
+    await flush();
+    assertFreshStage(reload, 18);
+    const paidReload = await harness({ session: reload.session, local: reload.local });
+    assert.equal(paidReload.state().levelIndex, 18);
+    assert.equal(paidReload.state().gameState, 'paused');
+    paidReload.click('#start-button');
+    assert.equal(paidReload.attempts.length, 0);
+    assert.equal(paidReload.state().levelIndex, 18);
+});
+
+test('consumed replay survives a failed save at the same late stage without a second charge', async () => {
+    for (const reload of [false, true]) {
+        const h = await harness();
+        failStage(h, 29);
+        h.click('#restart-button');
+        const write = h.local.setItem;
+        h.local.setItem = () => { throw Error('quota'); };
+        h.attempts[0].resolve({ credit_status: 'consumed' });
+        await flush();
+        assert.equal(h.state().levelIndex, 29);
+        assert.equal(h.state().score, 345);
+        h.local.setItem = write;
+        if (reload) {
+            const restored = await harness({ session: h.session, local: h.local });
+            assert.equal(restored.state().gameState, 'paused');
+            assert.equal(restored.state().levelIndex, 29);
+            restored.click('#start-button');
+            assert.equal(restored.attempts.length, 0);
+            assertFreshStage(restored, 29);
+        } else {
+            await h.click('#payment-retry');
+            assert.equal(h.attempts.length, 1);
+            assertFreshStage(h, 29);
+        }
+    }
+});
+
+test('voluntary replay stays at the current stage, while completed campaign replay returns to stage one', async () => {
+    for (const state of ['running', 'paused', 'won']) {
+        const h = await harness();
+        failStage(h, 29);
+        h.set(state, 345);
+        h.key('r');
+        assert.equal(h.attempts.length, 1);
+        h.attempts[0].resolve({ credit_status: 'consumed' });
+        await flush();
+        assertFreshStage(h, state === 'won' ? 0 : 29);
+    }
+});
+
 test('first play, pause/resume, lost-life relaunch and level transition are free', async () => {
     const h = await harness();
     h.click('#start-button');

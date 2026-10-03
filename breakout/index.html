@@ -67,7 +67,7 @@
 
             <div class="game-actions">
                 <button class="secondary-button" id="pause-button" type="button" disabled>暫停</button>
-                <button class="secondary-button" id="restart-button" type="button">重新開始（付費）</button>
+                <button class="secondary-button" id="restart-button" type="button">重試第 1 關（付費）</button>
                 <button class="secondary-button" id="fullscreen-button" type="button">全螢幕</button>
                 <button class="secondary-button" id="sound-test" type="button">試播音效</button>
             </div>
@@ -79,10 +79,10 @@
                 <p>三十關依機關切換配樂；三場頭目各有主題。暫停、待發球與付款時停樂；音樂與音效分別控制。</p>
             </div>
             <div class="payment-panel" aria-label="再來一局付款">
-                <p>首次遊玩免費 · 付款用途：再來一局 · 價格以 CashLink 付款頁為準</p>
+                <p>首次遊玩免費 · 解鎖後重試目前關卡 · 付款用途：再來一局 · 價格以 CashLink 付款頁為準</p>
                 <p id="payment-status" role="status" aria-live="polite">正在連線 CashLink…</p>
                 <div class="payment-actions">
-                    <button class="secondary-button" id="payment-retry" type="button">恢復／重試再來一局</button>
+                    <button class="secondary-button" id="payment-retry" type="button">恢復／重試第 1 關</button>
                     <button class="secondary-button" id="payment-cancel" type="button" disabled>取消付款流程</button>
                     <a id="payment-link" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" hidden>開啟 CashLink 付款頁 ↗</a>
                 </div>
@@ -94,7 +94,7 @@
                 <span>左鍵／<kbd>Space</kbd> 按住蓄力，接球時放開</span>
                 <span>右鍵／<kbd>Enter</kbd> 發球</span>
                 <span><kbd>P</kbd>／<kbd>Esc</kbd> 暫停</span>
-                <span><kbd>R</kbd> 付費再來一局</span>
+                <span><kbd>R</kbd> 付費重試本關</span>
             </p>
             <details class="field-guide"><summary>磚塊與道具圖例 · 30 關戰術</summary>
                 <p>球受重力影響，強擊須在放開後 0.12 秒內接到球。金色光環能穿過斥力盾；微球／普通球／巨球傷害為 1／2／4。所有球掉落才扣命，過關補一命（最多五命）。</p>
@@ -116,6 +116,6 @@
     <script src="./engine.js?v=30" defer></script>
     <script src="./renderer.js?v=30" defer></script>
     <script src="./storage.js?v=30" defer></script>
-    <script src="./game.js?v=31" defer></script>
+    <script src="./game.js?v=32" defer></script>
 </body>
 </html>

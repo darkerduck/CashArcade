@@ -29,7 +29,7 @@
 | [missile/engine.js](../missile/engine.js)、[missile/renderer.js](../missile/renderer.js) | 20 關資料、砲台／敵人／城市／道具規則，以及 Canvas 特效 |
 | [missile/game.js](../missile/game.js)、[missile/payment-gate.js](../missile/payment-gate.js) | 戰役 checkpoint、關間選擇、輸入、失敗後再玩付款與恢復 |
 | [missile/score.js](../missile/score.js)、[missile/music.js](../missile/music.js) | 天盾的 20 關樂譜與共用配樂引擎轉接介面 |
-| [assets/covers](../assets/covers)、[assets/brand](../assets/brand)、[brand.css](../brand.css) | 已確認的四張封面、Logo／圖示、共用頁首圖像樣式 |
+| [assets/covers](../assets/covers)、[assets/brand](../assets/brand)、[brand.css](../brand.css) | 已確認的五張封面、Logo／圖示、共用頁首圖像樣式 |
 | [site.webmanifest](../site.webmanifest)、[favicon.ico](../favicon.ico) | 相對作用範圍與圖示；目前沒有 Service Worker／離線快取 |
 | [tests](../tests) | Node 假環境測試、關卡對照頁與原生音訊量測頁 |
 
@@ -76,9 +76,19 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 
 公開網站位於 `/CashArcade/`，所以站內資源使用 `./`、`../`；不要用 `/audio.js` 或 `/snake/` 這類會跑到網域根目錄的絕對路徑。付款 Origin 是網域層級，和遊戲路徑不同，詳見[付款文件](STORAGE_AND_PAYMENTS.md)。
 
-封面保留 `assets/covers/{snake,breakout,flappy,missile}.jpg`。Logo 原始圖與生成提示見 [README 的品牌素材說明](../README.md#brand)，不要把來源不明的圖像、音樂或字型放進專案。配樂／音效即時合成，試聽頁下載的 WAV 是臨時產物，不是遊戲執行需要的素材。
+封面保留 `assets/covers/{snake,breakout,flappy,missile,assault}.jpg`。Logo 原始圖與生成提示見 [README 的品牌素材說明](../README.md#brand)，不要把來源不明的圖像、音樂或字型放進專案。配樂／音效即時合成，試聽頁下載的 WAV 是臨時產物，不是遊戲執行需要的素材。
 
 修改正式靜態資源時，同步檢查所有引用頁的 `?v=`；共用音訊或圖示可能同時被四款遊戲、首頁及驗收頁引用。只調整版本號不能取代部署內容核對。Manifest 為 `display: browser`，不可僅因存在 manifest 就聲稱支援離線遊玩。
+
+### 遊戲封面規範
+
+所有現有與未來的遊戲封面不得包含文字、字母、數字、標題、標語、Logo、介面或水印。遊戲名稱、編號及說明由網頁另外呈現，不烙印於圖片中。獨立的網站 Logo、favicon 與其他網站圖示不受此封面規範限制。
+
+新封面使用 imagegen 內建工具，將已確認的打磚塊、天盾與霓虹飛行圖片標示為風格參考，不覆寫參考圖。採橫式約 16:9、深藍背景、青藍／桃紅／紫色霓虹光效、金色點綴與立體材質；不得以平面線稿或像素風取代此系列的封面風格。完整規範亦列於 [README](../README.md#遊戲封面規範)。
+
+生成提示必須明列禁止文字、字母、數字、標題、標語、Logo、介面與水印。人工檢查整張輸出及遊戲卡尺寸縮圖：不得出現任何上述內容，主體仍須清楚；不合格時針對問題修正並重新驗收。先提供預覽時，不更動首頁圖片引用，也不覆寫或發布現有封面。
+
+首頁霓虹強襲使用[已確認的無文字 JPEG 封面](../assets/covers/assault.jpg)，[生成提示](../assets/covers/assault-prompt.txt)隨素材保存。舊 `assault.svg` 含英文標題與標語，僅保留為歷史稿、不供首頁使用；不得在後續生成中沿用其文字。圖片更新時同步調整引用版本並核對公開資源。
 
 ## 變更交付
 

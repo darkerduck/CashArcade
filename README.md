@@ -44,6 +44,14 @@ python3 -m http.server 4173 --bind 127.0.0.1
 
 Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母與紫色邊緣。保留[原始PNG](assets/brand/casharcade-logo-source.png)及[完整生成提示](assets/brand/logo-prompt.txt)，輸出僅做尺寸／格式轉換，保留透明邊角。更新圖示時需同步提高各頁圖示URL的版本，以避開瀏覽器舊圖示快取。
 
+## 遊戲封面規範
+
+所有現有與未來的遊戲封面不得包含文字、字母、數字、標題、標語、Logo、介面或水印。遊戲名稱、編號及說明由網頁另外呈現，不烙印於圖片中。獨立的網站 Logo、favicon 與其他網站圖示不受此封面規範限制。
+
+封面採橫式約 16:9 的華麗立體霓虹風格，以深藍背景、青藍／桃紅／紫色光效及金色點綴維持系列一致性；在遊戲卡縮圖中仍須能辨識遊戲主體。生成提示必須明列上述無文字限制，交付前人工檢查整張圖片與縮圖。
+
+首頁霓虹強襲已使用[新版無文字霓虹封面](assets/covers/assault.jpg)，由 imagegen 內建工具生成，僅做 JPEG 格式轉換；保留[完整生成提示](assets/covers/assault-prompt.txt)。舊 `assault.svg` 含文字，僅保留為歷史稿，不再供首頁使用，後續不得沿用其文字。開發維護要求見[圖像規範](docs/DEVELOPMENT.md#遊戲封面規範)。
+
 ## 遊戲
 
 - [霓虹貪吃蛇 3D](https://darkerduck.github.io/CashArcade/snake/)：Three.js 立體十二關戰役，六方向移動、封閉光域、跨高度傳送門、雷射與五種自動生效道具。收集能量後進入出口，挑戰下一關。

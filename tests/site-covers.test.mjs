@@ -5,9 +5,9 @@ import { readFileSync, existsSync } from 'node:fs';
 const root = new URL('../', import.meta.url);
 const html = readFileSync(new URL('index.html', root), 'utf8');
 
-test('homepage resolves five raster covers, including the approved text-free Assault artwork', () => {
+test('homepage resolves six raster covers, including the approved text-free Assault artwork', () => {
     const covers = [...html.matchAll(/<img\b[^>]*src="(\.\/assets\/covers\/[^"?]+)(?:\?[^"\s]*)?"[^>]*>/g)];
-    assert.equal(covers.length, 5);
+    assert.equal(covers.length, 6);
     for (const [tag, src] of covers) {
         assert.match(src, /\.jpg$/);
         assert.match(tag, /width="1672" height="941"/);

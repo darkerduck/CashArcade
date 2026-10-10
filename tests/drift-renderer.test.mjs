@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+function fixture(){let balance=0,calls=0;const ctx=new Proxy({}, {get(o,k){if(k in o)return o[k];return (...args)=>{calls++;for(const n of args)if(typeof n==='number')assert.ok(Number.isFinite(n),String(k));if(k==='save')balance++;if(k==='restore')balance--;if(String(k).startsWith('create'))return {addColorStop(){}};if(k==='measureText')return {width:30};};},set(o,k,v){o[k]=v;return true;}});class Canvas{constructor(w=1000,h=760){this.width=w;this.height=h;}getContext(){return ctx;}}const scope=vm.createContext({OffscreenCanvas:Canvas,performance:{now:()=>0}});for(const f of ['engine','renderer'])vm.runInContext(readFileSync(new URL('../drift/'+f+'.js',import.meta.url),'utf8'),scope);return {scope,canvas:new Canvas(),balance:()=>balance,calls:()=>calls};}
+test('every track renders in dark/light and reduced motion without mutating game',()=>{const h=fixture(),r=new h.scope.NeonDriftRenderer.Renderer(h.canvas);for(let i=0;i<3;i++){const g=new h.scope.NeonDrift.Game(i);for(const theme of ['dark','light'])for(const reducedMotion of [true,false]){const before=JSON.stringify(g);r.render(g,{theme,reducedMotion});assert.equal(JSON.stringify(g),before);}}assert.equal(h.balance(),0);assert.ok(h.calls()>100);r.destroy();});

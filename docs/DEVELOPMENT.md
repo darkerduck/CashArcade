@@ -98,3 +98,7 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 4. 提交與發布後記錄 commit、執行過的驗證及未驗項目。不要把假 SDK 通過寫成真實付款成功。
 
 目前 repository 根目錄沒有 `LICENSE` 檔案；公開可讀不等於已授予任意再散布授權。若要對外宣告授權，先由擁有者決定並補上正式檔案。第三方 Three.js 的 MIT 授權另保留於其 vendor 目錄，不代表本專案其餘內容的授權。
+
+## 霓虹甩尾
+
+`drift/engine.js` 是可在 Node 執行的純遊戲規則與三條平滑閉合賽道；`renderer.js` 使用 Canvas 2D，`game.js` 管理 DOM、鍵盤、多指 Pointer Events 與暫停，`audio.js` 使用延遲初始化 Web Audio，`storage.js` 驗證版本化紀錄並容忍儲存失敗。無外部套件、付款服務或追蹤。封面 `assets/covers/drift.jpg` 採內建 imagegen，提示位於 `assets/covers/drift-prompt.txt`。

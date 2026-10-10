@@ -1,6 +1,6 @@
 # CashArcade
 
-一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有五款遊戲、原創合成配樂與獨立音效設定。
+一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有六款遊戲、原創合成配樂與獨立音效設定。
 
 🎮 **[進入 CashArcade](https://darkerduck.github.io/CashArcade/)** · [GitHub 原始碼](https://github.com/darkerduck/CashArcade)
 
@@ -8,7 +8,7 @@
 
 | 想了解什麼 | 文件 |
 | --- | --- |
-| 五款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
+| 六款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
 | 本機環境、檔案分工、關卡、音訊介面與素材維護 | [開發指南](docs/DEVELOPMENT.md) |
 | 哪些操作收費、哪些進度可恢復、儲存鍵與付款錯誤 | [存檔與付款](docs/STORAGE_AND_PAYMENTS.md) |
 | 測試指令、瀏覽器驗收、GitHub Pages 發布與排錯 | [測試與發布](docs/TESTING_AND_DEPLOYMENT.md) |
@@ -33,14 +33,14 @@ python3 -m http.server 4173 --bind 127.0.0.1
 
 - GitHub Pages 從 `main` 分支根目錄發布，公開路徑為 `/CashArcade/`；新增的 `docs/` 是文件目錄，不是 Pages 發布來源。
 - 遊戲本身沒有後端、登入、雲端同步或排行榜；最高分、偏好及支援的存檔都在目前瀏覽器。各款恢復能力不同，詳見[存檔對照](docs/STORAGE_AND_PAYMENTS.md)。
-- 貪吃蛇、打磚塊、天盾與霓虹強襲的部分重開路徑使用外部 CashLink 付款服務；霓虹飛行免費。付款用途是「再來一局」，沒有獎金、抽獎、代幣或可兌現獎勵。
+- 貪吃蛇、打磚塊、天盾與霓虹強襲的部分重開路徑使用外部 CashLink 付款服務；霓虹飛行與霓虹甩尾免費。付款用途是「再來一局」，沒有獎金、抽獎、代幣或可兌現獎勵。
 - 本 repository 與 CashLink codebase 分離；此處只維護 CashArcade 的靜態檔案。
 
 <a id="brand"></a>
 
 ## Logo 與網站圖示
 
-首頁、五款遊戲與試聽／驗收頁皆宣告 CashArcade 圖示，使用相對路徑支援 GitHub Pages 的 `/CashArcade/` 子目錄。`favicon.ico` 是包含16、32、48、64、128、256px影像的真正ICO容器；另提供16／32px PNG、180px Apple touch icon與192／512px manifest圖示。頁首共用 `assets/brand/casharcade-logo.png`。Manifest使用一般瀏覽器模式，不加入Service Worker或離線快取。
+首頁、六款遊戲與試聽／驗收頁皆宣告 CashArcade 圖示，使用相對路徑支援 GitHub Pages 的 `/CashArcade/` 子目錄。`favicon.ico` 是包含16、32、48、64、128、256px影像的真正ICO容器；另提供16／32px PNG、180px Apple touch icon與192／512px manifest圖示。頁首共用 `assets/brand/casharcade-logo.png`。Manifest使用一般瀏覽器模式，不加入Service Worker或離線快取。
 
 Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母與紫色邊緣。保留[原始PNG](assets/brand/casharcade-logo-source.png)及[完整生成提示](assets/brand/logo-prompt.txt)，輸出僅做尺寸／格式轉換，保留透明邊角。更新圖示時需同步提高各頁圖示URL的版本，以避開瀏覽器舊圖示快取。
 
@@ -54,6 +54,8 @@ Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母
 
 ## 遊戲
 
+- [霓虹甩尾](https://darkerduck.github.io/CashArcade/drift/)：三條俯視霓虹賽道，每場 90 秒。自動油門，左右轉向，按住 Space／Shift 甩尾蓄能，放開衝刺；手機雙拇指操控。最快單圈、分數與連段紀錄保存在目前瀏覽器，全程免費。
+
 - [霓虹貪吃蛇 3D](https://darkerduck.github.io/CashArcade/snake/)：Three.js 立體十二關戰役，六方向移動、封閉光域、跨高度傳送門、雷射與五種自動生效道具。收集能量後進入出口，挑戰下一關。
 - [霓虹打磚塊](https://darkerduck.github.io/CashArcade/breakout/)：30 個固定設計關卡、16 種道具、重力彈道與蓄力回彈。最多 24 顆球，挑戰開關城門、斥力磁盾、折躍傳送與第 10／20／30 關首領。
 - [霓虹飛行](https://darkerduck.github.io/CashArcade/flappy/)：使用 `Space`、`↑`、`W`、滑鼠或觸控拍翼，穿越逐步加速並縮小間隙的無盡能源閘門。
@@ -61,7 +63,7 @@ Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母
 
 - [霓虹強襲](https://darkerduck.github.io/CashArcade/assault/)：三關直向射擊戰役，自動開火，拾取散射、雷射和雙翼護航，拆解三大機械頭目。電腦與手機皆可玩；死亡後再開局須解鎖。
 
-五款遊戲都支援亮暗主題、暫停、重新開始與瀏覽器本機最高分。沒有儲存主題偏好時一律使用暗版。
+六款遊戲都支援亮暗主題、暫停、重新開始與瀏覽器本機最高分。沒有儲存主題偏好時一律使用暗版。
 
 <a id="snake-campaign"></a>
 ## 霓虹貪吃蛇 3D · 十二關戰役
@@ -233,7 +235,7 @@ Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母
 
 ## 音效
 
-五款遊戲使用 Web Audio API 即時合成短音效，不使用外部音訊素材或音訊套件。音效預設開啟，首次操作遊戲後才會發聲；每款遊戲的標題列都可獨立切換靜音，設定保存在該瀏覽器。霓虹天盾與打磚塊提供「試播音效」；打磚塊的蓄力、強擊、不同尺寸撞擊、傳送、道具與首領各有音色。共用合成增益維持原設定，打磚塊輸出另留少量混音 headroom；同時聲部上限 40，密集碰撞／爆炸節流。瀏覽器不支援音訊或阻止播放時，遊戲仍可正常操作。
+六款遊戲使用 Web Audio API 即時合成短音效，不使用外部音訊素材或音訊套件。音效預設開啟，首次操作遊戲後才會發聲；每款遊戲的標題列都可獨立切換靜音，設定保存在該瀏覽器。霓虹天盾與打磚塊提供「試播音效」；打磚塊的蓄力、強擊、不同尺寸撞擊、傳送、道具與首領各有音色。共用合成增益維持原設定，打磚塊輸出另留少量混音 headroom；同時聲部上限 40，密集碰撞／爆炸節流。瀏覽器不支援音訊或阻止播放時，遊戲仍可正常操作。
 
 ### 霓虹天盾 · 原創 8-bit 關卡配樂
 
@@ -298,3 +300,7 @@ SDK 管理訂單秘密與冪等鍵；遊戲保留本局的本機 checkpoint 與�
 CashArcade 使用 HTML、CSS、JavaScript、Canvas 與 WebGL 製作，不包含前端框架或追蹤程式。貪吃蛇將固定版 [Three.js r186](https://github.com/mrdoob/three.js/releases/tag/r186) 及必要模組、MIT 授權放在 `vendor/three-r186/`，不依賴執行期 CDN；其餘四款遊戲維持原生 Canvas。打磚塊、貪吃蛇、霓虹天盾及霓虹強襲載入 CashLink Arcade SDK；霓虹飛行不使用付款服務。SDK 與 API 文件：<https://linkincash.cc/docs/arcade-api>。
 
 打磚塊分為 `levels.js` 固定關卡資料、`engine.js` 純物理／規則、`renderer.js` Canvas 視覺、`storage.js` 驗證與遷移、`game.js` 輸入／頁面控制，付款 gate 獨立不變。執行 `node --test tests/*.test.mjs` 驗證遊戲與假 SDK；`tests/breakout-gallery.html` 提供 30 關初始／啟動後共 60 畫面、亮暗檢查、PNG 對照圖與實際 OfflineAudioContext 音訊量測，不載入付款服務。幾何通路測試逐層清除可抵達的碰撞面，另測移動門完整周期、三幕與三場首領；不是宣稱以任意自動操作即可通關。自動測試不進行真實付款。
+
+## 霓虹甩尾 · Neon Drift
+
+第六台機器使用獨立 `drift/engine.js`、`renderer.js`、`game.js`、`storage.js` 與 `audio.js`。三條賽道有獨立分數、最快單圈與最高連段。90 秒只計實際遊玩時間，失焦或隱藏分頁自動暫停；重載不恢復未完成的場次。封面 [drift.jpg](assets/covers/drift.jpg) 由內建 imagegen 生成，無文字，提示保存在 [drift-prompt.txt](assets/covers/drift-prompt.txt)。

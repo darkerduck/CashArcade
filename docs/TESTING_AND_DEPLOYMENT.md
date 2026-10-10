@@ -130,3 +130,7 @@ node --test tests/*.test.mjs
 | 測試全綠，但聲音仍有異常 | 使用試聽頁做原生輸出量測，檢查瀏覽器播放限制、獨立開關、輸出裝置與藍牙延遲 |
 
 若發布內容需要回復，先確認受影響 commit 與存檔相容性，再以新的回復 commit 走同一驗證流程；避免 reset／force push 抹掉後續工作。尤其存檔版本變更不能只回復前端檔案就假定舊版可讀。
+
+## 霓虹甩尾驗收
+
+執行 `node --test tests/drift-*.test.mjs`，再跑完整 `node --test tests/*.test.mjs`。路徑為 `/CashArcade/drift/`，仍由 main 根目錄發布。桌機測試左右、甩尾／釋放、暫停、失焦、三條賽道及重開；390px 手機檢查雙指同時按住、移出按鈕後放開、pointercancel，以及暗／亮版無溢出。90 秒後必須顯示成績；重新整理只保留紀錄與設定。

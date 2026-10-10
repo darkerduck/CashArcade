@@ -134,3 +134,13 @@ SDK URL：`https://linkincash.cc/arcade/sdk/v1.js`。各遊戲 publishable key �
 ## 霓虹甩尾
 
 `casharcade-drift-v1` 保存三條賽道的分數、最快單圈、最大連段，以及賽道、音效、音樂、音量與減少動態效果偏好。沒有局中存檔或付款；重開、換賽道、所有遊玩都免費。儲存不可用時不阻止遊玩，頁面會提示。既有遊戲的 CashLink 行為不受影響。
+
+
+## 電路迷城與重力快遞
+
+兩款完全免費，不載入 CashLink SDK、不改變既有遊戲的付款規則。
+
+- `casharcade-circuit-v1`：已解鎖／選擇關卡、各關星等、最高分、最快秒數、通關次數與減少動態設定。
+- `casharcade-gravity-v1`：各關星等、最快秒數、碎片紀錄、送達次數與減少動態設定；解鎖範圍由依序完成的紀錄推導。
+- 各自 `casharcade-{circuit,gravity}-sound-muted` 保存音效靜音；`casharcade-{circuit,gravity}-music-muted`、`-music-volume` 保存配樂偏好。
+- 重載從關卡待命狀態重新開始，不恢復進行中的位置。儲存被封鎖時仍可遊玩，頁面會提示紀錄無法保留。

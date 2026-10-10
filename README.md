@@ -1,6 +1,6 @@
 # CashArcade
 
-一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有六款遊戲、原創合成配樂與獨立音效設定。
+一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有八款遊戲、原創合成配樂與獨立音效設定。
 
 🎮 **[進入 CashArcade](https://darkerduck.github.io/CashArcade/)** · [GitHub 原始碼](https://github.com/darkerduck/CashArcade)
 
@@ -8,7 +8,7 @@
 
 | 想了解什麼 | 文件 |
 | --- | --- |
-| 六款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
+| 八款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
 | 本機環境、檔案分工、關卡、音訊介面與素材維護 | [開發指南](docs/DEVELOPMENT.md) |
 | 哪些操作收費、哪些進度可恢復、儲存鍵與付款錯誤 | [存檔與付款](docs/STORAGE_AND_PAYMENTS.md) |
 | 測試指令、瀏覽器驗收、GitHub Pages 發布與排錯 | [測試與發布](docs/TESTING_AND_DEPLOYMENT.md) |
@@ -304,3 +304,16 @@ CashArcade 使用 HTML、CSS、JavaScript、Canvas 與 WebGL 製作，不包含�
 ## 霓虹甩尾 · Neon Drift
 
 第六台機器使用獨立 `drift/engine.js`、`renderer.js`、`game.js`、`storage.js` 與 `audio.js`。三條賽道有獨立分數、最快單圈與最高連段。90 秒只計實際遊玩時間，失焦或隱藏分頁自動暫停；重載不恢復未完成的場次。封面 [drift.jpg](assets/covers/drift.jpg) 由內建 imagegen 生成，無文字，提示保存在 [drift-prompt.txt](assets/covers/drift-prompt.txt)。
+
+
+## 電路迷城 / Circuit Escape
+
+[立即遊玩](https://darkerduck.github.io/CashArcade/circuit/) · 全程免費
+
+十座手工電路迷宮：收齊能源節點開啟出口，踩相位開關切換通路，躲避固定巡邏機。隱形可穿越巡邏機，但無法抵擋脈衝雷射；金色碎片與雷射捷徑帶來額外風險。方向鍵／WASD 或手機滑動會預先安排下一個轉彎；C 停步，Space／X 隱形。每關保存最快時間、最高分與三星紀錄。原創八小節 8-bit 配樂與獨立音效。
+
+## 重力快遞 / Gravity Courier
+
+[立即遊玩](https://darkerduck.github.io/CashArcade/gravity/) · 全程免費
+
+十條短航線，每趟約 11–19 秒。自動前進，點一下或按 Space 翻轉上下重力；穿越尖刺、脈衝雷射與浮動月台，把能源送至終點。可選金色碎片提供短暫加速，挑戰三顆星與最快送達紀錄。暫停、重試皆免費，紀錄與設定保存在本機。配有獨立原創 8-bit 航行配樂。

@@ -12,8 +12,8 @@
 
 | 路徑 | 職責 |
 | --- | --- |
-| [index.html](../index.html)、[style.css](../style.css)、[app.js](../app.js) | 首頁四張遊戲卡、版面、共用主題偏好 |
-| [audio.js](../audio.js) | 四款遊戲共用的短音效合成、音效靜音、聲部上限與峰值限制 |
+| [index.html](../index.html)、[style.css](../style.css)、[app.js](../app.js) | 首頁遊戲卡、版面、共用主題偏好 |
+| [audio.js](../audio.js) | 遊戲共用的短音效合成、音效靜音、聲部上限與峰值限制 |
 | [music.js](../music.js)、[music-scores.js](../music-scores.js)、[music.css](../music.css) | 配樂合成／排程與控制；蛇、飛行、打磚塊的原創樂譜 |
 | [snake/game.js](../snake/game.js)、[snake/audio-events.mjs](../snake/audio-events.mjs) | 六方向輸入、介面、保存協調、音效與四階段配樂 |
 | [snake/levels.mjs](../snake/levels.mjs)、[snake/engine.mjs](../snake/engine.mjs) | 十二關地形／種子、純三維規則、機關／道具、固定步進及 snapshot |
@@ -78,7 +78,7 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 
 封面保留 `assets/covers/{snake,breakout,flappy,missile,assault}.jpg`。Logo 原始圖與生成提示見 [README 的品牌素材說明](../README.md#brand)，不要把來源不明的圖像、音樂或字型放進專案。配樂／音效即時合成，試聽頁下載的 WAV 是臨時產物，不是遊戲執行需要的素材。
 
-修改正式靜態資源時，同步檢查所有引用頁的 `?v=`；共用音訊或圖示可能同時被四款遊戲、首頁及驗收頁引用。只調整版本號不能取代部署內容核對。Manifest 為 `display: browser`，不可僅因存在 manifest 就聲稱支援離線遊玩。
+修改正式靜態資源時，同步檢查所有引用頁的 `?v=`；共用音訊或圖示可能同時被多款遊戲、首頁及驗收頁引用。只調整版本號不能取代部署內容核對。Manifest 為 `display: browser`，不可僅因存在 manifest 就聲稱支援離線遊玩。
 
 ### 遊戲封面規範
 
@@ -102,3 +102,12 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 ## 霓虹甩尾
 
 `drift/engine.js` 是可在 Node 執行的純遊戲規則與三條平滑閉合賽道；`renderer.js` 使用 Canvas 2D，`game.js` 管理 DOM、鍵盤、多指 Pointer Events 與暫停，`audio.js` 使用延遲初始化 Web Audio 與 25 ms 音訊時鐘排程，透過共用 `music.js` 合成方波主旋律／三角波低音；`expansion-scores.js` 保存三條賽道的原創 8-bit 編曲，音樂音量與音效開關互相獨立。暫停／離頁會取消排程並停止聲音，後續玩家操作可喚醒被瀏覽器暫停的 context。`storage.js` 驗證版本化紀錄並容忍儲存失敗。無外部套件、付款服務或追蹤。封面 `assets/covers/drift.jpg` 採內建 imagegen，提示位於 `assets/covers/drift-prompt.txt`。
+
+
+## 電路迷城與重力快遞
+
+`circuit/` 使用原生 ES modules：`levels.mjs` 保存十座固定迷宮，`engine.mjs` 是 150 ms 固定格步進，`renderer.mjs` 處理插值與霓虹光效，`storage.mjs` 驗證紀錄，`game.mjs` 協調滑動、鍵盤與聲音。`tests/circuit-replays.mjs` 保存十關全危險開啟的三星回放；測試不得移除巡邏或雷射才能過關。
+
+`gravity/engine.js` 使用 120 Hz 固定物理步進，關卡提供可驗證的翻轉座標路線。`renderer.js` 根據窄畫面切換 720×600 視野，`game.js` 維持單次輸入與失焦暫停，`storage.js` 處理關卡紀錄。翻轉路線是測試文件，不會在遊戲內自動駕駛。
+
+兩款使用 `audio.js`／`music.js` 共用音訊混音與 `expansion-scores.js` 的獨立八小節原創編曲。新增封面 `circuit.jpg`、`gravity.jpg` 均由內建 imagegen 生成、無文字，提示以相同檔名的 `-prompt.txt` 保存。

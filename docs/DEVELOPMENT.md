@@ -101,4 +101,4 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 
 ## 霓虹甩尾
 
-`drift/engine.js` 是可在 Node 執行的純遊戲規則與三條平滑閉合賽道；`renderer.js` 使用 Canvas 2D，`game.js` 管理 DOM、鍵盤、多指 Pointer Events 與暫停，`audio.js` 使用延遲初始化 Web Audio，`storage.js` 驗證版本化紀錄並容忍儲存失敗。無外部套件、付款服務或追蹤。封面 `assets/covers/drift.jpg` 採內建 imagegen，提示位於 `assets/covers/drift-prompt.txt`。
+`drift/engine.js` 是可在 Node 執行的純遊戲規則與三條平滑閉合賽道；`renderer.js` 使用 Canvas 2D，`game.js` 管理 DOM、鍵盤、多指 Pointer Events 與暫停，`audio.js` 使用延遲初始化 Web Audio 與 25 ms 音訊時鐘排程，透過共用 `music.js` 合成方波主旋律／三角波低音；`expansion-scores.js` 保存三條賽道的原創 8-bit 編曲，音樂音量與音效開關互相獨立。暫停／離頁會取消排程並停止聲音，後續玩家操作可喚醒被瀏覽器暫停的 context。`storage.js` 驗證版本化紀錄並容忍儲存失敗。無外部套件、付款服務或追蹤。封面 `assets/covers/drift.jpg` 採內建 imagegen，提示位於 `assets/covers/drift-prompt.txt`。

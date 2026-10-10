@@ -12,10 +12,11 @@
 | 打磚塊 | 從開始／發球入口開第一局、恢復有效存檔、暫停／繼續、扣命後發球、換關 | 重試本關、R、再玩一次、結束後的 Space／Enter；解鎖後重打目前關卡，通關後再玩才從第一關開始 | 最近成功保存的完整本局，先暫停；付款待處理由玩家恢復 |
 | 霓虹飛行 | 所有遊玩與重開 | 無，未載入付款 SDK | 不保存本局；只保留最高分與偏好 |
 | 霓虹天盾 | 首次戰役、失敗前主動重試／新戰役、暫停／繼續、關間升級、通關後再玩 | 六城全毀後的重試、R、新戰役與失敗後開始 | 本關起點或關間升級階段；失敗／付款狀態一併保存 |
+| 霓虹強襲 | 首次遊玩、死亡前主動重試／新戰役、正常過關、通關後再玩、暫停／繼續 | 戰機死亡後的重試、R、新戰役與失敗畫面的開始 | 最近保存的完整局中狀態先暫停；死亡與付款狀態保持待恢復 |
 
 打磚塊的「重試本關」／R 會直接走付款 gate，即使尚未從免費開始按鈕開過第一局也一樣。付款意圖的原局 snapshot 保留目標關卡，成功後以三條命、零分與完整初始陣型重試該關；取消、重載、已消耗額度後的保存重試不會改成第一關。只有原局狀態為 `won` 才建立第一關新戰役。天盾付款一旦待處理，會保留當時選的「重試本關」或「新戰役」，其他按鈕不改換原訂單意圖。
 
-三款付費整合的付款用途均為「再來一局」。貪吃蛇原有註冊的回傳文案為「死亡或勝利後解鎖下一局遊戲」，本次保留該設定，亦接受「再來一局」；不接受其他用途。價格與用途由握手回傳值顯示，不寫死金額，收款資訊以 CashLink 付款頁為準。沒有獎金、抽獎、代幣或可兌現獎勵。
+四款付費整合的付款用途均為「再來一局」。貪吃蛇原有註冊的回傳文案為「死亡或勝利後解鎖下一局遊戲」，本次保留該設定，亦接受「再來一局」；霓虹強襲另接受「死亡後再來一局」。其他用途不接受。價格與用途由 CashLink 伺服器決定，不寫死金額，收款資訊以付款頁為準。沒有獎金、抽獎、代幣或可兌現獎勵。
 
 ## 本機資料與保存範圍
 
@@ -43,9 +44,13 @@
 | localStorage | `casharcade-missile-checkpoint` | 天盾 v2 envelope：關卡 checkpoint 與 replay 狀態 |
 | sessionStorage | `casharcade.missile.loss-lock.v1` | 天盾失敗記錄的分頁備援 |
 | sessionStorage | `casharcade.missile.paid-recovery.v1` | 天盾已消耗額度、尚待完整保存的新局備援 |
+| localStorage | `casharcade-assault-round-v2` | 強襲完整局中 snapshot、關卡起點、死亡與付款狀態 |
+| localStorage | `casharcade-assault-checkpoint-v1` | 強襲舊關卡起點存檔；遷移成功後移除 |
+| sessionStorage | `casharcade.assault.recovery.v2` | 強襲主存檔寫入失敗時的局中、死亡或付款狀態備援 |
+| sessionStorage | `casharcade.assault.paid-backup.v2` | 強襲已消耗額度但尚未完成本機提交的新局備援 |
 | localStorage，由 SDK 管理 | `cashlink.arcade.v1.<publishableKey>` | SDK 恢復資料；蛇／打磚塊只探測此鍵存在，不解析或自行修改內容 |
 
-`{game}` 代表 `snake`、`breakout`、`flappy` 或 `missile`，不是實際鍵中的大括號。SDK 格式由外部版本管理，不能把上表當作可自行重建訂單的規格。
+`{game}` 代表 `snake`、`breakout`、`flappy`、`missile` 或 `assault`，不是實際鍵中的大括號。SDK 格式由外部版本管理，不能把上表當作可自行重建訂單的規格。
 
 ### 霓虹貪吃蛇 3D
 
@@ -75,9 +80,15 @@
 
 `replay.state` 的轉移為：正常 `open` → 城市全毀 `lost` → 玩家請求新局 `payment-pending` → 額度已消耗且存檔完成 `paid-ready`。取消／錯誤保持待處理狀態，`intent` 保留 `retry` 或 `new`。恢復後新的關卡記錄可回到 `open`；下次再次失敗才重新要求解鎖。最終通關會移除戰役 checkpoint，保留最高分與偏好。
 
+### 霓虹強襲
+
+`casharcade-assault-round-v2` 同時保存完整戰鬥 snapshot、關卡起點與階段。遊玩中約每 250 ms 及暫停、死亡、過關、離頁時保存；重載後將局中狀態先暫停，玩家按「繼續戰役」才恢復。舊 v1 關卡起點遷移為待命局；死亡後的付費重試仍從本關起點部署。畫面粒子不屬遊戲規則，不保存在 snapshot。
+
+死亡後先持久保存 `lost`；玩家首次選定重試或新戰役時轉為 `pending`，後續取消、重載或改按其他入口都不改變該意圖。只有 SDK 回傳已消耗額度，才保存 `paid-ready` 候選局；分頁備援與遞增寫入序號避免重載時重複付款或讓舊備援覆蓋較新進度。主存檔寫入失敗時改用分頁備援並暫停遊戲；未能驗證保存時不開始新付款。額度已消耗則保留候選局，恢復保存時不再呼叫 `unlock()`。正常過關、通關後再玩及死亡前主動重開免費。
+
 ### 儲存不可用
 
-音訊／主題偏好寫入失敗可只維持當頁狀態，但不能將這種降級套用到付費存檔。蛇、打磚塊與天盾無法確認必要進度或付款意圖時，會阻止相關開局並顯示原因。不要為了讓按鈕可點而移除保存前置檢查。
+音訊／主題偏好寫入失敗可只維持當頁狀態，但不能將這種降級套用到付費存檔。蛇、打磚塊、天盾與強襲無法確認必要進度或付款意圖時，會阻止相關開局並顯示原因。不要為了讓按鈕可點而移除保存前置檢查。
 
 ## SDK 與單一付款入口
 
@@ -86,22 +97,23 @@ SDK URL：`https://linkincash.cc/arcade/sdk/v1.js`。各遊戲 publishable key �
 - 貪吃蛇：[snake/storage.mjs](../snake/storage.mjs) 的 `PUBLISHABLE_KEY`；控制器 `requestRound()` → `Campaign.request()` 集中開始路徑，由 [payment.mjs](../snake/payment.mjs) 解鎖。
 - 打磚塊：[breakout/payment-gate.js](../breakout/payment-gate.js) 的 `PUBLISHABLE_KEY`；控制器 `requestNewGame()` 集中提交新局。
 - 天盾：[missile/payment-gate.js](../missile/payment-gate.js) 的 `PUBLISHABLE_KEY`；控制器 `requestStart()` 分流免費／收費，再由 `requestPaid()` 提交。
+- 強襲：[assault/payment-gate.js](../assault/payment-gate.js) 的 `PUBLISHABLE_KEY`；控制器 `requestStart()` 只在死亡後轉入 `requestPaid()`。
 
-三款付款遊戲的共同保護：
+四款付款遊戲的共同保護：
 
-1. 預先 `handshake()`，核對回傳 `origin === 'https://darkerduck.github.io'`、付款用途。打磚塊／天盾要求「再來一局」；蛇另接受上文原有註冊文案。Origin 不含 `/CashArcade/` 路徑。
+1. 預先 `handshake()`，核對回傳 `origin === 'https://darkerduck.github.io'`、付款用途。打磚塊／天盾要求「再來一局」；蛇另接受上文原有註冊文案，強襲另接受「死亡後再來一局」。Origin 不含 `/CashArcade/` 路徑。
 2. 凍結舊局、清理輸入、保存付款意圖；快速連按由 busy 狀態阻止第二個解鎖請求。
 3. 由玩家明確操作呼叫 `await arcade.unlock()`；若剛完成重連 handshake，要求再次按下，保留 popup 所需的使用者操作。
 4. 只接受回傳 `credit_status === 'consumed'` 後提交新局。`unlocked` 事件、偵測到款項或 `available` 額度都只是提示，不足以開始。
 5. 成功保存新局後才切換遊戲狀態。音效、配樂、暫停／繼續和免費換關不呼叫付款入口。
 
-三款控制器只展示 `https://linkincash.cc/arcade/checkout/<ID>` 的付款頁，拒絕其他 Origin、query、username 或 password。fragment 可能含訂單憑證，不能記錄、轉放 query 或送到分析服務。
+四款控制器只展示 `https://linkincash.cc/arcade/checkout/<ID>` 的付款頁，拒絕其他 Origin、query、username 或 password。fragment 可能含訂單憑證，不能記錄、轉放 query 或送到分析服務。
 
 `linkincash.cc` 是 CashLink macOS localhost 的公開預覽入口，不是正式 production；GitHub Pages 靜態網站成功部署不代表付款預覽服務可用。本機 `127.0.0.1` 與其他 fork 的 Origin 不同，不能假設原 publishable key 在那裡也能付款。請勿為本機測試鬆綁正式頁面的核對邏輯。
 
 ## 付款問題與復原
 
-以下恢復介面適用於貪吃蛇 3D、打磚塊與天盾。
+以下恢復介面適用於貪吃蛇 3D、打磚塊、天盾與強襲。
 
 | 狀況 | 應採取的動作 | 不應做的事 |
 | --- | --- | --- |

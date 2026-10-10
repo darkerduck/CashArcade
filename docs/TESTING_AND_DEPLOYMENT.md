@@ -13,6 +13,7 @@ node --test tests/snake-3d.test.mjs tests/snake-payment.test.mjs
 node --test tests/snake-tutorial.test.mjs tests/snake-tutorial-ui.test.mjs
 node --test tests/breakout-engine.test.mjs tests/breakout-payment.test.mjs
 node --test tests/missile.test.mjs tests/missile-ui.test.mjs
+node --test tests/assault.test.mjs tests/assault-ui.test.mjs tests/assault-renderer.test.mjs
 git diff --check
 ```
 
@@ -38,6 +39,7 @@ node --test tests/*.test.mjs
 | 天盾規則 | [missile.test.mjs](../tests/missile.test.mjs) | 20 關、最近可用砲台、裝甲命中去重、城市、升級／頭目 |
 | 天盾輸入／付款／存檔 | [missile-ui.test.mjs](../tests/missile-ui.test.mjs) | 單次發射、失敗 gate、checkpoint、重載、升級與配樂 |
 | 天盾畫面 | [missile-renderer.test.mjs](../tests/missile-renderer.test.mjs) | 城市損壞、道具、頭目、震動與粒子生命週期 |
+| 強襲規則／付款／畫面 | [assault.test.mjs](../tests/assault.test.mjs)、[assault-ui.test.mjs](../tests/assault-ui.test.mjs)、[assault-renderer.test.mjs](../tests/assault-renderer.test.mjs) | 三關頭目、完整局中快照、死亡後單一付款 gate、取消與重載恢復、畫面特效 |
 | 共用音效 | [audio.test.mjs](../tests/audio.test.mjs) | 延遲初始化、靜音儲存、音量、節流及聲部限制 |
 | 四款配樂 | [missile-music.test.mjs](../tests/missile-music.test.mjs) | 名稱沿用天盾，但也涵蓋另三款樂譜、排程、暫停與音量 |
 | 主題／網站圖示 | [theme-default.test.mjs](../tests/theme-default.test.mjs)、[site-icons.test.mjs](../tests/site-icons.test.mjs) | 預設暗版、手動偏好、ICO／PNG、manifest 與子路徑 |
@@ -76,7 +78,7 @@ node --test tests/*.test.mjs
 | 發布方式 | Deploy from a branch |
 | Branch／folder | `main`／`/(root)` |
 | 公開首頁 | [CashArcade](https://darkerduck.github.io/CashArcade/) |
-| 遊戲路徑 | `/CashArcade/snake/`、`/CashArcade/breakout/`、`/CashArcade/flappy/`、`/CashArcade/missile/` |
+| 遊戲路徑 | `/CashArcade/snake/`、`/CashArcade/breakout/`、`/CashArcade/flappy/`、`/CashArcade/missile/`、`/CashArcade/assault/` |
 
 `docs/` 是維護文件，不要把 Pages 來源切到 `/docs`。沒有套件編譯產物、`dist/` 或本專案自訂的 `.github/workflows` 測試設定；目前推送不會自動替你跑 Node 測試。GitHub 仍會產生 Pages build/deployment 工作，不能把這種部署工作當成遊戲測試。
 

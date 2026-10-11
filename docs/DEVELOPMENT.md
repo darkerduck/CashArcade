@@ -120,3 +120,8 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 `prism/engine.js` 處理兩格管線組、旋轉踢牆、洗牌袋、鎖定延長上限、連通圖與閉合迴路、重力連鎖及暫存。`storage.js` 隔離紀錄驗證與保存；`renderer.js` 支援亮暗／減少動態，`game.js` 避免延後清除事件在失焦後重新開啟聲音。`tests/prism-replays.mjs` 的 seed=1 回放僅使用正常輸入，24 次放置完成五個迴路、二段連鎖與第二級。
 
 兩款使用 `expansion-scores.js` 的不同原創八小節音樂及獨立音效。封面 `reactor.jpg`、`prism.jpg` 為內建 imagegen 的無文字作品，提示保存在同名 `-prompt.txt`。
+
+
+## 雙軌節奏模組
+
+`pulse/tracks.js` 保存三首原創旋律、和聲、節奏與同網格譜面；`engine.js` 處理判定、長音與校正統計，`controller.js` 接收時間戳輸入。`audio.js` 以 AudioContext 時鐘和 25 ms 前瞻排程播放，優先用 output timestamp 估計可聽時間；渲染掉幀及音樂靜音不移動歌曲 epoch。`storage.js` 驗證本機設定和六組紀錄；`game.js` 處理頁面與輸入，`renderer.js` 畫雙軌及視覺拍點。`PulseSwitch.snapshot()` 回傳分離的唯讀診斷快照，不提供改分或跳關入口。

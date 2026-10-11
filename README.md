@@ -1,6 +1,6 @@
 # CashArcade
 
-一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有十款遊戲、原創合成配樂與獨立音效設定。
+一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有十一款遊戲、原創合成配樂與獨立音效設定。
 
 🎮 **[進入 CashArcade](https://darkerduck.github.io/CashArcade/)** · [GitHub 原始碼](https://github.com/darkerduck/CashArcade)
 
@@ -8,7 +8,7 @@
 
 | 想了解什麼 | 文件 |
 | --- | --- |
-| 十款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
+| 十一款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
 | 本機環境、檔案分工、關卡、音訊介面與素材維護 | [開發指南](docs/DEVELOPMENT.md) |
 | 哪些操作收費、哪些進度可恢復、儲存鍵與付款錯誤 | [存檔與付款](docs/STORAGE_AND_PAYMENTS.md) |
 | 測試指令、瀏覽器驗收、GitHub Pages 發布與排錯 | [測試與發布](docs/TESTING_AND_DEPLOYMENT.md) |
@@ -330,3 +330,10 @@ CashArcade 使用 HTML、CSS、JavaScript、Canvas 與 WebGL 製作，不包含�
 [立即遊玩](https://darkerduck.github.io/CashArcade/prism/) · 全程免費
 
 兩格一組的電路持續落下，旋轉與擺放後，讓每個端點相接成封閉迴路。迴路點亮清除後，落下的方塊可以繼續接成連鎖。無限關卡會依完成迴路數加速；有預覽、落點影子、暫存、柔降與硬降，保存最高分及最長連鎖。首組直接放下即可完成示範迴路，後續使用可重現的洗牌袋。測試包含只靠正常操作達成的二段連鎖回放。
+
+
+## 雙軌節奏 / Pulse Switch
+
+[立即遊玩](https://darkerduck.github.io/CashArcade/pulse/) · 全程免費
+
+三首完整原創 8-bit 電子樂：「餘光列車」110 BPM、「玻璃海岸」126 BPM、「離子午夜」144 BPM，每首約 67–70 秒，兩種難度共六份譜面。左右軌點擊、長按蓄力與雙軌閘門共用音訊時鐘；F／J 或左右鍵操作，手機可同時按兩軌。內建節拍延遲校正、視覺拍點、獨立音樂／音效音量與各曲紀錄。離開分頁或音訊被系統中斷會暫停，繼續有預備拍。

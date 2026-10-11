@@ -154,3 +154,8 @@ SDK URL：`https://linkincash.cc/arcade/sdk/v1.js`。各遊戲 publishable key �
 - `casharcade-prism-v1`：最高分、最長連鎖、減少動態設定。當局棋盤不恢復；進行中離頁會使用瀏覽器的原生離頁提醒。
 - 各自 `casharcade-{reactor,prism}-sound-muted` 與 `casharcade-{reactor,prism}-music-{muted,volume}` 保存獨立聲音偏好。
 - 無效數值會清理；無法儲存時仍可正常免費遊玩。
+
+
+## 雙軌節奏
+
+全程免費、不載入 CashLink SDK。`casharcade-pulse-v1` 保存歌曲、難度、-250 至 +250 ms 校正、減少動態效果、音樂／音效開關與獨立音量，並依六個歌曲難度組合保存最高分、準確率、連段與場次。只保存完成場次紀錄，不恢復進行中的歌曲。資料損壞或儲存不可用時仍可遊玩，頁面會提示無法保存。資料只在目前瀏覽器，不提供雲端同步。

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root=fileURLToPath(new URL('../',import.meta.url)), origin='https://darkerduck.github.io';
-const pages=['index.html','snake/index.html','breakout/index.html','flappy/index.html','missile/index.html','assault/index.html','drift/index.html','circuit/index.html','gravity/index.html','reactor/index.html','prism/index.html',
+const pages=['index.html','snake/index.html','breakout/index.html','flappy/index.html','missile/index.html','assault/index.html','drift/index.html','circuit/index.html','gravity/index.html','reactor/index.html','prism/index.html','pulse/index.html',
     'tests/arcade-music.html','tests/missile-music.html','tests/breakout-gallery.html','tests/assault-gallery.html','tests/snake-gallery.html'];
 const attrs=tag=>Object.fromEntries([...tag.matchAll(/([\w-]+)="([^"]*)"/g)].map(m=>[m[1],m[2]]));
 function png(data) {

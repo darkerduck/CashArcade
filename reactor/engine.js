@@ -4,6 +4,7 @@
     const W = 600, H = 920, BALL_R = 9, STEP = 1 / 120, GRAVITY = 790, MAX_SPEED = 1900;
     // The open outlet continues the shooter divider up to the table ceiling.
     const SHOOTER = Object.freeze({ x: 526, top: 35, exit: 220, bottom: 884, r: 4 });
+    const NUDGE = Object.freeze({ cooldown: .8, cooling: .22, tiltAt: 2.5, tiltDrainAfter: 10, horizontal: 105, upward: 170 });
     const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
     const BUMPERS = Object.freeze([
         Object.freeze({ x: 212, y: 222, r: 28, color: '#63efff', label: 'I' }),
@@ -19,16 +20,18 @@
     function wall(a, b, kind = 'wall') { WALLS.push(Object.freeze({ ax: a[0], ay: a[1], bx: b[0], by: b[1], kind, r: kind === 'sling' ? 5 : 4 })); }
     const shell = [[42, 823], [30, 680], [28, 200], [45, 115], [104, 55], [180, 35], [498, 35], [578, 126], [578, 884], [SHOOTER.x, SHOOTER.bottom], [SHOOTER.x, SHOOTER.exit]];
     for (let i = 1; i < shell.length; i++) wall(shell[i - 1], shell[i]);
-    wall([40, 692], [90, 754]); wall([90, 754], [177, 805]);
-    wall([513, 688], [470, 754]); wall([470, 754], [401, 805]);
+    wall([515, 720], [470, 754]); wall([470, 754], [401, 799]);
     wall([132, 422], [129, 309], 'rail'); wall([129, 309], [157, 185], 'rail');
     wall([454, 422], [448, 307], 'rail'); wall([448, 307], [420, 184], 'rail');
     // Slingshots face the centre lane. Their reverse sides are ordinary rubber.
     wall([88, 588], [159, 741], 'sling'); wall([88, 588], [98, 704]); wall([98, 704], [159, 741]);
     wall([490, 588], [419, 741], 'sling'); wall([490, 588], [480, 704]); wall([480, 704], [419, 741]);
-    // Inlane separators preserve two dangerous outlanes and a true centre drain.
-    wall([59, 573], [63, 689]); wall([63, 689], [141, 790]);
-    wall([515, 573], [511, 689]); wall([511, 689], [436, 790]);
+    // One continuous guide keeps the left inlane separate from the open
+    // outlane. The old crossing lower guide closed the drain and pinched balls.
+    // Meet the thicker flipper rubber slightly above its pivot, without a cup.
+    wall([59, 573], [63, 720]); wall([63, 720], [177, 799]);
+    // Keep the right lane closed to the shooter, but remove its matching pinch.
+    wall([515, 573], [515, 720]);
     Object.freeze(WALLS);
     const MISSIONS = Object.freeze([
         Object.freeze({ name: '點亮三座電容', detail: '命中三個不同的上方彈力環', target: 3, type: 'bumper' }),
@@ -59,6 +62,7 @@
             this.events = []; this.plungerCharge = 0; this._plungerHeld = false;
             this._accumulator = 0; this._saveUntil = 0; this._freshServe = true;
             this.lastHit = ''; this.combo = 0; this.comboUntil = 0;
+            this._resetNudge();
             this._serve(true); return this;
         }
         start() { if (this.state === 'ready') this.state = 'running'; return this; }
@@ -70,6 +74,27 @@
         get multiplier() { return this.overload > 0 ? 3 : 1; }
         get ballSave() { return Math.max(0, this._saveUntil - this.time); }
         get staged() { return this.balls.find(b => b.staged); }
+        get nudgeCooldown() { return Math.max(0, this._nudgeUntil - this.time); }
+        get tiltRemaining() { return this.tilted ? Math.max(0, this._tiltDrainAt - this.time) : 0; }
+        get canNudge() { return this.state === 'running' && !this.tilted && this.nudgeCooldown <= 1e-9 && this.balls.some(b => !b.staged && b.inField); }
+        _resetNudge() { this.nudgeHeat = 0; this._nudgeUntil = 0; this.tilted = false; this._tiltDrainAt = 0; }
+        nudge() {
+            if (!this.canNudge) return false;
+            this._nudgeUntil = this.time + NUDGE.cooldown; this.nudgeHeat += 1;
+            if (this.nudgeHeat >= NUDGE.tiltAt) {
+                // A tilt forfeits this ball's powered mechanisms and save, not
+                // another reserve immediately. Normal drains end the penalty.
+                this.tilted = true; this._saveUntil = 0; this.overload = 0; this.combo = 0;
+                this._tiltDrainAt = this.time + NUDGE.tiltDrainAfter;
+                this._event('tilt'); return false;
+            }
+            for (const ball of this.balls) {
+                if (ball.staged || !ball.inField) continue;
+                ball.vx += Math.sign(291 - ball.x) * NUDGE.horizontal;
+                ball.vy -= NUDGE.upward; this._cap(ball);
+            }
+            this._event('nudge', { x: 291, y: 720, heat: this.nudgeHeat }); return true;
+        }
         _event(type, values = {}) { this.events.push({ type, time: this.time, ...values }); if (this.events.length > 200) this.events.shift(); }
         takeEvents() { return this.events.splice(0); }
         _ball(x, y, vx = 0, vy = 0, staged = false) {
@@ -78,10 +103,11 @@
         }
         _serve(fresh) {
             this._freshServe = fresh; this.plungerCharge = 0; this._plungerHeld = false;
+            this._resetNudge();
             this._ball(552, 828, 0, 0, true); this._event('serve', { saved: !fresh });
         }
         launch(strength = this.plungerCharge) {
-            if (this.state !== 'running' || !this.staged) return false;
+            if (this.state !== 'running' || !this.staged || this.tilted) return false;
             const ball = this.staged;
             ball.staged = false; ball.vy = -(1220 + clamp(Number.isFinite(strength) ? strength : 0, 0, 1) * 410);
             // The one-way return gate engages only once a launched ball leaves the chute.
@@ -91,15 +117,17 @@
             this._event('launch', { x: ball.x, y: ball.y }); return true;
         }
         _award(points, x, y, label) {
+            if (this.tilted) return 0;
             const amount = Math.round(points * this.multiplier); this.score += amount;
             this._event('score', { points: amount, x, y, label }); return amount;
         }
         _charge(amount) {
-            if (this.overload > 0) return;
+            if (this.overload > 0 || this.tilted) return;
             this.energy = clamp(this.energy + amount, 0, 100);
             if (this.energy >= 100) this._overload();
         }
         _overload() {
+            if (this.tilted) return;
             this.energy = 0; this.overload = 22; this.overloads++; this.multiballs++;
             this._saveUntil = Math.max(this._saveUntil, this.time + 8);
             this._award(2500, CORE.x, CORE.y, '反應爐過載');
@@ -109,7 +137,7 @@
             this._event('overload', { x: CORE.x, y: CORE.y, balls: this.balls.length });
         }
         _mission(type, index) {
-            if (type !== this.mission.type) return;
+            if (this.tilted || type !== this.mission.type) return;
             if (type === 'bumper') {
                 this.litBumpers[index] = true; this.missionProgress = this.litBumpers.filter(Boolean).length;
             } else this.missionProgress++;
@@ -137,6 +165,7 @@
             ball.x = item.x + nx * (min + .05); ball.y = item.y + ny * (min + .05);
             const inward = ball.vx * nx + ball.vy * ny;
             if (inward < 0) { ball.vx -= 1.7 * inward * nx; ball.vy -= 1.7 * inward * ny; }
+            if (this.tilted) return;
             const key = core ? 'core' : 'bumper' + index;
             if (!this._hit(ball, key, .18)) return;
             const outward = ball.vx * nx + ball.vy * ny;
@@ -167,13 +196,13 @@
                 // Tip speed and contact position matter. Holding a raised bat never repeats this impulse.
                 ball.vy -= 220 * tip; ball.vx += (surface.side === 'left' ? 1 : -1) * 125 * tip;
                 this._event('flipper', { x: p.x, y: p.y, side: surface.side });
-            } else if (!surface && s.kind === 'sling' && ny < .65 && this._hit(ball, 'sling' + s.ax, .3)) {
+            } else if (!surface && !this.tilted && s.kind === 'sling' && ny < .65 && this._hit(ball, 'sling' + s.ax, .3)) {
                 ball.vx += nx * 170; ball.vy += ny * 210 - 100;
                 this._award(75, p.x, p.y, '彈射'); this._event('sling', { x: p.x, y: p.y });
             } else if (!surface && Math.abs(vn) > 140 && this._hit(ball, 'wall', .1)) this._event('wall', { x: p.x, y: p.y });
         }
         _rail(ball, rail, index) {
-            if (Math.hypot(ball.x - rail.x, ball.y - rail.y) > rail.r || !this._hit(ball, 'rail' + index, 1.8)) return;
+            if (this.tilted || Math.hypot(ball.x - rail.x, ball.y - rail.y) > rail.r || !this._hit(ball, 'rail' + index, 1.8)) return;
             this.railHits[index]++; this.lastHit = index ? '右能量軌道' : '左能量軌道';
             ball.vy = Math.min(ball.vy, -830); ball.vx += rail.side * -65;
             this._award(650, rail.x, rail.y, '能量軌道'); this._event('rail', { index, x: rail.x, y: rail.y });
@@ -200,9 +229,10 @@
         }
         _step(input) {
             this.time += STEP;
+            this.nudgeHeat = Math.max(0, this.nudgeHeat - NUDGE.cooling * STEP);
             if (this.overload > 0) { this.overload = Math.max(0, this.overload - STEP); if (!this.overload) this._event('overloadEnd'); }
             if (this.comboUntil < this.time) this.combo = 0;
-            if (this.staged) {
+            if (this.staged && !this.tilted) {
                 if (input.plunger) { this.plungerCharge = Math.min(1, this.plungerCharge + STEP * .95); this._plungerHeld = true; }
                 else if (this._plungerHeld) this.launch();
             }
@@ -214,9 +244,9 @@
             const dt = STEP / substeps;
             for (let n = 0; n < substeps; n++) {
                 for (const f of this.flippers) {
-                    const target = input[f.side] ? f.active : f.rest, before = f.angle;
+                    const pressed = !this.tilted && input[f.side], target = pressed ? f.active : f.rest, before = f.angle;
                     const delta = clamp(target - f.angle, -15 * dt, 15 * dt); f.angle += delta; f.omega = delta / dt;
-                    f.rising = !!input[f.side] && Math.abs(before - target) > .00001;
+                    f.rising = !!pressed && Math.abs(before - target) > .00001;
                 }
                 for (const ball of this.balls) {
                     if (ball.staged) continue;
@@ -242,9 +272,14 @@
                 // after all contacts, before the next adaptive substep.
                 for (const ball of this.balls) if (!ball.staged) this._shooterGate(ball);
             }
-            const drained = this.balls.filter(b => b.y > H + 25 || b.y < -100 || b.x < -80 || b.x > W + 80);
+            // Forfeited balls normally drain with the bats off. Collect a ball
+            // still balanced on a rounded post after ten simulated seconds so
+            // TILT cannot lock the round while the nudge control is disabled.
+            const tiltExpired = this.tilted && this.time + 1e-9 >= this._tiltDrainAt;
+            const drained = this.balls.filter(b => b.y > H + 25 || b.y < -100 || b.x < -80 || b.x > W + 80 || (tiltExpired && !b.staged));
             if (drained.length) {
                 this.balls = this.balls.filter(b => !drained.includes(b));
+                if (this.balls.length && this.balls.every(b => b.staged)) this._resetNudge();
                 drained.forEach(b => this._event('drain', { x: b.x, y: H - 20, remaining: this.balls.length }));
                 if (!this.balls.length) {
                     if (this.ballSave > 0) { this._serve(false); this._event('save'); }
@@ -262,7 +297,7 @@
             while (this._accumulator + 1e-10 >= STEP && this.state === 'running') { this._accumulator -= STEP; this._step(input); }
         }
     }
-    const api = { W, H, BALL_R, STEP, GRAVITY, MAX_SPEED, SHOOTER, BUMPERS, CORE, RAILS, WALLS, MISSIONS, Game, closest, flipperEnd };
+    const api = { W, H, BALL_R, STEP, GRAVITY, MAX_SPEED, SHOOTER, NUDGE, BUMPERS, CORE, RAILS, WALLS, MISSIONS, Game, closest, flipperEnd };
     root.ReactorPinball = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : window);

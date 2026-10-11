@@ -20,12 +20,16 @@
     class Renderer {
         constructor(canvas) {
             this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.elapsed = 0;
-            this.particles = []; this.pulses = []; this.labels = []; this.trails = new Map(); this.cache = null;
+            this.particles = []; this.pulses = []; this.labels = []; this.trails = new Map(); this.cache = null; this.shake = 0;
             this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
         }
-        reset() { this.particles.length = 0; this.pulses.length = 0; this.labels.length = 0; this.trails.clear(); }
+        reset() { this.particles.length = 0; this.pulses.length = 0; this.labels.length = 0; this.trails.clear(); this.shake = 0; }
         consume(events) {
             for (const e of events) {
+                if (e.type === 'nudge') {
+                    if (!this.reduced) this.shake = .22;
+                    this.pulses.push({ x: 291, y: 720, life: .5, color: '#ffd08b', big: false });
+                }
                 if (e.type === 'score') {
                     this.labels.push({ x: e.x || 290, y: e.y || 460, text: '+' + e.points, life: .9, color: e.points >= 1800 ? '#ffc875' : '#c2f8ff' });
                 }
@@ -86,6 +90,9 @@
                 line(ctx, [[s.ax, s.ay - 1], [s.bx, s.by - 1]], s.kind === 'sling' ? '#ff6ea7' : s.kind === 'rail' ? '#5fdae5' : '#7596a8', s.r * 2);
                 line(ctx, [[s.ax, s.ay - 3], [s.bx, s.by - 3]], s.kind === 'sling' ? '#ffb5d0' : '#b2d2dc', 1.3);
             }
+            // The open left outlane passes behind the guide, outside flipper reach.
+            for (const y of [751, 781, 811]) line(ctx, [[47, y - 3], [51, y + 2], [55, y - 3]], '#a37f5a', 1.2);
+            text(ctx, 'OUT', 54, 850, 7, '#bb9161', 700);
             // Slingshot aprons.
             polygon(ctx, [[89, 604], [100, 698], [143, 726]], '#321c38', '#9c416a', 1.3);
             polygon(ctx, [[489, 604], [478, 698], [435, 726]], '#231e40', '#7a538f', 1.3);
@@ -145,7 +152,12 @@
         }
         draw(game, delta = 0, theme = 'dark') {
             const dt = Math.max(0, Math.min(.04, delta)); if (game.state === 'running') this.elapsed += dt;
-            const ctx = this.ctx; ctx.clearRect(0, 0, W, H); ctx.drawImage(this.background(theme), 0, 0);
+            const ctx = this.ctx; ctx.clearRect(0, 0, W, H); ctx.save();
+            if (game.state === 'running' && this.shake > 0) {
+                this.shake = Math.max(0, this.shake - dt);
+                ctx.translate(Math.sin(this.elapsed * 75) * this.shake * 14, -Math.sin(this.shake / .22 * Math.PI) * 3);
+            }
+            ctx.drawImage(this.background(theme), 0, 0);
             BUMPERS.forEach((b, i) => this.bumper(ctx, b, i, game)); this.core(ctx, game);
             // A dotted route ties each mission to its corresponding mechanism.
             const active = game.missionIndex;
@@ -204,8 +216,13 @@
             this.particles = this.particles.filter(p => p.life > 0);
             for (const label of this.labels) { label.life -= animate; label.y -= animate * 29; ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, label.life * 2)); text(ctx, label.text, label.x, label.y, 14, label.color, 800); ctx.restore(); }
             this.labels = this.labels.filter(label => label.life > 0);
+            if (game.tilted) {
+                text(ctx, 'TILT', 291, 680, 28, '#ff789b', 800);
+                text(ctx, 'FLIPPERS OFF · WAIT FOR DRAIN', 291, 704, 9, '#ffc0d0', 700);
+            }
             if (game.ballSave > 0 && !game.staged) text(ctx, 'BALL SAVE  ·  ' + Math.ceil(game.ballSave), 291, 865, 10, '#7de8ba', 700);
             else if (game.balls.length > 1) text(ctx, 'MULTIBALL  ·  ' + game.balls.length, 291, 865, 10, '#ffcc83', 700);
+            ctx.restore();
         }
     }
     root.ReactorPinballRenderer = { Renderer };

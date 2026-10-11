@@ -51,3 +51,19 @@ test('reduced motion suppresses particle showers and reset removes obsolete ball
     g.balls = []; renderer.draw(g, 1 / 60); assert.equal(renderer.trails.size, 0);
     renderer.reset(); assert.equal(renderer.pulses.length, 0); assert.equal(renderer.labels.length, 0);
 });
+test('nudge feedback moves only the drawing, expires, and restores the canvas transform', () => {
+    const { renderer, calls } = harness(), g = new API.Game().start();
+    renderer.consume([{ type: 'nudge', x: 291, y: 720 }]); assert.ok(renderer.shake > 0);
+    const before = JSON.stringify(g); renderer.draw(g, 1 / 60);
+    assert.equal(JSON.stringify(g), before); assert.ok(calls.some(c => c[0] === 'translate'));
+    assert.equal(calls.filter(c => c[0] === 'save').length, calls.filter(c => c[0] === 'restore').length);
+    g.pause(); const shake = renderer.shake; renderer.draw(g, 1 / 30); assert.equal(renderer.shake, shake);
+    g.resume(); for (let i = 0; i < 20; i++) renderer.draw(g, 1 / 60); assert.equal(renderer.shake, 0);
+});
+test('reduced-motion nudge stays still and tilt has a visible playfield warning', () => {
+    const { renderer, calls } = harness(true), g = new API.Game().start();
+    renderer.consume([{ type: 'nudge' }]); assert.equal(renderer.shake, 0);
+    g.tilted = true; renderer.draw(g, 1 / 60);
+    assert.ok(calls.some(c => c[0] === 'fillText' && c[1] === 'TILT'));
+    renderer.reset(); assert.equal(renderer.shake, 0);
+});

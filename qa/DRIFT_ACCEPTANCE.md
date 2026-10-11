@@ -50,3 +50,20 @@
 ## 第三版雲端預發布 QA 結果
 
 Assistant 雲端驗證通過：Node 全套586/586；獨立DOM 5/5；2,304組高速斜撞護欄fixture；30/60/120Hz共9場、每場90秒的三賽道輸入回放；位置跳轉與無效解鎖矩陣；交接manifest全部匹配。第三道有效圈與奪冠、假finish及爆炸尾音均通過。Mac只做程式編輯、靜態檢查與版本控制，未開瀏覽器或跑遊戲／物理測試。使用者已授權此QA通過後commit/push/Pages；正式部署後仍由assistant雲端Chrome確認真實UI／鍵盤／布局。
+
+
+## 第四版：正式部署後全螢幕修正（待雲端重驗）
+
+已發布基準：baa58ecb46209456f3ae611549be84fad4f54e8c。部署後雲端真Chrome驗收找到1180×757全螢幕的畫布超出arena 119px，遮住telemetry與觸控。原CSS用固定232px預留高度，沒有反映六格兩行HUD。第四版將fullscreen機台改為五行Grid（HUD、剩餘空間arena、telemetry、touch、actions），所有固定內容按實際高度排列；arena作size container，canvas以兩軸container尺寸取小值、維持1000:760，畫布box與renderer均不會超出或拉伸。窄版左右鍵可伸縮、甩尾鍵保留120px；極短橫版的overlay可滾動。CSS版本提高至v4，物理／音訊／儲存／排名程式未改。
+
+新增 `node qa/drift-fullscreen.mjs http://127.0.0.1:4173/drift/`，須僅在assistant雲端既有Playwright/Chrome執行。涵蓋1180×757、393×844、844×393、320×568，暗／亮、ready overlay／running／paused、退出fullscreen與寬度重新調整；驗證畫布保持比例並完全在arena內、數據及觸控不重疊、所有控制在視窗內。Mac未開瀏覽器／未跑遊戲測試，僅靜態diff與Shell語法檢查。此版先交雲端QA，尚未commit/push。
+
+
+## 第五版：短橫版保留合理賽道高度（待雲端重驗）
+
+第四版雲端靜態/DOM確認Grid contain方向正確，五個核心JS與已通過版本hash完全相同，但844×393按原各列高度推算arena仍可能只剩42px，尚未冒稱此推算為浏览器實測。第五版新增max-height:500px橫向fullscreen媒體規則：六格HUD單行、較小字級與邊距、數據列緊湊、觸控40px高、actions更緊湊，控制仍保留在arena外。overlay隱藏裝飾emblem，必要時仍可滾動。
+
+雲端fullscreen腳本新增568×320，且對所有<=500px短橫版要求arena和實際canvas至少占viewport高度一半、HUD<=60px，不再只檢高度>0；仍驗證不重疊、完整畫布比例、暗亮/ready/running/paused/resize/exit。物理、AI、音訊、排名與存檔JS不變；先交雲端QA，不commit/push。Mac只做靜態檢查。
+
+
+第五版雲端預發布結果：Node 586/586、獨立DOM5/5通過；fullscreen腳本語法與5 viewport斷言review、manifest與5核心JS hash核實通過。這不代表已實測全螢幕幾何；使用者已授權先發布此修正，部署後由assistant雲端Chrome實量fullscreen與短橫版。Mac未跑瀏覽器／遊戲測試。

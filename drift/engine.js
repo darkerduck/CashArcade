@@ -1,7 +1,7 @@
 (() => {
     'use strict';
 
-    const W = 1000, H = 760, SESSION_SECONDS = 90;
+    const W = 1000, H = 760, SESSION_SECONDS = 90, CAR_RADIUS = 18.5;
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     const wrapAngle = angle => Math.atan2(Math.sin(angle), Math.cos(angle));
     const wrapProgress = value => ((value % 1) + 1) % 1;
@@ -83,7 +83,8 @@
     ]);
 
     class Game {
-        constructor(index = 0) {
+        constructor(index = 0, rival = false) {
+            this.isRival = rival;
             this.trackIndex = Number.isInteger(index) ? clamp(index, 0, TRACKS.length - 1) : 0;
             this.track = TRACKS[this.trackIndex];
             this._reset();
@@ -92,6 +93,16 @@
         _reset() {
             const start = this.track.start;
             this.car = { x: start.x, y: start.y, angle: start.angle, vx: 0, vy: 0, speed: 0 };
+            this.health = 100; this.collisions = 0; this.hitCooldown = 0; this.impactFlash = 0;
+            this.rank = 1; this.won = false; this.result = null;
+            this.rivals = this.isRival ? [] : [new Game(this.trackIndex, true), new Game(this.trackIndex, true)];
+            this.rivals.forEach((r, i) => {
+                const p = pointAt(-(i + 1) * 40 / this.track.length, this.track);
+                Object.assign(r.car, { x: p.x, y: p.y, angle: p.angle });
+                r.progress = p.progress; r._lastX = p.x; r._lastY = p.y;
+                r._invalidLap = true; r.pace = 190 + i * 8; r.name = ['VIOLET', 'AMBER'][i];
+                r.state = 'running';
+            });
             this.state = 'ready'; this.time = 0; this.timeLeft = SESSION_SECONDS;
             this.score = 0; this.laps = 0; this.bestLap = null; this.lapTime = 0;
             this.boost = 0; this.charge = 0; this.combo = 0; this.maxCombo = 0;
@@ -99,7 +110,7 @@
             this.progress = 0; this.checkpoint = 0;
             this._score = 0; this._holdingDrift = false; this._driftTime = 0; this._comboHold = 0;
             this._lapStarted = 0; this._nextCheckpoint = 1; this._legalDistance = 0;
-            this._lastX = start.x; this._lastY = start.y; this._invalidLap = false;
+            this._lastX = start.x; this._lastY = start.y; this._invalidLap = false; this._gateBlocked = false;
             return this;
         }
 
@@ -119,19 +130,35 @@
             if (this.state !== 'running' || !finite(dt) || dt <= 0) return this;
             // A background-tab wake never fast-forwards a race or teleports its car.
             const duration = Math.min(dt, .1, this.timeLeft);
-            const steps = Math.ceil(duration / (1 / 120)), step = duration / steps;
+            const speed = Math.max(345, Math.hypot(this.car.vx, this.car.vy));
+            const steps = Math.ceil(duration / Math.min(1 / 120, 2 / speed)), step = duration / steps;
             input = input && typeof input === 'object' ? input : {};
             const steer = finite(input.steer) ? clamp(input.steer, -1, 1) : 0;
             const handbrake = input.drift === true;
-            for (let i = 0; i < steps && this.state === 'running'; i++) this._step(step, steer, handbrake);
+            for (let i = 0; i < steps && this.state === 'running'; i++) {
+                for (const rival of this.rivals) {
+                    const input = rivalInput(rival);
+                    if (rival.state === 'running') rival._step(step, input.steer, false);
+                    rival.drain();
+                }
+                this._step(step, steer, handbrake);
+                this.rank = this.standings().findIndex(entry => entry.racer === this) + 1;
+                if (this.state === 'finished') {
+                    this.won = this.health > 0 && this.rank === 1 && this.laps > 0 && !this._invalidLap;
+                    this.result = this.won ? 'win' : 'loss';
+                }
+            }
             return this;
         }
 
         _step(dt, steer, handbrake) {
             const car = this.car, track = this.track;
+            this.hitCooldown = Math.max(0, this.hitCooldown - dt);
+            this.impactFlash = Math.max(0, this.impactFlash - dt);
             // Detect external relocations as well as discontinuous route projections.
             // Re-entering at the start line can begin a fresh legitimate lap.
-            if (Math.hypot(car.x - this._lastX, car.y - this._lastY) > 1) this._invalidLap = true;
+            this._gateBlocked = Math.hypot(car.x - this._lastX, car.y - this._lastY) > 1;
+            if (this._gateBlocked) this._invalidLap = true;
             const before = nearestPoint(car.x, car.y, track);
             const wasOffroad = this.offroad;
             this.offroad = before.distance > track.width / 2;
@@ -166,7 +193,7 @@
             }
 
             const boosted = this.boost > 0 && !handbrake && !this.offroad;
-            const targetSpeed = this.offroad ? 82 : boosted ? 345 : handbrake ? 168 : 215;
+            const targetSpeed = this.offroad ? 82 : boosted ? 345 : handbrake ? 168 : (this.pace || 215);
             const acceleration = targetSpeed > car.speed ? (boosted ? 4.4 : 2.8) : 5;
             car.speed += (targetSpeed - car.speed) * (1 - Math.exp(-acceleration * dt));
             const turnRate = handbrake ? 3.4 : 3.1;
@@ -176,14 +203,7 @@
             car.vx += (Math.cos(car.angle) * car.speed - car.vx) * alignment;
             car.vy += (Math.sin(car.angle) * car.speed - car.vy) * alignment;
             const oldX = car.x, oldY = car.y;
-            car.x += car.vx * dt; car.y += car.vy * dt;
-            const x = clamp(car.x, 12, W - 12), y = clamp(car.y, 12, H - 12);
-            if (x !== car.x || y !== car.y) {
-                if (x !== car.x) car.vx = 0;
-                if (y !== car.y) car.vy = 0;
-                car.x = x; car.y = y; car.speed *= .985;
-                this.charge = 0; this.boost = 0;
-            }
+            this._move(dt);
             if (boosted) this.boost = Math.max(0, this.boost - dt / 1.65);
 
             const projection = nearestPoint(car.x, car.y, track);
@@ -194,10 +214,85 @@
             this.lapTime = this.time - this._lapStarted;
             this._advanceLap(projection, Math.hypot(car.x - oldX, car.y - oldY));
             this._lastX = car.x; this._lastY = car.y;
-            if (this.timeLeft <= 1e-8) {
+            if (this.health <= 0) {
+                this.state = 'destroyed'; this.result = 'exploded'; this.won = false;
+                this.drifting = false; this.car.speed = 0; this.car.vx = 0; this.car.vy = 0;
+                this.emit('explosion');
+            } else if (this.timeLeft <= 1e-8) {
                 this.time = SESSION_SECONDS; this.timeLeft = 0; this.state = 'finished';
                 this.drifting = false; this.emit('finish', { score: this.score, laps: this.laps, bestLap: this.bestLap });
             }
+        }
+
+        // The car's enclosing disk is contained in the road tube. Sweep in
+        // <=2px increments and bisect the first exit, so a boost cannot cross
+        // either rail or skip the infield. Contact retains tangential velocity.
+        _move(dt) {
+            const c = this.car, limit = this.track.width / 2 - CAR_RADIUS;
+            const inside = (x, y) => nearestPoint(x, y, this.track).distance <= limit;
+            if (!inside(c.x, c.y)) {
+                // Defensive recovery from malformed/external positions; invalidate
+                // progress before correcting. Normal driving never uses relocation.
+                const p = nearestPoint(c.x, c.y, this.track);
+                const d = Math.hypot(c.x - p.x, c.y - p.y) || 1;
+                c.x = p.x + (c.x - p.x) / d * (limit - .5);
+                c.y = p.y + (c.y - p.y) / d * (limit - .5);
+                this._invalidLap = true; this._gateBlocked = true;
+            }
+            const dx = c.vx * dt, dy = c.vy * dt;
+            const count = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 2));
+            for (let i = 0; i < count; i++) {
+                const x = c.x + c.vx * dt / count, y = c.y + c.vy * dt / count;
+                if (inside(x, y)) { c.x = x; c.y = y; continue; }
+                let lo = 0, hi = 1;
+                for (let j = 0; j < 12; j++) {
+                    const t = (lo + hi) / 2;
+                    if (inside(c.x + (x - c.x) * t, c.y + (y - c.y) * t)) lo = t; else hi = t;
+                }
+                c.x += (x - c.x) * lo; c.y += (y - c.y) * lo;
+                const p = nearestPoint(c.x, c.y, this.track);
+                const d = Math.hypot(c.x - p.x, c.y - p.y) || 1;
+                const nx = (c.x - p.x) / d, ny = (c.y - p.y) / d;
+                const impact = Math.max(0, c.vx * nx + c.vy * ny);
+                c.x -= nx * .15; c.y -= ny * .15;
+                if (impact > 0) { c.vx -= nx * impact * 1.12; c.vy -= ny * impact * 1.12; }
+                c.speed = Math.min(c.speed, Math.max(55, Math.hypot(c.vx, c.vy)));
+                this.charge = 0; this.boost = 0; this.combo = 0; this._driftTime = 0;
+                this._comboHold = 0; this.drifting = false;
+                if (impact >= 35 && this.hitCooldown <= 0) {
+                    const damage = clamp(impact * .09, 5, 24);
+                    this.health = Math.max(0, this.health - damage);
+                    this.collisions++; this.hitCooldown = .9; this.impactFlash = .3;
+                    this.emit('collision', { damage, impact });
+                }
+            }
+        }
+
+        raceDistance() {
+            if (this.health <= 0) return -1;
+            // Invalid attempts never retain a shortcut's apparent progress.
+            return this.laps * this.track.length + (this._invalidLap ? 0 :
+                Math.min(Math.max(0, this._legalDistance), (this.checkpoint + 1) * this.track.length / 8));
+        }
+        standings() {
+            return [this, ...this.rivals].map((racer, id) => ({ racer, id, distance: racer.raceDistance() }))
+                .sort((a, b) => b.distance - a.distance || b.racer.health - a.racer.health || b.id - a.id);
+        }
+
+        _crossedGate(index) {
+            // A relocation or defensive recovery is not a physical sweep.
+            // Never treat the segment from the old position to that new
+            // position as checkpoint proof, including finish-line recovery.
+            if (this._gateBlocked) return false;
+            const gate = this.track.checkpoints[index];
+            const tx = Math.cos(gate.angle), ty = Math.sin(gate.angle);
+            const before = (this._lastX - gate.x) * tx + (this._lastY - gate.y) * ty;
+            const after = (this.car.x - gate.x) * tx + (this.car.y - gate.y) * ty;
+            if (before > 0 || after <= 0) return false;
+            const t = -before / (after - before);
+            const x = this._lastX + (this.car.x - this._lastX) * t - gate.x;
+            const y = this._lastY + (this.car.y - this._lastY) * t - gate.y;
+            return Math.abs(x * gate.nx + y * gate.ny) <= this.track.width / 2 - CAR_RADIUS + .01;
         }
 
         _advanceLap(projection, movement) {
@@ -205,22 +300,22 @@
             let delta = current - previous;
             if (delta > .5) delta -= 1;
             if (delta < -.5) delta += 1;
-            // At the inside edge of a hairpin, a nearest-point projection can
-            // legitimately jump across the bend while the entire car stays on road.
-            const plausible = Math.abs(delta) < .08
-                && Math.abs(delta * this.track.length) <= Math.max(this.track.width * .8, movement * 3);
+            // The nearest point can switch between adjacent sides of a tight
+            // bend even when a <=2px physical sweep stays entirely inside the
+            // road. Arc-distance / movement is therefore not a valid speed
+            // test. Ordered physical gate crossings below validate the route;
+            // external relocations are invalidated before the sweep in _step.
+            const plausible = Math.abs(delta) < .08;
             const onroad = !this.offroad;
             if (!plausible) this._invalidLap = true;
             if (plausible && onroad) this._legalDistance = Math.max(0, this._legalDistance + delta * this.track.length);
 
-            if (plausible && delta > 0 && onroad) {
-                const gate = this._nextCheckpoint / 8;
-                const end = previous + delta;
-                if (this._nextCheckpoint < 8 && previous < gate && end >= gate) {
+            if (plausible && onroad) {
+                if (this._nextCheckpoint < 8 && this._crossedGate(this._nextCheckpoint)) {
                     this.checkpoint = this._nextCheckpoint++;
                     this.emit('checkpoint', { checkpoint: this.checkpoint });
                 }
-                if (previous > .875 && current < .125) {
+                if ((previous > .875 || this._nextCheckpoint === 8) && this._crossedGate(0)) {
                     if (this._nextCheckpoint === 8 && !this._invalidLap
                         && this._legalDistance >= this.track.length * .9 && this.lapTime > 3) {
                         this.laps++;
@@ -232,7 +327,7 @@
                     }
                     this._lapStarted = this.time; this.lapTime = 0;
                     this._nextCheckpoint = 1; this.checkpoint = 0;
-                    this._legalDistance = current * this.track.length; this._invalidLap = false;
+                    this._legalDistance = current < .125 ? current * this.track.length : 0; this._invalidLap = false;
                 }
             }
             // Crossing the line backwards cannot complete or preserve a lap attempt.
@@ -244,5 +339,11 @@
         }
     }
 
-    globalThis.NeonDrift = Object.freeze({ Game, TRACKS, W, H, SESSION_SECONDS, nearestPoint, pointAt, wrapAngle, clamp });
+    function rivalInput(game) {
+        const p = nearestPoint(game.car.x, game.car.y, game.track);
+        const target = pointAt(p.progress + 65 / game.track.length, game.track);
+        return { steer: clamp(wrapAngle(Math.atan2(target.y - game.car.y, target.x - game.car.x) - game.car.angle) * 2.7, -1, 1) };
+    }
+
+    globalThis.NeonDrift = Object.freeze({ Game, TRACKS, W, H, SESSION_SECONDS, CAR_RADIUS, rivalInput, nearestPoint, pointAt, wrapAngle, clamp });
 })();

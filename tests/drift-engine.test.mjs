@@ -130,29 +130,15 @@ test('straight handbrake holds and tiny taps do not farm boost or drift score', 
     assert.equal(game.events.filter(event => event.type === 'boost').length, 0);
 });
 
-test('offroad removes charge and combo, stops drift scoring and reduces speed', () => {
-    const game = new Game().start();
-    advance(game, 6, (g, i) => drive(g, i > 48));
-    game.car.x = 500; game.car.y = 360;
-    const score = game.score, charge = game.charge;
-    advance(game, .5, { steer: .6, drift: true });
-    assert.equal(game.offroad, true);
-    assert.equal(game.drifting, false);
-    assert.equal(game.combo, 0);
-    assert.ok(game.charge < charge);
-    assert.equal(game.score, score);
-    assert.ok(game.car.speed < 100);
-    assert.equal(game.events.filter(event => event.type === 'offroad').length, 1);
-});
-
-test('world boundaries remain finite and cannot be escaped under sustained input', () => {
+test('rail contact breaks boost and remains contained under sustained outward input', () => {
     const game = new Game().start();
     advance(game, 30, { steer: 0 });
-    assert.ok(game.car.x >= 12 && game.car.x <= W - 12);
-    assert.ok(game.car.y >= 12 && game.car.y <= H - 12);
+    assert.ok(nearestPoint(game.car.x, game.car.y, game.track).distance <= game.track.width / 2 - 18.5 + .01);
     assert.ok(Object.values(game.car).every(Number.isFinite));
     assert.equal(game.laps, 0);
-    assert.ok(game.offroad);
+    assert.equal(game.offroad, false);
+    assert.ok(game.health < 100);
+    assert.equal(game.boost, 0);
 });
 
 test('reverse driving cannot complete laps on any track', () => {

@@ -205,7 +205,7 @@
       for (const [edge, c] of [[this.outer, p.accent], [this.inner, p.second]]) {
         stroke(ctx, edge, 13, color(c, p.light ? .1 : .065));
         stroke(ctx, edge, 6, color(c, .17));
-        stroke(ctx, edge, 2.5, color(c, p.light ? .8 : .94));
+        stroke(ctx, edge, 5, color(c, p.light ? .8 : .94));
         stroke(ctx, edge, .7, color('#e7ffff', .69));
       }
       // Asphalt reflects long thin light rather than a flat fill.
@@ -296,6 +296,11 @@
       this.updateTrails(game, dt, reduced);
       this.drawTrails(ctx);
       this.drawCheckpoints(ctx, game, reduced ? 0 : now);
+      for (const [i, rival] of (game.rivals || []).entries()) {
+        this.drawCar(ctx, rival, reduced, i ? '#ffb45e' : '#ba88ff');
+        ctx.save(); ctx.fillStyle = i ? '#ffb45e' : '#ba88ff'; ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center'; ctx.fillText(rival.name || 'CPU', rival.car.x, rival.car.y - 25); ctx.restore();
+      }
       if (game.car) this.drawCar(ctx, game, reduced);
       this.drawTunnel(ctx);
       if (!reduced) this.drawAtmosphere(ctx, now);
@@ -375,7 +380,7 @@
       });
     }
 
-    drawCar(ctx, game, reduced) {
+    drawCar(ctx, game, reduced, livery = null) {
       const car = game.car, p = this.pal;
       const x = Number(car.x) || 0, y = Number(car.y) || 0, a = Number(car.angle) || 0;
       const boost = !!(game.boosting || car.boosting || game.boostActive || (typeof game.boost === 'number' && game.boost > 0 && !game.drifting && !game.offroad) || (game.boost && typeof game.boost === 'object' && game.boost.active));
@@ -393,7 +398,7 @@
       ctx.fillStyle = '#050d17';
       for (const tx of [-9, 8]) for (const sy of [-1, 1]) { ctx.save(); ctx.translate(tx, sy * 7.5); if (tx > 0) ctx.rotate(clamp(Number(car.steerAngle || car.steer) || 0, -.45, .45)); rounded(ctx, -4, -1.8, 8, 3.6, 1); ctx.fill(); ctx.restore(); }
       const body = ctx.createLinearGradient(0, -8, 0, 8); body.addColorStop(0, '#d8fcf8'); body.addColorStop(.25, '#92e5df'); body.addColorStop(.52, '#effff9'); body.addColorStop(.72, '#86c6ce'); body.addColorStop(1, '#44889f');
-      ctx.fillStyle = body; ctx.beginPath(); ctx.moveTo(-14, -6); ctx.lineTo(-11, -8); ctx.lineTo(6, -8); ctx.quadraticCurveTo(14, -7, 16, -4); ctx.lineTo(16, 4); ctx.quadraticCurveTo(14, 7, 6, 8); ctx.lineTo(-11, 8); ctx.lineTo(-14, 6); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = game.health <= 0 ? '#30313b' : livery || body; ctx.beginPath(); ctx.moveTo(-14, -6); ctx.lineTo(-11, -8); ctx.lineTo(6, -8); ctx.quadraticCurveTo(14, -7, 16, -4); ctx.lineTo(16, 4); ctx.quadraticCurveTo(14, 7, 6, 8); ctx.lineTo(-11, 8); ctx.lineTo(-14, 6); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = '#e5fff7'; ctx.lineWidth = .55; ctx.stroke();
       // Dark panoramic glass with a bright roof and asymmetrical livery.
       ctx.fillStyle = '#112b3b'; ctx.beginPath(); ctx.moveTo(-7, -5.5); ctx.lineTo(3, -5.5); ctx.lineTo(8, -4); ctx.lineTo(8, 4); ctx.lineTo(3, 5.5); ctx.lineTo(-7, 5.5); ctx.closePath(); ctx.fill();
@@ -408,6 +413,13 @@
         const len = reduced ? 14 : 18 + Math.sin(this.elapsed * 51) * 6;
         const flame = ctx.createLinearGradient(-13, 0, -13 - len, 0); flame.addColorStop(0, 'rgba(225,255,255,.95)'); flame.addColorStop(.2, 'rgba(92,241,255,.8)'); flame.addColorStop(1, 'rgba(119,126,255,0)');
         ctx.fillStyle = flame; for (const sy of [-3.5, 3.5]) { ctx.beginPath(); ctx.moveTo(-13, sy - 2); ctx.quadraticCurveTo(-20, sy - 4, -13 - len, sy); ctx.quadraticCurveTo(-20, sy + 4, -13, sy + 2); ctx.fill(); }
+      }
+      if (game.health <= 0 || game.impactFlash > 0) {
+        ctx.fillStyle = game.health <= 0 ? '#ff8844' : '#fff4b0';
+        for (let i = 0; i < 8; i++) {
+          const a = i * TAU / 8, radius = game.health <= 0 ? 24 : 19;
+          ctx.beginPath(); ctx.arc(Math.cos(a) * radius, Math.sin(a) * radius, game.health <= 0 ? 5 : 2, 0, TAU); ctx.fill();
+        }
       }
       ctx.restore();
       // Small heading marker remains clear even under the glass canopy.

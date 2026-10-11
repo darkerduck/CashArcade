@@ -133,7 +133,7 @@ node --test tests/*.test.mjs
 
 ## 霓虹甩尾驗收
 
-執行 `node --test tests/drift-*.test.mjs`，再跑完整 `node --test tests/*.test.mjs`。路徑為 `/CashArcade/drift/`，仍由 main 根目錄發布。桌機測試左右、甩尾／釋放、暫停、失焦、三條賽道及重開；390px 手機檢查雙指同時按住、移出按鈕後放開、pointercancel，以及暗／亮版無溢出。90 秒後必須顯示成績；重新整理只保留紀錄與設定。
+執行 `node --test tests/drift-*.test.mjs`，再跑完整 `node --test tests/*.test.mjs`。路徑為 `/CashArcade/drift/`，仍由 main 根目錄發布。桌機測試左右、甩尾／釋放、暫停、失焦、三條賽道及重開；390px 手機檢查雙指同時按住、移出按鈕後放開、pointercancel，以及暗／亮版無溢出。90 秒後顯示名次與勝負；反覆硬撞會爆炸並可免費重試。第一名且未毀車才逐道解鎖；重新整理保留解鎖、紀錄與設定。護欄／AI／競速測試與雲端瀏覽器腳本、完整驗收清單見 `qa/DRIFT_ACCEPTANCE.md`，本輪通過結果須由執行者另行記錄。
 
 ## 電路迷城／重力快遞驗收
 

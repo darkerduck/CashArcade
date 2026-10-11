@@ -54,7 +54,7 @@ Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母
 
 ## 遊戲
 
-- [霓虹甩尾](https://darkerduck.github.io/CashArcade/drift/)：三條俯視霓虹賽道，每場 90 秒。自動油門，左右轉向，按住 Space／Shift 甩尾蓄能，放開衝刺；手機雙拇指操控。最快單圈、分數與連段紀錄保存在目前瀏覽器，全程免費。
+- [霓虹甩尾](https://darkerduck.github.io/CashArcade/drift/)：三條俯視霓虹賽道，每場 90 秒。自動油門，左右轉向，按住 Space／Shift 甩尾蓄能，放開衝刺；手機雙拇指操控。實體護欄、車輛耐久與兩台電腦對手；第一名且未毀車才逐道解鎖。解鎖、最快單圈、分數與連段紀錄保存在目前瀏覽器，全程免費。
 
 - [霓虹貪吃蛇 3D](https://darkerduck.github.io/CashArcade/snake/)：Three.js 立體十二關戰役，六方向移動、封閉光域、跨高度傳送門、雷射與五種自動生效道具。收集能量後進入出口，挑戰下一關。
 - [霓虹打磚塊](https://darkerduck.github.io/CashArcade/breakout/)：30 個固定設計關卡、16 種道具、重力彈道與蓄力回彈。最多 24 顆球，挑戰開關城門、斥力磁盾、折躍傳送與第 10／20／30 關首領。
@@ -303,7 +303,7 @@ CashArcade 使用 HTML、CSS、JavaScript、Canvas 與 WebGL 製作，不包含�
 
 ## 霓虹甩尾 · Neon Drift
 
-第六台機器使用獨立 `drift/engine.js`、`renderer.js`、`game.js`、`storage.js` 與 `audio.js`。三條賽道有獨立分數、最快單圈與最高連段。90 秒只計實際遊玩時間，失焦或隱藏分頁自動暫停；重載不恢復未完成的場次。封面 [drift.jpg](assets/covers/drift.jpg) 由內建 imagegen 生成，無文字，提示保存在 [drift-prompt.txt](assets/covers/drift-prompt.txt)。
+第六台機器使用獨立 `drift/engine.js`、`renderer.js`、`game.js`、`storage.js` 與 `audio.js`。三條賽道有獨立分數、最快單圈與最高連段。護欄碰撞會損壞車輛，耐久歸零爆炸；兩台 AI 依相同道路物理競速。排名依有效圈數與進度，90 秒後僅完整有效奪冠且未毀車才能解鎖下一道，已解鎖賽道可自由重玩。90 秒只計實際遊玩時間，失焦或隱藏分頁自動暫停；重載不恢復未完成的場次。封面 [drift.jpg](assets/covers/drift.jpg) 由內建 imagegen 生成，無文字，提示保存在 [drift-prompt.txt](assets/covers/drift-prompt.txt)。
 
 
 ## 電路迷城 / Circuit Escape

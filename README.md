@@ -1,6 +1,6 @@
 # CashArcade
 
-一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有八款遊戲、原創合成配樂與獨立音效設定。
+一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有十款遊戲、原創合成配樂與獨立音效設定。
 
 🎮 **[進入 CashArcade](https://darkerduck.github.io/CashArcade/)** · [GitHub 原始碼](https://github.com/darkerduck/CashArcade)
 
@@ -8,7 +8,7 @@
 
 | 想了解什麼 | 文件 |
 | --- | --- |
-| 八款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
+| 十款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
 | 本機環境、檔案分工、關卡、音訊介面與素材維護 | [開發指南](docs/DEVELOPMENT.md) |
 | 哪些操作收費、哪些進度可恢復、儲存鍵與付款錯誤 | [存檔與付款](docs/STORAGE_AND_PAYMENTS.md) |
 | 測試指令、瀏覽器驗收、GitHub Pages 發布與排錯 | [測試與發布](docs/TESTING_AND_DEPLOYMENT.md) |
@@ -33,7 +33,7 @@ python3 -m http.server 4173 --bind 127.0.0.1
 
 - GitHub Pages 從 `main` 分支根目錄發布，公開路徑為 `/CashArcade/`；新增的 `docs/` 是文件目錄，不是 Pages 發布來源。
 - 遊戲本身沒有後端、登入、雲端同步或排行榜；最高分、偏好及支援的存檔都在目前瀏覽器。各款恢復能力不同，詳見[存檔對照](docs/STORAGE_AND_PAYMENTS.md)。
-- 貪吃蛇、打磚塊、天盾與霓虹強襲的部分重開路徑使用外部 CashLink 付款服務；霓虹飛行與霓虹甩尾免費。付款用途是「再來一局」，沒有獎金、抽獎、代幣或可兌現獎勵。
+- 貪吃蛇、打磚塊、天盾與霓虹強襲的部分重開路徑使用外部 CashLink 付款服務；霓虹飛行、霓虹甩尾與本次新增遊戲免費。付款用途是「再來一局」，沒有獎金、抽獎、代幣或可兌現獎勵。
 - 本 repository 與 CashLink codebase 分離；此處只維護 CashArcade 的靜態檔案。
 
 <a id="brand"></a>
@@ -297,7 +297,7 @@ SDK 管理訂單秘密與冪等鍵；遊戲保留本局的本機 checkpoint 與�
 
 ## 技術
 
-CashArcade 使用 HTML、CSS、JavaScript、Canvas 與 WebGL 製作，不包含前端框架或追蹤程式。貪吃蛇將固定版 [Three.js r186](https://github.com/mrdoob/three.js/releases/tag/r186) 及必要模組、MIT 授權放在 `vendor/three-r186/`，不依賴執行期 CDN；其餘四款遊戲維持原生 Canvas。打磚塊、貪吃蛇、霓虹天盾及霓虹強襲載入 CashLink Arcade SDK；霓虹飛行不使用付款服務。SDK 與 API 文件：<https://linkincash.cc/docs/arcade-api>。
+CashArcade 使用 HTML、CSS、JavaScript、Canvas 與 WebGL 製作，不包含前端框架或追蹤程式。貪吃蛇將固定版 [Three.js r186](https://github.com/mrdoob/three.js/releases/tag/r186) 及必要模組、MIT 授權放在 `vendor/three-r186/`，不依賴執行期 CDN；其餘遊戲維持原生 Canvas。打磚塊、貪吃蛇、霓虹天盾及霓虹強襲載入 CashLink Arcade SDK；霓虹飛行不使用付款服務。SDK 與 API 文件：<https://linkincash.cc/docs/arcade-api>。
 
 打磚塊分為 `levels.js` 固定關卡資料、`engine.js` 純物理／規則、`renderer.js` Canvas 視覺、`storage.js` 驗證與遷移、`game.js` 輸入／頁面控制，付款 gate 獨立不變。執行 `node --test tests/*.test.mjs` 驗證遊戲與假 SDK；`tests/breakout-gallery.html` 提供 30 關初始／啟動後共 60 畫面、亮暗檢查、PNG 對照圖與實際 OfflineAudioContext 音訊量測，不載入付款服務。幾何通路測試逐層清除可抵達的碰撞面，另測移動門完整周期、三幕與三場首領；不是宣稱以任意自動操作即可通關。自動測試不進行真實付款。
 
@@ -317,3 +317,16 @@ CashArcade 使用 HTML、CSS、JavaScript、Canvas 與 WebGL 製作，不包含�
 [立即遊玩](https://darkerduck.github.io/CashArcade/gravity/) · 全程免費
 
 十條短航線，每趟約 11–19 秒。自動前進，點一下或按 Space 翻轉上下重力；穿越尖刺、脈衝雷射與浮動月台，把能源送至終點。可選金色碎片提供短暫加速，挑戰三顆星與最快送達紀錄。暫停、重試皆免費，紀錄與設定保存在本機。配有獨立原創 8-bit 航行配樂。
+
+
+## 反應爐彈珠台 / Reactor Pinball
+
+[立即遊玩](https://darkerduck.github.io/CashArcade/reactor/) · 全程免費
+
+一張原創霓虹彈珠台，雙擋板、蓄力發球、彈力環、外側能量軌道與中央核心。依序完成電容／軌道／核心任務，充滿能量觸發三球過載與三倍得分。移動擋板的接觸位置和速度會影響回彈；引擎以 120 Hz 固定步進與自適應子步進避免高速穿透。A／D 或左右鍵控制，Space 按住蓄力放開發球；手機可同時按兩個擋板。保存本機最高分，音效與配樂獨立控制。
+
+## 光路拼接 / Prism Stack
+
+[立即遊玩](https://darkerduck.github.io/CashArcade/prism/) · 全程免費
+
+兩格一組的電路持續落下，旋轉與擺放後，讓每個端點相接成封閉迴路。迴路點亮清除後，落下的方塊可以繼續接成連鎖。無限關卡會依完成迴路數加速；有預覽、落點影子、暫存、柔降與硬降，保存最高分及最長連鎖。首組直接放下即可完成示範迴路，後續使用可重現的洗牌袋。測試包含只靠正常操作達成的二段連鎖回放。

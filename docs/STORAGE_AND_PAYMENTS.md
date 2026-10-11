@@ -144,3 +144,13 @@ SDK URL：`https://linkincash.cc/arcade/sdk/v1.js`。各遊戲 publishable key �
 - `casharcade-gravity-v1`：各關星等、最快秒數、碎片紀錄、送達次數與減少動態設定；解鎖範圍由依序完成的紀錄推導。
 - 各自 `casharcade-{circuit,gravity}-sound-muted` 保存音效靜音；`casharcade-{circuit,gravity}-music-muted`、`-music-volume` 保存配樂偏好。
 - 重載從關卡待命狀態重新開始，不恢復進行中的位置。儲存被封鎖時仍可遊玩，頁面會提示紀錄無法保留。
+
+
+## 反應爐彈珠台與光路拼接
+
+兩款完全免費，沒有付款 SDK 或額外解鎖價格。
+
+- `casharcade-reactor-best-v1`：本機最高分。當局球體、任務與餘球不恢復。
+- `casharcade-prism-v1`：最高分、最長連鎖、減少動態設定。當局棋盤不恢復；進行中離頁會使用瀏覽器的原生離頁提醒。
+- 各自 `casharcade-{reactor,prism}-sound-muted` 與 `casharcade-{reactor,prism}-music-{muted,volume}` 保存獨立聲音偏好。
+- 無效數值會清理；無法儲存時仍可正常免費遊玩。

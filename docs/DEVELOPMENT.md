@@ -111,3 +111,12 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 `gravity/engine.js` 使用 120 Hz 固定物理步進，關卡提供可驗證的翻轉座標路線。`renderer.js` 根據窄畫面切換 720×600 視野，`game.js` 維持單次輸入與失焦暫停，`storage.js` 處理關卡紀錄。翻轉路線是測試文件，不會在遊戲內自動駕駛。
 
 兩款使用 `audio.js`／`music.js` 共用音訊混音與 `expansion-scores.js` 的獨立八小節原創編曲。新增封面 `circuit.jpg`、`gravity.jpg` 均由內建 imagegen 生成、無文字，提示以相同檔名的 `-prompt.txt` 保存。
+
+
+## 反應爐彈珠台與光路拼接
+
+`reactor/engine.js` 是 120 Hz 固定物理步進，依最高球速自適應子步進；線段碰撞包含移動擋板表面速度、接觸位置與升起狀態。碰撞冷卻避免單次接觸重複得分。`renderer.js` 繪製原創桌面，`game.js` 協調多指／鍵盤來源、存檔與音訊；活躍畫面限制為 30 Hz，待命／暫停僅變更時重繪。對應 `tests/reactor-*.test.mjs`。
+
+`prism/engine.js` 處理兩格管線組、旋轉踢牆、洗牌袋、鎖定延長上限、連通圖與閉合迴路、重力連鎖及暫存。`storage.js` 隔離紀錄驗證與保存；`renderer.js` 支援亮暗／減少動態，`game.js` 避免延後清除事件在失焦後重新開啟聲音。`tests/prism-replays.mjs` 的 seed=1 回放僅使用正常輸入，24 次放置完成五個迴路、二段連鎖與第二級。
+
+兩款使用 `expansion-scores.js` 的不同原創八小節音樂及獨立音效。封面 `reactor.jpg`、`prism.jpg` 為內建 imagegen 的無文字作品，提示保存在同名 `-prompt.txt`。

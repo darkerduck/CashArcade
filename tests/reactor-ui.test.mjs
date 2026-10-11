@@ -106,3 +106,20 @@ test('focused controls support Space and Enter holds without requiring pointer e
     h.els.plunger.emit('keydown', { code: 'Enter' }); h.frame(20); assert.ok(h.game.plungerCharge > .2);
     h.els.plunger.emit('keyup', { code: 'Enter' }); assert.equal(h.game.staged, undefined);
 });
+test('keyboard and touch-plunger launches enter the table and stay out of the shooter lane', () => {
+    for (const control of ['keyboard', 'touch']) for (const frames of [0, 16, 48, 70]) {
+        const h = harness(); h.start(); const ball = h.game.staged;
+        if (control === 'keyboard') h.event('keydown', { code: 'Space' });
+        else h.els.plunger.emit('pointerdown', { pointerId: 3 });
+        h.frame(frames);
+        if (control === 'keyboard') h.event('keyup', { code: 'Space' });
+        else h.els.plunger.emit('pointerup', { pointerId: 3 });
+        assert.equal(ball.staged, false); let entered = false;
+        for (let i = 0; i < 720 && h.game.balls.includes(ball); i++) {
+            h.frame(); entered ||= ball.inField;
+            if (entered && ball.y <= 897) assert.ok(ball.x <= 513.001, `${control}, charge frames ${frames}`);
+        }
+        assert.ok(entered, `${control}, charge frames ${frames} did not enter`);
+        h.els.retry.emit('click'); assert.equal(h.game.staged.inField, false); assert.equal(h.game.balls.length, 1);
+    }
+});

@@ -2,6 +2,8 @@
 ((root) => {
     'use strict';
     const W = 600, H = 920, BALL_R = 9, STEP = 1 / 120, GRAVITY = 790, MAX_SPEED = 1900;
+    // The open outlet continues the shooter divider up to the table ceiling.
+    const SHOOTER = Object.freeze({ x: 526, top: 35, exit: 220, bottom: 884, r: 4 });
     const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
     const BUMPERS = Object.freeze([
         Object.freeze({ x: 212, y: 222, r: 28, color: '#63efff', label: 'I' }),
@@ -15,7 +17,7 @@
     ]);
     const WALLS = [];
     function wall(a, b, kind = 'wall') { WALLS.push(Object.freeze({ ax: a[0], ay: a[1], bx: b[0], by: b[1], kind, r: kind === 'sling' ? 5 : 4 })); }
-    const shell = [[42, 823], [30, 680], [28, 200], [45, 115], [104, 55], [180, 35], [498, 35], [578, 126], [578, 884], [526, 884], [526, 220]];
+    const shell = [[42, 823], [30, 680], [28, 200], [45, 115], [104, 55], [180, 35], [498, 35], [578, 126], [578, 884], [SHOOTER.x, SHOOTER.bottom], [SHOOTER.x, SHOOTER.exit]];
     for (let i = 1; i < shell.length; i++) wall(shell[i - 1], shell[i]);
     wall([40, 692], [90, 754]); wall([90, 754], [177, 805]);
     wall([513, 688], [470, 754]); wall([470, 754], [401, 805]);
@@ -71,7 +73,7 @@
         _event(type, values = {}) { this.events.push({ type, time: this.time, ...values }); if (this.events.length > 200) this.events.shift(); }
         takeEvents() { return this.events.splice(0); }
         _ball(x, y, vx = 0, vy = 0, staged = false) {
-            const ball = { id: this.nextBallId++, x, y, vx, vy, staged, cooldowns: Object.create(null), trail: [] };
+            const ball = { id: this.nextBallId++, x, y, vx, vy, staged, inField: !staged, cooldowns: Object.create(null), trail: [] };
             this.balls.push(ball); return ball;
         }
         _serve(fresh) {
@@ -181,6 +183,21 @@
             const speed = Math.hypot(ball.vx, ball.vy);
             if (speed > MAX_SPEED) { ball.vx *= MAX_SPEED / speed; ball.vy *= MAX_SPEED / speed; }
         }
+        _shooterGate(ball) {
+            const clearance = BALL_R + SHOOTER.r, face = SHOOTER.x - clearance;
+            // Each served ball passes freely outwards until its whole circle clears
+            // the outlet. Balls spawned on the table (overload) start protected.
+            if (!ball.inField && ball.x <= face && ball.y <= SHOOTER.exit) ball.inField = true;
+            if (!ball.inField || ball.y < SHOOTER.top - clearance || ball.y > SHOOTER.bottom + clearance || ball.x <= face) return;
+            // One-sided contact: always resolve towards the field, including a
+            // ball displaced across the face by another ball or a corner contact.
+            // Extending through the existing divider leaves no seam at its tip.
+            ball.x = face;
+            if (ball.vx > 0) {
+                const impact = ball.vx; ball.vx *= -.78;
+                if (impact > 140 && this._hit(ball, 'wall', .1)) this._event('wall', { x: SHOOTER.x, y: ball.y });
+            }
+        }
         _step(input) {
             this.time += STEP;
             if (this.overload > 0) { this.overload = Math.max(0, this.overload - STEP); if (!this.overload) this._event('overloadEnd'); }
@@ -206,9 +223,7 @@
                     ball.vy += GRAVITY * dt; ball.vx *= 1 - dt * .035;
                     ball.x += ball.vx * dt; ball.y += ball.vy * dt;
                     for (const s of WALLS) this._segment(ball, s);
-                    if (ball.x < 512 && ball.y < 214) ball.inField = true;
-                    // One-way gate closes the shooter lane after first entering the table.
-                    if (ball.inField) this._segment(ball, { ax: 526, ay: 162, bx: 526, by: 225, r: 3, kind: 'wall' });
+                    this._shooterGate(ball);
                     BUMPERS.forEach((b, i) => this._bumper(ball, b, i)); this._bumper(ball, CORE, 0, true);
                     RAILS.forEach((r, i) => this._rail(ball, r, i));
                     for (const f of this.flippers) { const e = flipperEnd(f); this._segment(ball, { ax: f.x, ay: f.y, bx: e.x, by: e.y, r: f.r }, f); }
@@ -223,6 +238,9 @@
                     const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
                     if (vn < 0) { a.vx += vn * .93 * nx; a.vy += vn * .93 * ny; b.vx -= vn * .93 * nx; b.vy -= vn * .93 * ny; }
                 }
+                // Pair separation is positional too; enforce the same boundary
+                // after all contacts, before the next adaptive substep.
+                for (const ball of this.balls) if (!ball.staged) this._shooterGate(ball);
             }
             const drained = this.balls.filter(b => b.y > H + 25 || b.y < -100 || b.x < -80 || b.x > W + 80);
             if (drained.length) {
@@ -244,7 +262,7 @@
             while (this._accumulator + 1e-10 >= STEP && this.state === 'running') { this._accumulator -= STEP; this._step(input); }
         }
     }
-    const api = { W, H, BALL_R, STEP, GRAVITY, MAX_SPEED, BUMPERS, CORE, RAILS, WALLS, MISSIONS, Game, closest, flipperEnd };
+    const api = { W, H, BALL_R, STEP, GRAVITY, MAX_SPEED, SHOOTER, BUMPERS, CORE, RAILS, WALLS, MISSIONS, Game, closest, flipperEnd };
     root.ReactorPinball = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : window);

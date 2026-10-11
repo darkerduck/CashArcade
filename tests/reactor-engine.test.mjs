@@ -26,6 +26,69 @@ test('all launch strengths enter the playfield through the actual shooter-lane g
         assert.ok(entered, `strength ${strength}`); assert.ok(g.balls.every(b => b.x > 15 && b.x < 580));
     }
 });
+test('every launch strength clears the outlet and never returns to the shooter lane', () => {
+    for (let percent = 0; percent <= 100; percent++) {
+        const g = new Game().start(); g.launch(percent / 100); const ball = g.balls[0]; let entered = false;
+        for (let i = 0; i < 1440 && g.balls.includes(ball); i++) {
+            g.update(STEP); entered ||= ball.inField;
+            if (entered && ball.y >= 22 && ball.y <= 897) assert.ok(ball.x <= 513.001, `strength ${percent}% returned at ${g.time}: (${ball.x}, ${ball.y})`);
+        }
+        assert.ok(entered, `strength ${percent}% never cleared the outlet`);
+    }
+});
+test('field balls cannot enter any part of the outlet, including its ceiling and divider join', () => {
+    for (const y of [48.02, 67, 80, 100, 145, 149, 162, 213.99, 220, 225, 232, 400, 875]) {
+        for (const vx of [100, MAX_SPEED, MAX_SPEED * 30]) {
+            const g = bare(), ball = g._ball(500, y, vx, 0); ball.inField = true;
+            for (let i = 0; i < 60; i++) {
+                g.update(STEP);
+                assert.ok(ball.x <= 513.001, `outlet y=${y}, vx=${vx}, x=${ball.x}`);
+                for (const value of [ball.x, ball.y, ball.vx, ball.vy]) assert.ok(Number.isFinite(value));
+            }
+        }
+    }
+    const g = bare(), ball = g._ball(512.99, 145, MAX_SPEED, 0); g.update(STEP);
+    assert.ok(ball.vx < 0, 'an incoming shot reflects off the gate');
+});
+test('high-speed outgoing balls cross the outlet without receiving a gate impulse', () => {
+    for (const y of [100, 145, 200]) {
+        const g = bare(), ball = g._ball(530, y, -MAX_SPEED, 0); ball.inField = false;
+        g.update(STEP); g.update(STEP);
+        assert.ok(ball.inField); assert.ok(ball.x < 513); assert.ok(ball.vx < -1800);
+        assert.ok(ball.vy > 0 && ball.vy < 14, 'outgoing velocity changed only with normal gravity');
+        assert.equal(g.score, 0); assert.ok(!g.events.some(e => e.type === 'wall'));
+    }
+});
+test('outlet corner rebounds and glancing shots remain on the field side', () => {
+    for (const [x, y, vx, vy] of [[505, 52, 900, -1500], [510, 74, 800, -1700], [512.999, 145, 1, -1900], [513, 220, 1900, -5], [506, 227, 1300, -1300]]) {
+        const g = bare(), ball = g._ball(x, y, vx, vy); ball.inField = true;
+        for (let i = 0; i < 300; i++) { g.update(STEP); if (ball.y <= 897) assert.ok(ball.x <= 513.001, `corner shot crossed at (${ball.x}, ${ball.y})`); }
+    }
+});
+test('overload balls are protected immediately while an independent staged ball can still launch', () => {
+    const g = new Game().start(); const staged = g.staged; g._charge(100);
+    const active = g.balls.filter(b => !b.staged); assert.equal(active.length, 2);
+    assert.ok(active.every(b => b.inField)); assert.equal(staged.inField, false);
+    active.forEach((b, i) => { b.x = 500; b.y = 110 + i * 25; b.vx = MAX_SPEED; b.vy = 0; });
+    assert.ok(g.launch(.25)); assert.equal(staged.inField, false);
+    for (let i = 0; i < 180; i++) { g.update(STEP); for (const b of g.balls) if (b.inField && b.y <= 897) assert.ok(b.x <= 513.001); }
+    assert.ok(staged.inField, 'the staged ball cleared its own open exit during multiball');
+});
+test('ball-ball separation at the outlet cannot push a field ball across the one-way boundary', () => {
+    const g = bare(), a = g._ball(512.8, 145), b = g._ball(496, 145, MAX_SPEED);
+    a.inField = b.inField = true;
+    for (let i = 0; i < 30; i++) { g.update(STEP); assert.ok(a.x <= 513.001); assert.ok(b.x <= 513.001); }
+});
+test('save, next reserve and restart each give the new ball its own open launch exit', () => {
+    const g = new Game().start();
+    for (const mode of ['save', 'reserve', 'restart']) {
+        g.launch(.25); advance(g, 1); assert.ok(g.balls[0].inField);
+        if (mode === 'restart') g.restart();
+        else { g._saveUntil = mode === 'save' ? g.time + 1 : 0; g.balls[0].y = 980; g.update(STEP); }
+        const ball = g.staged; assert.ok(ball); assert.equal(ball.inField, false);
+        assert.ok(g.launch(.75)); advance(g, 1); assert.ok(ball.inField); assert.ok(ball.x <= 513.001);
+    }
+});
 test('120 Hz fixed stepping is identical across 30, 60 and 120 fps partitions', () => {
     const results = [];
     for (const fps of [30, 60, 120]) {

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1672 941" width="1672" height="941">
+<defs>
+ <radialGradient id="bg"><stop stop-color="#23354d"/><stop offset="1" stop-color="#070e20"/></radialGradient>
+ <linearGradient id="arc"><stop stop-color="#65f0ff"/><stop offset="1" stop-color="#b18aff"/></linearGradient>
+ <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M64 0H0V64" fill="none" stroke="#29415c" stroke-width="1"/></pattern>
+ <filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="9"/></filter>
+ <g id="swarm"><path d="M0-34 30 24 0 12-30 24Z" fill="#37283e" stroke="#ff856b" stroke-width="4"/><path d="M0-13 9 8-9 8Z" fill="#ffb58e"/></g>
+ <g id="pillar"><path d="M0-37 32-18V18L0 37-32 18V-18Z" fill="#292937" stroke="#ffd577" stroke-width="4"/><path d="M0-18 15-9V9L0 18-15 9V-9Z" fill="none" stroke="#ffd577" stroke-width="3"/><path d="M0-11V11" stroke="#fff0bd" stroke-width="5"/></g>
+ <g id="mech"><path d="M0-67 39-20 31 45H-31L-39-20Z" fill="#102b40" stroke="#65efff" stroke-width="6"/><path d="M-62-15H-42V45H-62ZM42-15H62V45H42Z" fill="#28203e" stroke="#b78dff" stroke-width="5"/><path d="M-9-42H9V-5H-9Z" fill="#65efff"/><path d="M-8 10H8V24H-8Z" fill="#efffff"/><path d="M-20 51V73M20 51V73" stroke="#af89ff" stroke-width="8"/></g>
+</defs>
+<path fill="url(#bg)" d="M0 0H1672V941H0Z"/><path fill="url(#grid)" d="M0 0H1672V941H0Z"/>
+<g fill="none" stroke="#34546b" stroke-width="3"><path d="M80 145H310L355 190H1317L1362 145H1592M80 780H310L355 735H1317L1362 780H1592"/><path d="M50 70H1622V871H50Z"/><circle cx="836" cy="470" r="308"/><circle cx="836" cy="470" r="230" stroke-dasharray="8 24"/></g>
+<path d="M50 170V70H150M1522 70H1622V170M50 771V871H150M1522 871H1622V771" fill="none" stroke="#65efff" stroke-width="7"/>
+<g opacity=".36" stroke="#ae84ff" stroke-width="3" fill="none"><path d="M610 320 836 190 1062 320V580L836 710 610 580Z"/><path d="M380 0 550 170M1122 771 1292 941M1292 0 1122 170M550 771 380 941"/></g>
+<g transform="translate(1070 250)"><path d="m0-88 26 31 44-13-13 44 31 26-31 26 13 44-44-13-26 31-26-31-44 13 13-44-31-26 31-26-13-44 44 13Z" fill="#30243f" stroke="#ff9673" stroke-width="5"/><circle r="55" fill="#191e36" stroke="#b88aff" stroke-width="7"/><path d="M0-36 31-18V18L0 36-31 18V-18Z" fill="none" stroke="#ffd577" stroke-width="4"/><circle r="16" fill="#fff2bf"/></g>
+<use href="#pillar" transform="translate(500 340)"/><use href="#pillar" transform="translate(1250 645)"/>
+<g fill="none" stroke="#ffd577"><circle cx="1250" cy="645" r="72" stroke-width="3" opacity=".8"/><circle cx="1250" cy="645" r="101" stroke-width="2" opacity=".35"/><path d="m1182 576-18-19m153 21 18-18m-17 154 18 18m-154-18-18 18" stroke-width="5"/></g>
+<use href="#swarm" transform="translate(540 565) rotate(83)"/><use href="#swarm" transform="translate(670 240) rotate(140)"/><use href="#swarm" transform="translate(1320 420) rotate(-75)"/><use href="#swarm" transform="translate(1010 740) rotate(-20)"/><use href="#swarm" transform="translate(350 690) rotate(55)"/>
+<g fill="none" stroke="url(#arc)" stroke-linejoin="bevel"><path id="bolt" d="m811 532-72-62 19-33-66-48-36-71 14-78 29 39 51-15 32 28 60-8 53 28 27-27 70 10 78-45M692 389l-69 6-23-20-57 10-43-45" stroke-width="21" opacity=".65" filter="url(#glow)"/><use href="#bolt" stroke-width="6"/></g>
+<path d="m811 532-72-62 19-33-66-48-36-71 14-78" fill="none" stroke="#efffff" stroke-width="2"/>
+<use href="#mech" transform="translate(913 682) rotate(-26)" opacity=".08"/><use href="#mech" transform="translate(875 650) rotate(-26)" opacity=".17"/><use href="#mech" transform="translate(837 618) rotate(-26)"/>
+<g fill="#ffae80"><circle cx="1185" cy="383" r="7"/><circle cx="1142" cy="414" r="7"/><circle cx="1090" cy="432" r="7"/><circle cx="1035" cy="434" r="7"/></g>
+<text x="100" y="123" fill="#7debf6" font-family="monospace" font-size="17" letter-spacing="6">CASHARCADE / 006</text>
+<text x="100" y="790" fill="#efffff" font-family="system-ui,sans-serif" font-size="56" font-weight="700" letter-spacing="8">霓虹突圍</text>
+<text x="103" y="828" fill="#9bacc4" font-family="monospace" font-size="18" letter-spacing="6">NEON BREACH / TWELVE WAVES</text>
+<text x="1570" y="828" text-anchor="end" fill="#b899ff" font-family="monospace" font-size="17" letter-spacing="4">ARC. DASH. DETONATE.</text>
+</svg>

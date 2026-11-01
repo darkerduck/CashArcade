@@ -1,6 +1,6 @@
 # CashArcade
 
-一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有五款遊戲、原創合成配樂與獨立音效設定。
+一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有六款遊戲、原創合成配樂與獨立音效設定。
 
 🎮 **[進入 CashArcade](https://darkerduck.github.io/CashArcade/)** · [GitHub 原始碼](https://github.com/darkerduck/CashArcade)
 
@@ -8,10 +8,11 @@
 
 | 想了解什麼 | 文件 |
 | --- | --- |
-| 既有四款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
+| 既有六款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
 | 本機環境、檔案分工、關卡、音訊介面與素材維護 | [開發指南](docs/DEVELOPMENT.md) |
 | 哪些操作收費、哪些進度可恢復、儲存鍵與付款錯誤 | [存檔與付款](docs/STORAGE_AND_PAYMENTS.md) |
 | 測試指令、瀏覽器驗收、GitHub Pages 發布與排錯 | [測試與發布](docs/TESTING_AND_DEPLOYMENT.md) |
+| 霓虹突圍本次測試、瀏覽器與原生音訊量測結果 | [突圍驗收紀錄](docs/ARENA_ACCEPTANCE.md) |
 
 本頁保留打磚塊 30 關、天盾 20 關及配樂主題的完整清單。文件描述目前程式行為；已知差異與限制也列在對應指南，不把計畫中的能力當成已實作。
 
@@ -25,22 +26,22 @@ cd CashArcade
 python3 -m http.server 4173 --bind 127.0.0.1
 ```
 
-開啟 [本機首頁](http://127.0.0.1:4173/)，以 `Ctrl+C` 停止預覽。也可使用其他靜態 HTTP 伺服器；不要直接以 `file://` 開啟遊戲。沒有 `package.json`、套件安裝或前端建置步驟；Node.js 只用於[自動測試](docs/TESTING_AND_DEPLOYMENT.md)。不需要 CashLink 的 Laravel、Docker、資料庫或私密設定。
+開啟 [本機首頁](http://127.0.0.1:4173/)，以 `Ctrl+C` 停止預覽。也可使用其他靜態 HTTP 伺服器；不要直接以 `file://` 開啟遊戲。沒有 `package.json`、套件安裝或前端建置步驟；Node.js 用於[自動測試](docs/TESTING_AND_DEPLOYMENT.md)，也可執行 `node tests/serve.mjs` 取代 Python 預覽。不需要 CashLink 的 Laravel、Docker、資料庫或私密設定。
 
-本機遊戲頁仍會嘗試載入外部 CashLink SDK，但本機 Origin 與已註冊的公開 Origin 不同，**不作為真實付款驗收環境**。測試付款流程請使用既有假 SDK 測試，不輸入真實付款資料。
+部分既有遊戲頁仍會嘗試載入外部 CashLink SDK，但本機 Origin 與已註冊的公開 Origin 不同，**不作為真實付款驗收環境**。測試付款流程請使用既有假 SDK 測試，不輸入真實付款資料。
 
 ## 發布與資料範圍
 
 - GitHub Pages 從 `main` 分支根目錄發布，公開路徑為 `/CashArcade/`；新增的 `docs/` 是文件目錄，不是 Pages 發布來源。
 - 遊戲本身沒有後端、登入、雲端同步或排行榜；最高分、偏好及支援的存檔都在目前瀏覽器。各款恢復能力不同，詳見[存檔對照](docs/STORAGE_AND_PAYMENTS.md)。
-- 貪吃蛇、打磚塊與天盾的部分重開路徑使用外部 CashLink 付款服務；霓虹飛行與霓虹強襲免費。付款用途是「再來一局」，沒有獎金、抽獎、代幣或可兌現獎勵。
+- 貪吃蛇、打磚塊與天盾的部分重開路徑使用外部 CashLink 付款服務；霓虹飛行、霓虹強襲與霓虹突圍免費。付款用途是「再來一局」，沒有獎金、抽獎、代幣或可兌現獎勵。
 - 本 repository 與 CashLink codebase 分離；此處只維護 CashArcade 的靜態檔案。
 
 <a id="brand"></a>
 
 ## Logo 與網站圖示
 
-首頁、五款遊戲與試聽／驗收頁皆宣告 CashArcade 圖示，使用相對路徑支援 GitHub Pages 的 `/CashArcade/` 子目錄。`favicon.ico` 是包含16、32、48、64、128、256px影像的真正ICO容器；另提供16／32px PNG、180px Apple touch icon與192／512px manifest圖示。頁首共用 `assets/brand/casharcade-logo.png`。Manifest使用一般瀏覽器模式，不加入Service Worker或離線快取。
+首頁、六款遊戲與試聽／驗收頁皆宣告 CashArcade 圖示，使用相對路徑支援 GitHub Pages 的 `/CashArcade/` 子目錄。`favicon.ico` 是包含16、32、48、64、128、256px影像的真正ICO容器；另提供16／32px PNG、180px Apple touch icon與192／512px manifest圖示。頁首共用 `assets/brand/casharcade-logo.png`。Manifest使用一般瀏覽器模式，不加入Service Worker或離線快取。
 
 Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母與紫色邊緣。保留[原始PNG](assets/brand/casharcade-logo-source.png)及[完整生成提示](assets/brand/logo-prompt.txt)，輸出僅做尺寸／格式轉換，保留透明邊角。更新圖示時需同步提高各頁圖示URL的版本，以避開瀏覽器舊圖示快取。
 
@@ -53,7 +54,33 @@ Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母
 
 - [霓虹強襲](https://darkerduck.github.io/CashArcade/assault/)：三關直向射擊戰役，自動開火，拾取散射、雷射和雙翼護航，拆解三大機械頭目。電腦與手機皆可玩，首次遊玩與重玩皆免費。
 
-五款遊戲都支援亮暗主題、暫停、重新開始與瀏覽器本機最高分。沒有儲存主題偏好時一律使用暗版。
+- [霓虹突圍](arena/)：12 波競技場射擊，電弧、衝刺與三選一升級，六首原創 8-bit 配樂，全程免費。
+
+六款遊戲都支援亮暗主題、暫停、重新開始與瀏覽器本機最高分。沒有儲存主題偏好時一律使用暗版。
+
+## 霓虹突圍 · 12 波競技場射擊
+
+[遊戲入口](arena/) · [本機試玩](http://127.0.0.1:4173/CashArcade/arena/) · [視覺與音訊驗收](tests/arena-gallery.html) · [操作試玩台](tests/arena-playtest.html)
+
+執行 `node tests/serve.mjs` 啟動無依賴本機伺服器，同時支援 `/` 與 `/CashArcade/` 子路徑。霓虹突圍全程免費，不載入付款 SDK。
+
+原創「弧光」機甲在 720 × 720 封閉戰場突破三階段封鎖。電腦使用 WASD／方向鍵移動、滑鼠瞄準與自動射擊，Space／Shift 衝刺，P／Esc 暫停，R 免費重試本波；手機用場外左搖桿移動、自動瞄準最近敵人、右鍵衝刺，支援雙指操作。
+
+五格裝甲，受擊後無敵一秒；衝刺持續 0.18 秒、回充 2.4 秒。初始電弧傷害 24，每 0.24 秒發射，先命中射線第一個目標，再跳躍最多兩次，每跳乘以 0.72。每波四座金色能量柱不阻擋移動，爆炸只傷敵人與其他能量柱。
+
+| 波次 | 普通敵人數／生成時間 | 頭目 |
+| --- | --- | --- |
+| 1–4 能源工廠 | 14、20、26／約 35 秒 | 鋸輪監工：預告衝撞、扇形彈幕 |
+| 5–8 磁暴反應爐 | 32、38、44／約 40 秒 | 磁暴核心：旋轉電束、護衛 |
+| 9–12 封鎖核心 | 50、58、66／約 45 秒 | 封鎖主機：召喚、交叉封路光束、過載 |
+
+清空普通敵人或擊破頭目才過波，完成修復一格裝甲。第 1–11 波各從電弧、衝刺、爆破與生存共 12 種能力抽出三個不同選項；額外衝刺次數限一級，其他最高三級。實際效果與當前等級顯示在卡片上，第 12 波完成直接通關。設計目標每局 8–12 分鐘，實際時間依操作、升級與重試而變。
+
+`arena/` 分離資料、存檔、純規則、Canvas、輸入、控制器及樂譜。120 Hz 固定步進，連鎖爆炸由逐次事件佇列處理，死亡標記與目標去重防止重複計分；粒子、殘影與敵彈都有上限。減少動態偏好停用震動、閃爍與裝飾殘影，危險提示保留。
+
+本波起點保存血量、分數、能力、種子與累計戰鬥時間；重試不累加失敗分數。波間的三張升級卡原樣保存，重新整理不重抽，須按繼續才恢復。無法保存時顯示提示，當頁仍能免費遊玩；通關清除戰役 checkpoint，保留最高分及音訊偏好。
+
+六首原創配樂依序為〈銅線脈動〉、〈鋸齒指令〉、〈磁流回聲〉、〈離子心跳〉、〈封鎖線之外〉、〈零時解鎖〉，三場頭目各有下一小節切入的過載編曲。音樂與九種專屬音效共用既有混音器，音樂預設 65%。驗收室提供六首配樂、三首過載與密集音效的原生離線量測，操作試玩台不寫正式存檔。
 
 ## 霓虹強襲 · 三關直向射擊
 
@@ -175,7 +202,7 @@ Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母
 
 ## 音效
 
-五款遊戲使用 Web Audio API 即時合成短音效，不使用外部音訊素材或音訊套件。音效預設開啟，首次操作遊戲後才會發聲；每款遊戲的標題列都可獨立切換靜音，設定保存在該瀏覽器。霓虹天盾與打磚塊提供「試播音效」；打磚塊的蓄力、強擊、不同尺寸撞擊、傳送、道具與首領各有音色。共用合成增益維持原設定，打磚塊輸出另留少量混音 headroom；同時聲部上限 40，密集碰撞／爆炸節流。瀏覽器不支援音訊或阻止播放時，遊戲仍可正常操作。
+六款遊戲使用 Web Audio API 即時合成短音效，不使用外部音訊素材或音訊套件。音效預設開啟，首次操作遊戲後才會發聲；每款遊戲的標題列都可獨立切換靜音，設定保存在該瀏覽器。霓虹天盾與打磚塊提供「試播音效」；打磚塊的蓄力、強擊、不同尺寸撞擊、傳送、道具與首領各有音色。共用合成增益維持原設定，打磚塊輸出另留少量混音 headroom；同時聲部上限 40，密集碰撞／爆炸節流。瀏覽器不支援音訊或阻止播放時，遊戲仍可正常操作。
 
 ### 霓虹天盾 · 原創 8-bit 關卡配樂
 
@@ -237,6 +264,6 @@ SDK 管理訂單秘密與冪等鍵；遊戲保留本局的本機 checkpoint 與�
 
 ## 技術
 
-CashArcade 使用 HTML、CSS、JavaScript 與 Canvas 製作，不包含框架或追蹤程式。打磚塊、貪吃蛇及霓虹天盾載入 CashLink Arcade SDK，霓虹飛行與霓虹強襲不使用付款服務。SDK 與 API 文件：<https://linkincash.cc/docs/arcade-api>。
+CashArcade 使用 HTML、CSS、JavaScript 與 Canvas 製作，不包含框架或追蹤程式。打磚塊、貪吃蛇及霓虹天盾載入 CashLink Arcade SDK，霓虹飛行、霓虹強襲與霓虹突圍不使用付款服務。SDK 與 API 文件：<https://linkincash.cc/docs/arcade-api>。
 
 打磚塊分為 `levels.js` 固定關卡資料、`engine.js` 純物理／規則、`renderer.js` Canvas 視覺、`storage.js` 驗證與遷移、`game.js` 輸入／頁面控制，付款 gate 獨立不變。執行 `node --test tests/*.test.mjs` 驗證遊戲與假 SDK；`tests/breakout-gallery.html` 提供 30 關初始／啟動後共 60 畫面、亮暗檢查、PNG 對照圖與實際 OfflineAudioContext 音訊量測，不載入付款服務。幾何通路測試逐層清除可抵達的碰撞面，另測移動門完整周期、三幕與三場首領；不是宣稱以任意自動操作即可通關。自動測試不進行真實付款。

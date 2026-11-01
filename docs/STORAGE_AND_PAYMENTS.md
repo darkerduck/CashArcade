@@ -17,17 +17,23 @@
 
 三款付費整合的付款用途均為「再來一局」。價格與收款資訊應以 CashLink 付款頁為準；貪吃蛇的較早版 UI 仍有 `1,000 sat` 預設文案，不能把它當成全站固定價格。沒有獎金、抽獎、代幣或可兌現獎勵。
 
+霓虹強襲（`assault/`）與霓虹突圍（`arena/`）首次遊玩、重試及新戰役全部免費，不載入付款 SDK。重新載入後須按繼續，回到關卡／波次起點；突圍也會恢復波間原本的三張升級卡。
+
 ## 本機資料與保存範圍
 
 資料沒有帳號同步或雲端備份。`localStorage` 依 Origin 分隔，同網域的不同遊戲路徑使用獨立鍵隔離；`sessionStorage` 還限於分頁生命週期，關閉後不應視為可靠備份。無痕模式、容量限制或清除網站資料都可能使紀錄失效。不要同時在多個分頁操作同一遊戲的付款／存檔；目前沒有跨分頁遊戲鎖。
 
 | 儲存位置 | 鍵 | 用途 |
 | --- | --- | --- |
-| localStorage | `casharcade-theme` | 四款遊戲與首頁共用亮暗偏好；無偏好預設暗版 |
+| localStorage | `casharcade-theme` | 六款遊戲與首頁共用亮暗偏好；無偏好預設暗版 |
 | localStorage | `casharcade-high-score` | 貪吃蛇最高分，名稱沒有 `snake` |
 | localStorage | `casharcade-breakout-high-score` | 打磚塊最高分 |
 | localStorage | `casharcade-flappy-high-score` | 飛行最高分 |
 | localStorage | `casharcade-missile-high-score` | 天盾最高分 |
+| localStorage | `casharcade-assault-high-score` | 強襲最高分 |
+| localStorage | `casharcade-assault-checkpoint-v1` | 強襲關卡起點 |
+| localStorage | `casharcade-arena-high-score` | 突圍最高分，獨立於戰役進度 |
+| localStorage | `casharcade-arena-checkpoint-v1` | 突圍波次起點或待選升級的 v1 checkpoint |
 | localStorage | `casharcade-{game}-sound-muted` | 個別音效靜音，`1` 為靜音 |
 | localStorage | `casharcade-{game}-music-muted` | 個別配樂靜音，`1` 為靜音 |
 | localStorage | `casharcade-{game}-music-volume` | 配樂音量的 0–1 數值字串，預設 `0.65` |
@@ -41,7 +47,17 @@
 | sessionStorage | `casharcade.missile.paid-recovery.v1` | 天盾已消耗額度、尚待完整保存的新局備援 |
 | localStorage，由 SDK 管理 | `cashlink.arcade.v1.<publishableKey>` | SDK 恢復資料；打磚塊只探測此鍵存在，不解析或自行修改內容 |
 
-`{game}` 代表 `snake`、`breakout`、`flappy` 或 `missile`，不是實際鍵中的大括號。SDK 格式由外部版本管理，不能把上表當作可自行重建訂單的規格。
+`{game}` 代表 `snake`、`breakout`、`flappy`、`missile`、`assault` 或 `arena`，不是實際鍵中的大括號。SDK 格式由外部版本管理，不能把上表當作可自行重建訂單的規格。
+
+### 霓虹突圍
+
+[storage.js](../arena/storage.js) 驗證 `version: 1`、`kind: wave | upgrade`、1–12 波、血量／分數／累計秒數、32-bit 種子及能力等級。已取得升級總數必須等於 `wave - 1`；待選卡必須為三個不同、尚未滿級的項目，且不能出現在第 12 波後。
+
+`wave` 記錄本波起點，不保存局中敵人／彈幕。死亡或 R 重試完整還原起點，包含隨機種子；失敗嘗試不累加戰役分數或時間。最高分獨立取各次嘗試最大值，不將重試分數相加。
+
+`upgrade` 保存完成本波後修復一格的血量、分數、種子及原三項 `choices`。選擇後提交下一波起點，單頁狀態門檻阻止雙擊重複套用；重載不重抽。重新載入在待命畫面等待操作，沒有自動戰鬥或配樂。
+
+讀寫例外、靜默寫入失敗均顯示提示；當頁仍能免費玩，不能保證下次恢復。損壞／版本不符的資料以新戰役待命處理。通關移除戰役進度，保留最高分、音樂／音效及主題偏好。沒有跨分頁鎖，請避免兩頁同時推進同一戰役。
 
 ### 打磚塊
 

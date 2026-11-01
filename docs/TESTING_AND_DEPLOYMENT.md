@@ -4,6 +4,8 @@
 
 所有命令從 **CashArcade 自己的 Git 根目錄**執行，不能在 CashLink checkout 直接提交或發布本專案。這份文件是操作方法，不是一次新的測試通過報告；交付時仍需記錄本次實際執行的結果。
 
+霓虹突圍本次的全站回歸、瀏覽器檢查、原生音訊數值及尚待人工調校項目，見[驗收紀錄](ARENA_ACCEPTANCE.md)。
+
 ## 自動測試
 
 測試使用 Node.js 內建 `node:test`，不需 npm 套件、不啟動資料庫、不連真實付款服務。先跑直接受影響的檔案，例如：
@@ -12,6 +14,7 @@
 node --test tests/snake-items.test.mjs
 node --test tests/breakout-engine.test.mjs tests/breakout-payment.test.mjs
 node --test tests/missile.test.mjs tests/missile-ui.test.mjs
+node --test tests/arena*.test.mjs tests/audio.test.mjs
 git diff --check
 ```
 
@@ -35,6 +38,8 @@ node --test tests/*.test.mjs
 | 天盾規則 | [missile.test.mjs](../tests/missile.test.mjs) | 20 關、最近可用砲台、裝甲命中去重、城市、升級／頭目 |
 | 天盾輸入／付款／存檔 | [missile-ui.test.mjs](../tests/missile-ui.test.mjs) | 單次發射、失敗 gate、checkpoint、重載、升級與配樂 |
 | 天盾畫面 | [missile-renderer.test.mjs](../tests/missile-renderer.test.mjs) | 城市損壞、道具、頭目、震動與粒子生命週期 |
+| 強襲 | [assault.test.mjs](../tests/assault.test.mjs)、[assault-ui.test.mjs](../tests/assault-ui.test.mjs)、[assault-renderer.test.mjs](../tests/assault-renderer.test.mjs) | 三關戰役、火力、頭目、拖曳、存檔、畫面與樂譜 |
+| 突圍 | [arena.test.mjs](../tests/arena.test.mjs)、[arena-ui.test.mjs](../tests/arena-ui.test.mjs)、[arena-renderer.test.mjs](../tests/arena-renderer.test.mjs) | 電弧／爆破去重、衝刺、12 波勝敗、升級、重試／重載、雙指操作、主題及特效 |
 | 共用音效 | [audio.test.mjs](../tests/audio.test.mjs) | 延遲初始化、靜音儲存、音量、節流及聲部限制 |
 | 四款配樂 | [missile-music.test.mjs](../tests/missile-music.test.mjs) | 名稱沿用天盾，但也涵蓋另三款樂譜、排程、暫停與音量 |
 | 主題／網站圖示 | [theme-default.test.mjs](../tests/theme-default.test.mjs)、[site-icons.test.mjs](../tests/site-icons.test.mjs) | 預設暗版、手動偏好、ICO／PNG、manifest 與子路徑 |
@@ -50,8 +55,11 @@ node --test tests/*.test.mjs
 | [打磚塊關卡對照](http://127.0.0.1:4173/tests/breakout-gallery.html) | 30 關初始／機關啟動後共 60 畫面、亮暗切換、PNG 對照圖、音效時長／RMS／峰值 |
 | [三款配樂試聽](http://127.0.0.1:4173/tests/arcade-music.html) | 打磚塊 30 關／首領／三幕，蛇與飛行的加速編曲及密集混音 |
 | [天盾配樂試聽](http://127.0.0.1:4173/tests/missile-music.html) | 20 關、兩個頭目階段、原生合成輸出與大音效疊加 |
+| [強襲驗收](http://127.0.0.1:4173/tests/assault-gallery.html) | 三關場景、頭目階段、12 組配樂 |
+| [突圍驗收](http://127.0.0.1:4173/CashArcade/tests/arena-gallery.html) | 三場景／頭目、亮暗版、減少動態、六首配樂＋三首過載＋密集混音 |
+| [突圍試玩台](http://127.0.0.1:4173/CashArcade/tests/arena-playtest.html) | 選波次實際操作，正常受傷，獨立於正式存檔 |
 
-這三頁不載入付款 SDK，也不保存正式遊戲進度。量測使用瀏覽器 `OfflineAudioContext`；先按產生試聽，再由播放器播放，必要時下載本次合成 WAV。試聽的時長、RMS、peak、clipped 與 PASS／FAIL 會顯示在頁面。關卡對照由程式直接啟動機關建立樣本，不是 30 關真實手動通關紀錄。
+這些驗收頁不載入付款 SDK，也不保存正式遊戲進度。量測使用瀏覽器 `OfflineAudioContext`；先按產生試聽，再由播放器播放，必要時下載本次合成 WAV。試聽的時長、RMS、peak、clipped 與 PASS／FAIL 會顯示在頁面。關卡對照由程式直接啟動機關建立樣本，不是 30 關真實手動通關紀錄。
 
 涉及畫面或操作的改動，至少檢查：
 
@@ -72,7 +80,7 @@ node --test tests/*.test.mjs
 | 發布方式 | Deploy from a branch |
 | Branch／folder | `main`／`/(root)` |
 | 公開首頁 | [CashArcade](https://darkerduck.github.io/CashArcade/) |
-| 遊戲路徑 | `/CashArcade/snake/`、`/CashArcade/breakout/`、`/CashArcade/flappy/`、`/CashArcade/missile/` |
+| 遊戲路徑 | `/CashArcade/snake/`、`/CashArcade/breakout/`、`/CashArcade/flappy/`、`/CashArcade/missile/`、`/CashArcade/assault/`、`/CashArcade/arena/` |
 
 `docs/` 是維護文件，不要把 Pages 來源切到 `/docs`。沒有套件編譯產物、`dist/` 或本專案自訂的 `.github/workflows` 測試設定；目前推送不會自動替你跑 Node 測試。GitHub 仍會產生 Pages build/deployment 工作，不能把這種部署工作當成遊戲測試。
 

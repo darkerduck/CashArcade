@@ -12,8 +12,8 @@
 
 | 路徑 | 職責 |
 | --- | --- |
-| [index.html](../index.html)、[style.css](../style.css)、[app.js](../app.js) | 首頁四張遊戲卡、版面、共用主題偏好 |
-| [audio.js](../audio.js) | 四款遊戲共用的短音效合成、音效靜音、聲部上限與峰值限制 |
+| [index.html](../index.html)、[style.css](../style.css)、[app.js](../app.js) | 首頁六張遊戲卡、版面、共用主題偏好 |
+| [audio.js](../audio.js) | 六款遊戲共用的短音效合成、音效靜音、聲部上限與峰值限制 |
 | [music.js](../music.js)、[music-scores.js](../music-scores.js)、[music.css](../music.css) | 配樂合成／排程與控制；蛇、飛行、打磚塊的原創樂譜 |
 | [snake/game.js](../snake/game.js) | 棋盤、遊玩時鐘、食物／炸彈、Canvas、輸入及舊版付款整合 |
 | [flappy/game.js](../flappy/game.js)、[flappy/renderer.js](../flappy/renderer.js) | 飛行規則／輸入與獨立的小鳥、閘門、視差場景繪製 |
@@ -25,7 +25,7 @@
 | [missile/engine.js](../missile/engine.js)、[missile/renderer.js](../missile/renderer.js) | 20 關資料、砲台／敵人／城市／道具規則，以及 Canvas 特效 |
 | [missile/game.js](../missile/game.js)、[missile/payment-gate.js](../missile/payment-gate.js) | 戰役 checkpoint、關間選擇、輸入、失敗後再玩付款與恢復 |
 | [missile/score.js](../missile/score.js)、[missile/music.js](../missile/music.js) | 天盾的 20 關樂譜與共用配樂引擎轉接介面 |
-| [assets/covers](../assets/covers)、[assets/brand](../assets/brand)、[brand.css](../brand.css) | 已確認的四張封面、Logo／圖示、共用頁首圖像樣式 |
+| [assets/covers](../assets/covers)、[assets/brand](../assets/brand)、[brand.css](../brand.css) | 六張原創封面、Logo／圖示、共用頁首圖像樣式 |
 | [site.webmanifest](../site.webmanifest)、[favicon.ico](../favicon.ico) | 相對作用範圍與圖示；目前沒有 Service Worker／離線快取 |
 | [tests](../tests) | Node 假環境測試、關卡對照頁與原生音訊量測頁 |
 
@@ -52,6 +52,18 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 
 打磚塊引擎提供 CommonJS 匯出供 Node 測試使用；天盾測試則以 `node:vm` 載入並讀取 `scope.NeonDefense`，沒有 CommonJS 匯出。瀏覽器分別使用 `NeonBreakout`／`NeonDefense` 全域介面。現有 HTML 使用有順序的 `defer` script，新增檔案時保留資料／引擎／渲染／存檔先於頁面控制器，音效／配樂引擎先於呼叫端。不要把這些 script 隨意改成 `async`。
 
+## 強襲與突圍模組
+
+`assault/` 分離三關規則、繪圖、控制器及樂譜，邏輯畫布 540 × 780、120 Hz。`arena/` 為 720 × 720、120 Hz，載入順序為 `data → storage → engine → renderer → input → music → game`，共用音效／配樂先於控制器；所有 script 保持 `defer` 順序。
+
+`NeonArena.Game` 提供 `start(checkpoint)`、`update(dt, input)`、`dash(input)`、`getUpgrades()`、`chooseUpgrade(id)`、`checkpoint()`、`retry()`、`drain()`。引擎不碰 DOM、音訊與儲存；renderer 與控制器消費 `arc`、`chain`、`dash`、`explode`、`bossDown`、`overload` 等事件。
+
+引擎狀態為 `running / upgrade / lost / won`；控制器另管理 `ready / paused / transition`。頭目解體轉場不更新規則，暫停時連轉場計時也凍結。開局／重試／恢復清除按鍵及觸控，滑桿保留原生鍵盤行為。
+
+電弧以射線與圓形交點選第一個目標，每次攻擊用 ID 集合排除重複跳躍。爆炸消費佇列快照，新爆炸下次更新才執行，死亡標記阻止反覆引爆／計分。能量柱與裝飾沒有玩家碰撞。敵人上限 100、敵彈 240、規則殘影 60、視覺殘影 40、粒子 240、光環 32。
+
+`NeonArenaScore.profile(wave, phase)` 提供六首獨立主題；`phase('overload')` 利用共用音樂排程在下一小節加強編曲。強襲與突圍使用原創 `assets/covers/assault.svg`、`arena.svg`，遊戲內以 Canvas 繪製。`node tests/serve.mjs` 啟動預覽並支援 `/CashArcade/` 子路徑。
+
 ## 音效與配樂介面
 
 短音效由 `CashArcadeAudio.create({ storageKey, toggleButton, outputLevel, musicMix })` 建立：
@@ -72,7 +84,7 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 
 封面保留 `assets/covers/{snake,breakout,flappy,missile}.jpg`。Logo 原始圖與生成提示見 [README 的品牌素材說明](../README.md#brand)，不要把來源不明的圖像、音樂或字型放進專案。配樂／音效即時合成，試聽頁下載的 WAV 是臨時產物，不是遊戲執行需要的素材。
 
-修改正式靜態資源時，同步檢查所有引用頁的 `?v=`；共用音訊或圖示可能同時被四款遊戲、首頁及驗收頁引用。只調整版本號不能取代部署內容核對。Manifest 為 `display: browser`，不可僅因存在 manifest 就聲稱支援離線遊玩。
+修改正式靜態資源時，同步檢查所有引用頁的 `?v=`；共用音訊或圖示可能同時被六款遊戲、首頁及驗收頁引用。只調整版本號不能取代部署內容核對。Manifest 為 `display: browser`，不可僅因存在 manifest 就聲稱支援離線遊玩。
 
 ## 變更交付
 

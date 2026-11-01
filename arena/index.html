@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#080f20"><meta name="description" content="霓虹突圍：12 波免費競技場射擊。駕駛原創機甲，電弧連鎖、無敵衝刺與三選一升級，突破三大頭目封鎖。">
+    <title>CashArcade — 霓虹突圍</title>
+    <link rel="icon" href="../favicon.ico?v=1" type="image/x-icon" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
+    <link rel="icon" href="../assets/brand/favicon-32.png?v=1" type="image/png" sizes="32x32">
+    <link rel="icon" href="../assets/brand/favicon-16.png?v=1" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../assets/brand/apple-touch-icon.png?v=1" sizes="180x180">
+    <link rel="manifest" href="../site.webmanifest?v=1">
+    <link rel="stylesheet" href="./style.css?v=1"><link rel="stylesheet" href="../brand.css?v=1">
+</head>
+<body><main class="shell">
+    <header class="site-header"><a class="brand" href="../" aria-label="CashArcade 首頁"><img class="brand-logo" src="../assets/brand/casharcade-logo.png?v=1" width="44" height="44" alt="" aria-hidden="true"><span><strong>CashArcade</strong><small>POCKET-SIZED ARCADE</small></span></a><div class="header-controls"><button id="sound-toggle" aria-label="關閉音效" aria-pressed="true">♪</button><button id="theme-toggle" aria-label="切換亮暗主題">◐</button></div></header>
+    <section class="heading"><div><p class="eyebrow">ARCADE 006 / ARENA SHOOTER</p><h1>霓虹突圍 <span>NEON BREACH</span></h1></div><span class="online"><i></i> LINK ESTABLISHED</span></section>
+    <div class="layout">
+        <section class="machine" id="machine" aria-label="霓虹突圍遊戲機台">
+            <div class="hud"><div><small>SCORE / 分數</small><strong id="score">000000</strong></div><div><small>BEST / 最高分</small><strong id="best">000000</strong></div><div><small>ARMOR / 裝甲</small><strong id="health">5 / 5</strong></div></div>
+            <div class="battlefield">
+                <canvas id="game-canvas" width="720" height="720" tabindex="0" aria-label="720 × 720 競技場。WASD 或方向鍵移動，滑鼠瞄準，自動射擊；空白鍵或 Shift 衝刺。觸控使用下方搖桿與衝刺鍵。"></canvas>
+                <div class="overlay" id="overlay">
+                    <p class="eyebrow" id="overlay-kicker">ONE MECH. TWELVE WAVES.</p>
+                    <div class="emblem" aria-hidden="true">ϟ</div>
+                    <h2 id="overlay-title">讓包圍，變成連鎖反應。</h2>
+                    <p id="overlay-message">駕駛「弧光」機甲，衝出三重封鎖。用電弧串連敵群、引爆金色能量柱，每波選擇一項新能力。</p>
+                    <div id="upgrades" class="upgrades" hidden></div>
+                    <button id="start" class="primary">啟動機甲 →</button>
+                    <small id="overlay-hint">全程免費 · 12 波戰役 · 波次起點自動保存</small>
+                </div>
+            </div>
+            <div class="combat-bar"><span id="weapon">電弧槍 · 3 目標</span><span id="shield">護盾未裝備</span><span id="dash-status">衝刺 1 / 1</span></div>
+            <div class="touch-controls"><div class="stick-wrap"><div id="joystick" role="group" aria-label="移動搖桿"><span class="stick-cross" aria-hidden="true">＋</span><span id="stick-knob" aria-hidden="true"></span></div><small>移動 / AUTO AIM</small></div><p>拖曳左側移動<br>右側衝刺穿越敵群</p><button id="dash" class="dash-button" aria-label="衝刺">ϟ<small>衝刺</small></button></div>
+            <div class="actions"><button id="pause" disabled>暫停</button><button id="retry" disabled>重試本波</button><button id="new">新戰役</button><button id="fullscreen">全螢幕</button></div>
+        </section>
+        <aside class="deck">
+            <section class="mission-panel"><p class="eyebrow">LOCKDOWN PROTOCOL</p><div class="mission-title"><h2 id="sector">能源工廠</h2><span id="wave">01 / 12</span></div><p id="status" role="status">等待機甲連線</p><div class="progress" id="progress" role="progressbar" aria-label="本波生成進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress-fill"></span></div><ol class="route"><li><span>01–04</span><div>能源工廠<small>鋸輪監工 / SAW WARDEN</small></div></li><li><span>05–08</span><div>磁暴反應爐<small>磁暴核心 / ION HEART</small></div></li><li><span>09–12</span><div>封鎖核心<small>封鎖主機 / LOCKFRAME</small></div></li></ol></section>
+            <section class="loadout"><p class="eyebrow">ARC. DASH. DETONATE.</p><h2>突破，從一條電弧開始。</h2><div class="equipment"><b>ϟ</b><p><strong>分支電弧</strong>瞄準首個目標，自動串連鄰近敵人。跳躍傷害逐次遞減。</p></div><div class="equipment"><b>»</b><p><strong>相位衝刺</strong>穿越敵人與彈幕。移動中沿前進方向，靜止時沿瞄準方向。</p></div><div class="equipment gold"><b>⬡</b><p><strong>能量連鎖</strong>射擊金色能量柱，引爆周圍敵群。爆炸不會傷害機甲。</p></div><p id="build" class="build">本戰役尚未取得升級</p></section>
+            <section class="music-panel" aria-label="背景音樂控制"><div class="music-top"><p class="eyebrow">ORIGINAL 8-BIT</p><button id="music-toggle" aria-label="關閉背景音樂" aria-pressed="true">♫ 音樂：開</button></div><p id="music-track">銅線脈動 · 待命</p><label for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output></label><input id="music-volume" type="range" min="0" max="100" step="5" value="65"><button id="preview-sound">♪ 試播電弧與衝刺</button></section>
+            <details class="guide"><summary>機甲操作手冊 ＋</summary><p><kbd>WASD</kbd> / <kbd>↑↓←→</kbd> 移動<br>滑鼠瞄準 · 自動射擊<br><kbd>Space</kbd> / <kbd>Shift</kbd> 衝刺<br><kbd>P</kbd> / <kbd>Esc</kbd> 暫停<br><kbd>R</kbd> 重試本波</p><p>手機：左搖桿移動，自動瞄準最近敵人；右側衝刺，可雙指同時操作。暖色圓圈是入口預警，虛線是即將衝撞或發射的光束。衝刺期間免傷。</p><p>每波清空敵人後修復一格裝甲，三選一升級。重試會還原本波起點的裝甲、分數與能力。換頁或失焦自動暫停；重載後按「繼續戰役」恢復。</p><a href="../tests/arena-gallery.html">視覺與音訊驗收室 ↗</a></details>
+        </aside>
+    </div>
+    <p id="storage-note" class="notice" role="status"></p><p id="live" class="sr-only" aria-live="polite"></p>
+    <footer><a href="../">← ALL GAMES</a><span>TURN THE CROWD INTO A CHAIN.</span><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
+</main>
+<script src="../audio.js?v=8" defer></script><script src="../music.js?v=1" defer></script>
+<script src="./data.js?v=1" defer></script><script src="./storage.js?v=1" defer></script><script src="./engine.js?v=1" defer></script><script src="./renderer.js?v=1" defer></script><script src="./input.js?v=1" defer></script><script src="./music.js?v=1" defer></script><script src="./game.js?v=1" defer></script>
+</body></html>

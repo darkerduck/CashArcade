@@ -9,6 +9,15 @@
     const LIMIT_KNEE = .9;
     const LIMIT_HEADROOM = .09;
     const EFFECTS = Object.freeze({
+        arenaArc: { tones: [[580, 210, .10, 0, .025, 'square']], minGap: 180 },
+        arenaChain: { tones: [[920, 470, .075, 0, .023, 'triangle'], [660, 320, .07, .04, .018, 'square']], minGap: 200 },
+        arenaDash: { tones: [[180, 720, .18, 0, .055, 'triangle']], noise: [.14, .025, 2000], minGap: 150 },
+        arenaExplosion: { tones: [[125, 38, .28, 0, .055, 'triangle']], noise: [.22, .04, 1400], minGap: 75 },
+        arenaShield: { tones: [[310, 930, .2, 0, .06, 'sine'], [930, 620, .15, .12, .025, 'triangle']], minGap: 120 },
+        arenaHurt: { tones: [[160, 45, .3, 0, .07, 'sawtooth']], noise: [.22, .035, 800], minGap: 150 },
+        arenaUpgrade: { tones: [[440, 660, .12, 0, .05, 'square'], [660, 990, .18, .12, .05, 'triangle']] },
+        arenaBoss: { tones: [[110, 165, .24, 0, .04, 'square'], [165, 110, .24, .24, .04, 'triangle']], minGap: 1500 },
+        arenaBossDown: { tones: [[150, 36, .7, 0, .075, 'triangle'], [440, 880, .32, .35, .04, 'square']], noise: [.6, .055, 1000], minGap: 450 },
         assaultStart: { tones: [[220, 440, .12, 0, .07, 'triangle'], [440, 880, .2, .12, .07, 'square']] },
         assaultShot: { tones: [[840, 290, .07, 0, .027, 'square']], minGap: 130 },
         assaultLaser: { tones: [[360, 180, .10, 0, .035, 'sawtooth']], minGap: 170 },

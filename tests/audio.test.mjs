@@ -77,6 +77,15 @@ test('all assault combat effects synthesize finite voices, with rapid gunfire th
     assert.equal(h.calls.filter(c => c[0] === 'toneStart').length, 1);
 });
 
+test('all arena effects synthesize audible finite voices and throttle overlapping arcs', () => {
+    for (const name of ['arenaArc','arenaChain','arenaDash','arenaExplosion','arenaShield','arenaHurt','arenaUpgrade','arenaBoss','arenaBossDown']) {
+        const h=setup(),sound=h.create('arena',{musicMix:true,outputLevel:.6});sound.play(name);
+        assert.ok(h.calls.some(c=>c[0]==='toneStart'),name);
+        assert.ok(h.calls.every(([,v])=>typeof v!=='number'||Number.isFinite(v)));
+    }
+    const h=setup(),s=h.create();s.play('arenaArc');s.play('arenaArc');assert.equal(h.calls.filter(c=>c[0]==='toneStart').length,1);
+});
+
 test('opt-in music bus is lazy, reusable when SFX are muted and keeps unity gain below its safety knee',()=>{
     const h=setup(),s=h.create('mix',{musicMix:true}); assert.equal(h.calls.length,0);
     s.toggleMuted(); const bus=s.musicOutput(); assert.ok(bus.context); assert.notEqual(bus.destination,bus.context.destination);

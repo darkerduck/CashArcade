@@ -19,6 +19,37 @@
             && Object.hasOwn(WEAPONS, c.weapon) && Number.isInteger(c.power) && c.power >= 1 && c.power <= 3
             && Number.isInteger(c.wings) && c.wings >= 0 && c.wings <= 2;
     }
+    const finite = n => typeof n === 'number' && Number.isFinite(n);
+    const numbers = (value, fields) => !!value && fields.every(field => finite(value[field]));
+    const list = (value, limit, check) => Array.isArray(value) && value.length <= limit && value.every(check);
+    function validSnapshot(s) {
+        if (!s || s.version !== 1 || !valid(s.checkpoint) || s.level !== s.checkpoint.level
+            || !['running', 'clearing', 'lost', 'stageClear', 'won'].includes(s.state)
+            || !Object.hasOwn(WEAPONS, s.weapon) || !numbers(s, ['score', 'hp', 'bombs', 'power', 'wings', 'time',
+                'wave', 'nextWave', 'nextSupply', 'supplies', 'kills', 'combo', 'comboTime', 'maxCombo', 'id',
+                'clearTime', 'bombCooldown']) || s.score < 0 || s.hp < 0 || s.hp > 5 || s.bombs < 0 || s.bombs > 3
+            || s.power < 1 || s.power > 3 || s.wings < 0 || s.wings > 2 || s.time < 0 || s.time > 3600
+            || !numbers(s.player, ['x', 'y', 'r', 'invulnerable', 'fire', 'wingFire', 'lean'])) return false;
+        const enemy = e => numbers(e, ['id', 'x', 'y', 'origin', 'age', 'hp', 'maxHp', 'r', 'speed', 'fire'])
+            && ['scout', 'fighter', 'gunship'].includes(e.type)
+            && (e.sway === undefined || finite(e.sway)) && (e.flash === undefined || finite(e.flash))
+            && (e.dead === undefined || typeof e.dead === 'boolean');
+        const shot = v => numbers(v, ['x', 'y', 'vx', 'vy', 'damage', 'r'])
+            && (v.wing === undefined || typeof v.wing === 'boolean') && (v.dead === undefined || typeof v.dead === 'boolean');
+        const bullet = v => numbers(v, ['x', 'y', 'vx', 'vy', 'r']) && ['round', 'heavy'].includes(v.type)
+            && (v.dead === undefined || typeof v.dead === 'boolean');
+        const item = v => numbers(v, ['x', 'y', 'age']) && Object.hasOwn(ITEMS, v.type)
+            && (v.dead === undefined || typeof v.dead === 'boolean');
+        const boss = s.boss;
+        return list(s.enemies, 55, enemy) && list(s.shots, 180, shot) && list(s.bullets, 240, bullet)
+            && list(s.items, 12, item) && list(s.beams, 20, v => numbers(v, ['x', 'y', 'width', 'life']))
+            && (boss === null || (numbers(boss, ['x', 'y', 'age', 'hp', 'maxHp', 'fire', 'volley', 'flash'])
+                && ['armor', 'core', 'rage'].includes(boss.phase) && typeof boss.dead === 'boolean'
+                && typeof boss.rage === 'boolean'
+                && (boss.sweep === null || numbers(boss.sweep, ['x', 'age', 'width']))
+                && list(boss.nodes, 4, node => numbers(node, ['offset', 'dy', 'hp', 'maxHp'])
+                    && (node.flash === undefined || finite(node.flash)))));
+    }
     // Distance to the full swept path prevents high-speed shots from tunnelling.
     function segmentDistance(x, y, ax, ay, bx, by) {
         const dx = bx - ax, dy = by - ay, length = dx * dx + dy * dy;
@@ -35,6 +66,20 @@
             this.events = []; this.boss = null; this.wave = 0; this.nextWave = 1.5; this.nextSupply = 6;
             this.supplies = 0; this.kills = 0; this.combo = 0; this.comboTime = 0; this.maxCombo = 0;
             this.id = 0; this.clearTime = 0; this.bombCooldown = 0;
+        }
+        snapshot() {
+            const fields = ['checkpoint', 'level', 'score', 'hp', 'bombs', 'weapon', 'power', 'wings', 'state',
+                'time', 'player', 'enemies', 'shots', 'bullets', 'items', 'beams', 'boss', 'wave', 'nextWave',
+                'nextSupply', 'supplies', 'kills', 'combo', 'comboTime', 'maxCombo', 'id', 'clearTime', 'bombCooldown'];
+            return clone(Object.fromEntries([['version', 1], ...fields.map(field => [field, this[field]])]));
+        }
+        static restore(snapshot) {
+            if (!validSnapshot(snapshot)) throw new Error('Invalid assault snapshot');
+            const game = new Game(snapshot.checkpoint);
+            for (const field of Object.keys(game.snapshot())) {
+                if (field !== 'version' && field !== 'checkpoint') game[field] = clone(snapshot[field]);
+            }
+            return game;
         }
         emit(type, x, y, data = {}) { if (this.events.length < 200) this.events.push({ type, x, y, ...data }); }
         drain() { return this.events.splice(0); }
@@ -298,5 +343,5 @@
             this.items = this.items.filter(i => !i.dead && i.y < H + 30 && i.age < 12);
         }
     }
-    globalThis.NeonAssault = Object.freeze({ W, H, LEVELS, WEAPONS, ITEMS, Game, fresh, valid, segmentDistance });
+    globalThis.NeonAssault = Object.freeze({ W, H, LEVELS, WEAPONS, ITEMS, Game, fresh, valid, validSnapshot, segmentDistance });
 })();

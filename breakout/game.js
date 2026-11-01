@@ -63,9 +63,11 @@
         } else if (!musicRunning) music.resume();
         music.phase(phase); musicRunning = true;
     }
+    function replayLevelIndex() { return game.state === 'won' ? 0 : game.levelIndex; }
     function unlockedCommit() {
         // A consumed credit survives a failed durable write, without requesting another unlock.
-        if (!authorizedCandidate) { authorizedCandidate = new Game(); authorizedCandidate.launch(); authorizedCandidate.drainEvents(); }
+        // The original checkpoint retains the failed stage throughout checkout and reload.
+        if (!authorizedCandidate) { authorizedCandidate = new Game({ levelIndex: replayLevelIndex() }); authorizedCandidate.launch(); authorizedCandidate.drainEvents(); }
         const saved = envelope(authorizedCandidate, { paidReady: true, pending: false, played: true });
         try { store.paidBackup(saved); } catch { /* The durable write below is still required. */ }
         store.write(saved);
@@ -139,12 +141,15 @@
         const signature = [game.state, game.levelIndex, game.wave, locked, replayGate.busy].join(':');
         if (force || signature !== uiSignature) {
             uiSignature = signature;
-            if (locked) showOverlay('REPLAY GATE', authorizedCandidate ? '解鎖已確認' : storageBlocked ? '儲存待恢復' : '再來一局待解鎖', '原局與訂單保留，不會自動重建訂單。請使用下方恢復按鈕。', authorizedCandidate ? '保存並開始已解鎖新局' : '恢復／重試再來一局');
+            const replayLevel = replayLevelIndex() + 1;
+            restartButton.textContent = game.state === 'won' ? '新戰役（付費）' : `重試第 ${replayLevel} 關（付費）`;
+            paymentRetry.textContent = `恢復／重試第 ${replayLevel} 關`;
+            if (locked) showOverlay('REPLAY GATE', authorizedCandidate ? '解鎖已確認' : storageBlocked ? '儲存待恢復' : `重試第 ${replayLevel} 關待解鎖`, `解鎖後從第 ${replayLevel} 關重新挑戰。原局與訂單保留；請使用下方恢復按鈕。`, authorizedCandidate ? '保存並開始已解鎖重試' : `恢復／重試第 ${replayLevel} 關`);
             else if (game.state === 'running') overlay.hidden = true;
             else if (game.state === 'paused') showOverlay('PAUSED', '光流已凍結', '完整球群、機關與道具倒數已保存；繼續不收費。', '繼續遊戲');
             else if (game.state === 'level-clear') showOverlay('STAGE CLEAR', `${game.level.name} · 完成`, `生命已補充（最多五命）。下一關：${window.NeonBreakout.TITLES[game.levelIndex + 1]}`, '部署下一關（免費）');
             else if (game.state === 'life-lost') showOverlay('RELAUNCH', `還有 ${game.lives} 命`, '只有全部球都掉落才扣命。磚塊損壞保留；重新發球免費。', '重新發球（免費）');
-            else if (game.state === 'over' || game.state === 'won') showOverlay(game.state === 'won' ? 'CAMPAIGN COMPLETE' : 'GAME OVER', game.state === 'won' ? '超新星已崩解' : '能量耗盡', `本局 ${game.score} 分。再次開新局需要「再來一局」解鎖。`, '再玩一次（付費）');
+            else if (game.state === 'over' || game.state === 'won') showOverlay(game.state === 'won' ? 'CAMPAIGN COMPLETE' : 'GAME OVER', game.state === 'won' ? '超新星已崩解' : `第 ${replayLevel} 關 · 能量耗盡`, `本局 ${game.score} 分。解鎖後${game.state === 'won' ? '從第一關展開新戰役' : `重試第 ${replayLevel} 關，恢復三條命`}。`, game.state === 'won' ? '新戰役（付費）' : `解鎖並重試第 ${replayLevel} 關`);
             else showOverlay(`STAGE ${String(game.levelIndex + 1).padStart(2,'0')}`, game.level.name, game.level.tip, '發射第一球');
             $('#stage-name').textContent = game.level.name; $('#stage-tip').textContent = game.level.tip;
         }

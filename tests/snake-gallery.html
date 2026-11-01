@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CashArcade · 3D Snake visual / audio QA</title>
+<link rel="icon" type="image/x-icon" href="../favicon.ico?v=1"><link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicon-32.png?v=1"><link rel="icon" type="image/png" sizes="16x16" href="../assets/brand/favicon-16.png?v=1"><link rel="apple-touch-icon" sizes="180x180" href="../assets/brand/apple-touch-icon.png?v=1"><link rel="manifest" href="../site.webmanifest">
+<style>
+:root{color-scheme:dark;font:14px system-ui;background:#070e1a;color:#d5fff5}body{max-width:1040px;margin:auto;padding:18px}h1{font-size:22px}button,select{padding:10px;margin:3px;border:1px solid #347969;border-radius:7px;background:#102728;color:inherit;font:inherit}canvas{display:block;width:100%;aspect-ratio:1.3;border:1px solid #276458;border-radius:12px;touch-action:none}pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#12212b}a{color:#61efd1}[data-theme=light]{color-scheme:light;background:#e8f3ef;color:#183931}[data-theme=light] button,[data-theme=light] select{background:white}[data-theme=light] pre{background:#d2e6e0}
+</style>
+<script type="importmap">{"imports":{"three":"../vendor/three-r186/build/three.module.js","three/addons/":"../vendor/three-r186/examples/jsm/"}}</script>
+<script src="../audio.js?v=8"></script></head><body>
+<h1>3D Snake · 視覺與音訊驗收</h1>
+<p>獨立驗收場景，不載入 SDK、不付款、不讀寫戰役存檔。道具演示是測試 fixture；通關回放使用完整真實規則。</p>
+<label>關卡 <select id="level"></select></label><button id="showcase">封面風格展示</button><button id="replay">執行本關完整回放</button><button id="pause">暫停／觀察</button><button id="theme">亮暗主題</button><button id="low">低效能模式</button><button id="context">測試 context 中斷</button>
+<div id="powers"></div><canvas id="scene" aria-label="3D 遊戲驗收場景"></canvas>
+<p id="metrics" style="overflow-wrap:anywhere">載入中</p><button id="measure">量測新音效</button><button id="listen">試播取食音效</button><pre id="result">尚未量測</pre>
+<script type="module" src="./snake-gallery.mjs"></script></body></html>

@@ -20,8 +20,4 @@
 <path d="m811 532-72-62 19-33-66-48-36-71 14-78" fill="none" stroke="#efffff" stroke-width="2"/>
 <use href="#mech" transform="translate(913 682) rotate(-26)" opacity=".08"/><use href="#mech" transform="translate(875 650) rotate(-26)" opacity=".17"/><use href="#mech" transform="translate(837 618) rotate(-26)"/>
 <g fill="#ffae80"><circle cx="1185" cy="383" r="7"/><circle cx="1142" cy="414" r="7"/><circle cx="1090" cy="432" r="7"/><circle cx="1035" cy="434" r="7"/></g>
-<text x="100" y="123" fill="#7debf6" font-family="monospace" font-size="17" letter-spacing="6">CASHARCADE / 006</text>
-<text x="100" y="790" fill="#efffff" font-family="system-ui,sans-serif" font-size="56" font-weight="700" letter-spacing="8">霓虹突圍</text>
-<text x="103" y="828" fill="#9bacc4" font-family="monospace" font-size="18" letter-spacing="6">NEON BREACH / TWELVE WAVES</text>
-<text x="1570" y="828" text-anchor="end" fill="#b899ff" font-family="monospace" font-size="17" letter-spacing="4">ARC. DASH. DETONATE.</text>
 </svg>

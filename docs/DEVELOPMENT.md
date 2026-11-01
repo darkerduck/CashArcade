@@ -4,7 +4,7 @@
 
 ## 執行環境
 
-這是獨立的靜態網站，遊玩使用現代瀏覽器的 Canvas 2D、Pointer Events、Web Audio、Web Storage 與 `requestAnimationFrame`。沒有框架、套件管理、編譯、後端或環境變數。CashLink 只透過外部 SDK 接入部分重開流程，不需要把 CashLink 原始碼複製進來。
+這是獨立的靜態網站，遊玩使用現代瀏覽器的 Canvas 2D、WebGL2、Pointer Events、Web Audio、Web Storage 與 `requestAnimationFrame`。貪吃蛇使用 vendored Three.js r186，其餘使用原生 Canvas；沒有前端框架、套件安裝、編譯、後端或環境變數。CashLink 只透過外部 SDK 接入部分重開流程，不需要把 CashLink 原始碼複製進來。
 
 本機預覽方法見 [README](../README.md)。伺服器的網站根目錄必須是 CashArcade repository 根目錄，才能解析 `../audio.js`、封面與共用素材。遊玩不需 Node.js；開發測試請準備 Node.js 22 或更新版本，使用內建 `node:test`，不用 `npm install`。Python 3 只是 README 範例使用的靜態伺服器，也可替換為既有 HTTP 預覽工具。
 
@@ -12,10 +12,14 @@
 
 | 路徑 | 職責 |
 | --- | --- |
-| [index.html](../index.html)、[style.css](../style.css)、[app.js](../app.js) | 首頁六張遊戲卡、版面、共用主題偏好 |
-| [audio.js](../audio.js) | 六款遊戲共用的短音效合成、音效靜音、聲部上限與峰值限制 |
+| [index.html](../index.html)、[style.css](../style.css)、[app.js](../app.js) | 首頁遊戲卡、版面、共用主題偏好 |
+| [audio.js](../audio.js) | 遊戲共用的短音效合成、音效靜音、聲部上限與峰值限制 |
 | [music.js](../music.js)、[music-scores.js](../music-scores.js)、[music.css](../music.css) | 配樂合成／排程與控制；蛇、飛行、打磚塊的原創樂譜 |
-| [snake/game.js](../snake/game.js) | 棋盤、遊玩時鐘、食物／炸彈、Canvas、輸入及舊版付款整合 |
+| [snake/game.js](../snake/game.js)、[snake/audio-events.mjs](../snake/audio-events.mjs) | 六方向輸入、介面、保存協調、音效與四階段配樂 |
+| [snake/levels.mjs](../snake/levels.mjs)、[snake/engine.mjs](../snake/engine.mjs) | 十二關地形／種子、純三維規則、機關／道具、固定步進及 snapshot |
+| [snake/tutorial.mjs](../snake/tutorial.mjs) | 獨立第0關、固定引導目標、免費重試、自由練習及教學存檔；無SDK依賴 |
+| [snake/renderer.mjs](../snake/renderer.mjs)、[vendor/three-r186](../vendor/three-r186) | Three.js 立體場景、插值、實例化、反射／光暈、固定與觀察鏡頭 |
+| [snake/storage.mjs](../snake/storage.mjs)、[snake/payment.mjs](../snake/payment.mjs) | 完整戰役存檔、已解鎖備援、單一重試 gate 與 SDK 恢復 |
 | [flappy/game.js](../flappy/game.js)、[flappy/renderer.js](../flappy/renderer.js) | 飛行規則／輸入與獨立的小鳥、閘門、視差場景繪製 |
 | [breakout/levels.js](../breakout/levels.js) | 30 個固定關卡、陣型、提示、配色、磚塊耐久、16 種道具 |
 | [breakout/engine.js](../breakout/engine.js) | 純遊戲狀態、重力、多球、掃掠碰撞、機關、事件與 snapshot |
@@ -25,7 +29,7 @@
 | [missile/engine.js](../missile/engine.js)、[missile/renderer.js](../missile/renderer.js) | 20 關資料、砲台／敵人／城市／道具規則，以及 Canvas 特效 |
 | [missile/game.js](../missile/game.js)、[missile/payment-gate.js](../missile/payment-gate.js) | 戰役 checkpoint、關間選擇、輸入、失敗後再玩付款與恢復 |
 | [missile/score.js](../missile/score.js)、[missile/music.js](../missile/music.js) | 天盾的 20 關樂譜與共用配樂引擎轉接介面 |
-| [assets/covers](../assets/covers)、[assets/brand](../assets/brand)、[brand.css](../brand.css) | 六張原創封面、Logo／圖示、共用頁首圖像樣式 |
+| [assets/covers](../assets/covers)、[assets/brand](../assets/brand)、[brand.css](../brand.css) | 遊戲封面、Logo／圖示、共用頁首圖像樣式 |
 | [site.webmanifest](../site.webmanifest)、[favicon.ico](../favicon.ico) | 相對作用範圍與圖示；目前沒有 Service Worker／離線快取 |
 | [tests](../tests) | Node 假環境測試、關卡對照頁與原生音訊量測頁 |
 
@@ -35,7 +39,7 @@
 
 | 遊戲 | 邏輯畫布 | 遊戲更新 |
 | --- | --- | --- |
-| 貪吃蛇 | 600 × 600、20 × 20 格 | `setTimeout` 依速度移動；實際遊玩時鐘管理甜點與炸彈 |
+| 貪吃蛇 | 10 × 10 × 3 至 14 × 14 × 5 三維格點 | 10 ms 固定模擬；正式每格 250–160 ms、教學預設800ms（原400ms的0.5–2倍可調），渲染獨立插值 |
 | 打磚塊 | 720 × 540 | 引擎 120 Hz 固定物理步進、掃掠碰撞；控制器安排畫格 |
 | 霓虹飛行 | 720 × 540 | 畫格 delta 更新重力／閘門；renderer 與碰撞圈分離 |
 | 霓虹天盾 | 960 × 720 | 引擎按 delta 更新戰役；控制器處理畫格與單次按壓 |
@@ -46,11 +50,13 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 
 ## 維護關卡與機關
 
+貪吃蛇使用 ES modules 與相對路徑 import map。`snake/levels.mjs` 的十二關包含三維牆體、出口、傳送門、雷射、炸彈數、配樂章節與種子；`engine.mjs` 不依賴 DOM／WebGL。改關卡時要用完整移動回放驗證可通關，不能只測連通性。每步 snapshot 包含蛇身、方向、物件、遊玩時鐘、道具和隨機種子；恢復後一律先暫停。Three.js 固定版與 MIT 授權位於 `vendor/three-r186/`，不使用執行期 CDN。
+
 打磚塊在 `createLevel(index, wave)` 逐關定義，index 為 0–29；`TITLES`、`TIPS`、`PALETTES`、`PATTERNS` 要保持對應。新增機關要同步碰撞、snapshot／restore、存檔驗證與 renderer；不可破壞物不能算清關目標。第 29 關三幕與第 30 關核心分段都有進度旗標，不能只改初始陣型。道具機率／保證掉落以該關資料為準。
 
 天盾的 `LEVELS` 在 `missile/engine.js`，包含名稱、敵人數、基速、間隔、波數、齊射數、陣型與敵人種類；畫面關卡為 1–20。調整關數時，也要檢查 checkpoint 驗證、最後關勝利、升級上限、頭目邏輯與樂譜對應。
 
-打磚塊引擎提供 CommonJS 匯出供 Node 測試使用；天盾測試則以 `node:vm` 載入並讀取 `scope.NeonDefense`，沒有 CommonJS 匯出。瀏覽器分別使用 `NeonBreakout`／`NeonDefense` 全域介面。現有 HTML 使用有順序的 `defer` script，新增檔案時保留資料／引擎／渲染／存檔先於頁面控制器，音效／配樂引擎先於呼叫端。不要把這些 script 隨意改成 `async`。
+打磚塊引擎提供 CommonJS 匯出供 Node 測試使用；天盾測試則以 `node:vm` 載入並讀取 `scope.NeonDefense`，沒有 CommonJS 匯出。瀏覽器分別使用 `NeonBreakout`／`NeonDefense` 全域介面。除蛇的 module 控制器外，現有 HTML 使用有順序的 `defer` script，新增檔案時保留資料／引擎／渲染／存檔先於頁面控制器，音效／配樂引擎先於呼叫端。不要把這些 script 隨意改成 `async`。
 
 ## 強襲與突圍模組
 
@@ -82,9 +88,19 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 
 公開網站位於 `/CashArcade/`，所以站內資源使用 `./`、`../`；不要用 `/audio.js` 或 `/snake/` 這類會跑到網域根目錄的絕對路徑。付款 Origin 是網域層級，和遊戲路徑不同，詳見[付款文件](STORAGE_AND_PAYMENTS.md)。
 
-封面保留 `assets/covers/{snake,breakout,flappy,missile}.jpg`。Logo 原始圖與生成提示見 [README 的品牌素材說明](../README.md#brand)，不要把來源不明的圖像、音樂或字型放進專案。配樂／音效即時合成，試聽頁下載的 WAV 是臨時產物，不是遊戲執行需要的素材。
+封面保留 `assets/covers/{snake,breakout,flappy,missile,assault}.jpg`。Logo 原始圖與生成提示見 [README 的品牌素材說明](../README.md#brand)，不要把來源不明的圖像、音樂或字型放進專案。配樂／音效即時合成，試聽頁下載的 WAV 是臨時產物，不是遊戲執行需要的素材。
 
-修改正式靜態資源時，同步檢查所有引用頁的 `?v=`；共用音訊或圖示可能同時被六款遊戲、首頁及驗收頁引用。只調整版本號不能取代部署內容核對。Manifest 為 `display: browser`，不可僅因存在 manifest 就聲稱支援離線遊玩。
+修改正式靜態資源時，同步檢查所有引用頁的 `?v=`；共用音訊或圖示可能同時被多款遊戲、首頁及驗收頁引用。只調整版本號不能取代部署內容核對。Manifest 為 `display: browser`，不可僅因存在 manifest 就聲稱支援離線遊玩。
+
+### 遊戲封面規範
+
+所有現有與未來的遊戲封面不得包含文字、字母、數字、標題、標語、Logo、介面或水印。遊戲名稱、編號及說明由網頁另外呈現，不烙印於圖片中。獨立的網站 Logo、favicon 與其他網站圖示不受此封面規範限制。
+
+新封面使用 imagegen 內建工具，將已確認的打磚塊、天盾與霓虹飛行圖片標示為風格參考，不覆寫參考圖。採橫式約 16:9、深藍背景、青藍／桃紅／紫色霓虹光效、金色點綴與立體材質；不得以平面線稿或像素風取代此系列的封面風格。完整規範亦列於 [README](../README.md#遊戲封面規範)。
+
+生成提示必須明列禁止文字、字母、數字、標題、標語、Logo、介面與水印。人工檢查整張輸出及遊戲卡尺寸縮圖：不得出現任何上述內容，主體仍須清楚；不合格時針對問題修正並重新驗收。先提供預覽時，不更動首頁圖片引用，也不覆寫或發布現有封面。
+
+首頁霓虹強襲使用[已確認的無文字 JPEG 封面](../assets/covers/assault.jpg)，[生成提示](../assets/covers/assault-prompt.txt)隨素材保存。舊 `assault.svg` 含英文標題與標語，僅保留為歷史稿、不供首頁使用；不得在後續生成中沿用其文字。圖片更新時同步調整引用版本並核對公開資源。
 
 ## 變更交付
 
@@ -93,4 +109,31 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 3. 依[測試對照表](TESTING_AND_DEPLOYMENT.md)執行直接受影響測試，再做相應桌面／390px、亮暗版驗收。
 4. 提交與發布後記錄 commit、執行過的驗證及未驗項目。不要把假 SDK 通過寫成真實付款成功。
 
-目前 repository 沒有 `LICENSE` 檔案；公開可讀不等於已授予任意再散布授權。若要對外宣告授權，先由擁有者決定並補上正式檔案。
+目前 repository 根目錄沒有 `LICENSE` 檔案；公開可讀不等於已授予任意再散布授權。若要對外宣告授權，先由擁有者決定並補上正式檔案。第三方 Three.js 的 MIT 授權另保留於其 vendor 目錄，不代表本專案其餘內容的授權。
+
+## 霓虹甩尾
+
+`drift/engine.js` 是可在 Node 執行的純遊戲規則與三條平滑閉合賽道，護欄以半徑 18.5px 包圍圓、<=2px 掃掠子步進與出口二分求接觸點，保留切向速度；法線撞擊至少 35px/s 才扣 5–24 耐久，0.9秒傷害冷卻。兩台 AI 使用相同 Game 物理與合法圈數，以 190/198px/s 固定目標速度追蹤道路，無追趕傳送。玩家正常速度 215px/s、衝刺345px/s。圈數以實際車輛軌跡依序正向穿越道路範圍內的8個checkpoint閘門與起點驗證，不以急彎最近點投影速度推斷作弊。排名依有效圈數／合法進度，完整有效第一名且未毀車才解鎖下一道；`renderer.js` 使用 Canvas 2D，`game.js` 管理 DOM、鍵盤、多指 Pointer Events 與暫停，`audio.js` 使用延遲初始化 Web Audio 與 25 ms 音訊時鐘排程，透過共用 `music.js` 合成方波主旋律／三角波低音；`expansion-scores.js` 保存三條賽道的原創 8-bit 編曲，音樂音量與音效開關互相獨立。暫停／離頁會取消排程並停止聲音，後續玩家操作可喚醒被瀏覽器暫停的 context。`storage.js` 驗證版本化紀錄並容忍儲存失敗。無外部套件、付款服務或追蹤。封面 `assets/covers/drift.jpg` 採內建 imagegen，提示位於 `assets/covers/drift-prompt.txt`。
+
+
+## 電路迷城與重力快遞
+
+`circuit/` 使用原生 ES modules：`levels.mjs` 保存十座固定迷宮，`engine.mjs` 是 150 ms 固定格步進，`renderer.mjs` 處理插值與霓虹光效，`storage.mjs` 驗證紀錄，`game.mjs` 協調滑動、鍵盤與聲音。`tests/circuit-replays.mjs` 保存十關全危險開啟的三星回放；測試不得移除巡邏或雷射才能過關。
+
+`gravity/engine.js` 使用 120 Hz 固定物理步進，關卡提供可驗證的翻轉座標路線。`renderer.js` 根據窄畫面切換 720×600 視野，`game.js` 維持單次輸入與失焦暫停，`storage.js` 處理關卡紀錄。翻轉路線是測試文件，不會在遊戲內自動駕駛。
+
+兩款使用 `audio.js`／`music.js` 共用音訊混音與 `expansion-scores.js` 的獨立八小節原創編曲。新增封面 `circuit.jpg`、`gravity.jpg` 均由內建 imagegen 生成、無文字，提示以相同檔名的 `-prompt.txt` 保存。
+
+
+## 反應爐彈珠台與光路拼接
+
+`reactor/engine.js` 是 120 Hz 固定物理步進，依最高球速自適應子步進；線段碰撞包含移動擋板表面速度、接觸位置與升起狀態。碰撞冷卻避免單次接觸重複得分。`renderer.js` 繪製原創桌面，`game.js` 協調多指／鍵盤來源、存檔與音訊；活躍畫面限制為 30 Hz，待命／暫停僅變更時重繪。對應 `tests/reactor-*.test.mjs`。
+
+`prism/engine.js` 處理兩格管線組、旋轉踢牆、洗牌袋、鎖定延長上限、連通圖與閉合迴路、重力連鎖及暫存。`storage.js` 隔離紀錄驗證與保存；`renderer.js` 支援亮暗／減少動態，`game.js` 避免延後清除事件在失焦後重新開啟聲音。`tests/prism-replays.mjs` 的 seed=1 回放僅使用正常輸入，24 次放置完成五個迴路、二段連鎖與第二級。
+
+兩款使用 `expansion-scores.js` 的不同原創八小節音樂及獨立音效。封面 `reactor.jpg`、`prism.jpg` 為內建 imagegen 的無文字作品，提示保存在同名 `-prompt.txt`。
+
+
+## 雙軌節奏模組
+
+`pulse/tracks.js` 保存三首原創旋律、和聲、節奏與同網格譜面；`engine.js` 處理判定、長音與校正統計，`controller.js` 接收時間戳輸入。`audio.js` 以 AudioContext 時鐘和 25 ms 前瞻排程播放，優先用 output timestamp 估計可聽時間；渲染掉幀及音樂靜音不移動歌曲 epoch。`storage.js` 驗證本機設定和六組紀錄；`game.js` 處理頁面與輸入，`renderer.js` 畫雙軌及視覺拍點。`PulseSwitch.snapshot()` 回傳分離的唯讀診斷快照，不提供改分或跳關入口。

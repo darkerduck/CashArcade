@@ -34,6 +34,11 @@ h1 span { display:inline-block; margin-left:10px; color:var(--muted); font-size:
 .flight-emblem { width:95px; height:100px; filter:drop-shadow(0 0 15px color-mix(in srgb,var(--cyan) 40%,transparent)); }.flight-emblem svg { width:100%; height:100%; fill:var(--raised); stroke:var(--cyan); stroke-width:1.4; }.flight-emblem path+path { fill:var(--violet); stroke:var(--violet); }
 .primary { min-width:190px; padding:14px 21px; border-color:var(--cyan); color:var(--button-ink); background:var(--cyan); font-size:.9rem; font-weight:800; }.primary span { margin-left:26px; }
 .overlay-hint { margin-top:20px; font-size:.56rem; color:var(--muted); line-height:1.7; }
+.overlay[data-payment="true"] .flight-emblem { display:none; }
+.overlay[data-payment="false"] .payment-status { display:none; }
+.overlay .payment-status { max-width:34ch; margin:10px 0; color:var(--gold); font:.72rem/1.5 system-ui,sans-serif; }
+.payment-link { color:var(--cyan); font:.72rem/1.5 system-ui,sans-serif; overflow-wrap:anywhere; margin:4px 0; }
+#payment-cancel { min-height:36px; margin-top:8px; }
 .combat-bar { display:flex; align-items:center; gap:8px; padding:9px 12px; font-size:.67rem; color:var(--cyan); border-bottom:1px solid var(--line); }.combat-bar b { color:var(--ink); }.combat-bar>span:nth-child(2) { margin-left:auto; color:var(--muted); font-size:.6rem; }.combat-bar button { margin-left:auto; border-color:color-mix(in srgb,var(--gold) 40%,var(--line)); color:var(--gold); min-height:42px; }
 .actions { display:flex; gap:7px; padding:10px; }.actions button { flex:1; min-width:0; font-size:.67rem; padding-inline:5px; }
 .flight-deck { display:grid; gap:22px; }.flight-deck h2 { margin:0; font-size:1.1rem; letter-spacing:-.035em; }

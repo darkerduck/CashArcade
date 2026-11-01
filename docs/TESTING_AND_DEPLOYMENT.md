@@ -11,10 +11,12 @@
 測試使用 Node.js 內建 `node:test`，不需 npm 套件、不啟動資料庫、不連真實付款服務。先跑直接受影響的檔案，例如：
 
 ```sh
-node --test tests/snake-items.test.mjs
+node --test tests/snake-3d.test.mjs tests/snake-payment.test.mjs
+node --test tests/snake-tutorial.test.mjs tests/snake-tutorial-ui.test.mjs
 node --test tests/breakout-engine.test.mjs tests/breakout-payment.test.mjs
 node --test tests/missile.test.mjs tests/missile-ui.test.mjs
 node --test tests/arena*.test.mjs tests/audio.test.mjs
+node --test tests/assault.test.mjs tests/assault-ui.test.mjs tests/assault-renderer.test.mjs
 git diff --check
 ```
 
@@ -28,23 +30,25 @@ node --test tests/*.test.mjs
 
 | 變更範圍 | 對應測試（都在 `tests/`） | 涵蓋重點 |
 | --- | --- | --- |
-| 蛇的食物／炸彈／遊玩時鐘 | [snake-items.test.mjs](../tests/snake-items.test.mjs) | 生成／消失／換位、安全位置、增長與音效事件 |
+| 蛇的三維規則與十二關 | [snake-3d.test.mjs](../tests/snake-3d.test.mjs) | 六方向、十二關完整移動回放、出口、傳送、雷射、道具、甜點／炸彈計時與 snapshot |
+| 蛇的付款與存檔 | [snake-payment.test.mjs](../tests/snake-payment.test.mjs) | 免費續關、付費入口、單次解鎖、錯誤／取消、存檔失敗與付款前後恢復 |
+| 蛇的第0關與控制器 | [snake-tutorial.test.mjs](../tests/snake-tutorial.test.mjs)、[snake-tutorial-ui.test.mjs](../tests/snake-tutorial-ui.test.mjs) | 真實移動完成13個教學目標、半／原／雙倍速度回放、即時調速與保存、自由練習方向／Space啟動、按鈕／滑桿焦點、原生鍵盤與免費重試／R、暫停恢復、儲存降級與正式付款隔離 |
 | 蛇與飛行事件 | [game-audio-events.test.mjs](../tests/game-audio-events.test.mjs) | 拍翼、計分、加速、暫停、遊戲與音樂協調 |
 | 飛行畫面 | [flappy-renderer.test.mjs](../tests/flappy-renderer.test.mjs) | 鳥形、場景、亮暗版、減少動態效果、裝飾上限 |
 | 打磚塊規則／存檔 | [breakout-engine.test.mjs](../tests/breakout-engine.test.mjs) | 30 關、蓄力、多球、道具、首領與 snapshot／遷移 |
 | 打磚塊空間路線 | [breakout-routes.test.mjs](../tests/breakout-routes.test.mjs) | 必要目標碰撞面可抵達、門、傳送與多幕 |
 | 打磚塊畫面 | [breakout-renderer.test.mjs](../tests/breakout-renderer.test.mjs) | 三色霓虹、特殊磚辨識、主題／特效上限 |
-| 打磚塊付款／頁面控制 | [breakout-payment.test.mjs](../tests/breakout-payment.test.mjs) | 免費與付費入口、快速連按、取消／錯誤、存檔失敗及重載 |
+| 打磚塊付款／頁面控制 | [breakout-payment.test.mjs](../tests/breakout-payment.test.mjs) | 免費與付費入口、死亡關卡重試、快速連按、取消／錯誤、存檔失敗及重載 |
 | 天盾規則 | [missile.test.mjs](../tests/missile.test.mjs) | 20 關、最近可用砲台、裝甲命中去重、城市、升級／頭目 |
 | 天盾輸入／付款／存檔 | [missile-ui.test.mjs](../tests/missile-ui.test.mjs) | 單次發射、失敗 gate、checkpoint、重載、升級與配樂 |
 | 天盾畫面 | [missile-renderer.test.mjs](../tests/missile-renderer.test.mjs) | 城市損壞、道具、頭目、震動與粒子生命週期 |
-| 強襲 | [assault.test.mjs](../tests/assault.test.mjs)、[assault-ui.test.mjs](../tests/assault-ui.test.mjs)、[assault-renderer.test.mjs](../tests/assault-renderer.test.mjs) | 三關戰役、火力、頭目、拖曳、存檔、畫面與樂譜 |
+| 強襲規則／付款／畫面 | [assault.test.mjs](../tests/assault.test.mjs)、[assault-ui.test.mjs](../tests/assault-ui.test.mjs)、[assault-renderer.test.mjs](../tests/assault-renderer.test.mjs) | 三關頭目、完整局中快照、死亡後單一付款 gate、取消與重載恢復、畫面特效 |
 | 突圍 | [arena.test.mjs](../tests/arena.test.mjs)、[arena-ui.test.mjs](../tests/arena-ui.test.mjs)、[arena-renderer.test.mjs](../tests/arena-renderer.test.mjs) | 電弧／爆破去重、衝刺、12 波勝敗、升級、重試／重載、雙指操作、主題及特效 |
 | 共用音效 | [audio.test.mjs](../tests/audio.test.mjs) | 延遲初始化、靜音儲存、音量、節流及聲部限制 |
 | 四款配樂 | [missile-music.test.mjs](../tests/missile-music.test.mjs) | 名稱沿用天盾，但也涵蓋另三款樂譜、排程、暫停與音量 |
 | 主題／網站圖示 | [theme-default.test.mjs](../tests/theme-default.test.mjs)、[site-icons.test.mjs](../tests/site-icons.test.mjs) | 預設暗版、手動偏好、ICO／PNG、manifest 與子路徑 |
 
-測試多使用固定時鐘、假 DOM、假 AudioContext 或假 SDK。Node 測試通過不代表真實瀏覽器能播放聲音、手機一定無溢出、真實付款成功，或任意自動玩家能完成全部關卡。貪吃蛇未具備打磚塊／天盾的持久付款保護，不能由其他遊戲的 gate 測試推論它也通過。
+測試多使用固定時鐘、假 DOM、假 AudioContext 或假 SDK。Node 測試通過不代表真實瀏覽器能播放聲音、手機一定無溢出或真實付款成功。蛇的固定種子回放以實際方向輸入逐步通關、不依賴道具；這證明指定路線可完成，不代表所有路線與玩家操作都能過關。
 
 ## 瀏覽器驗收工具
 
@@ -52,6 +56,7 @@ node --test tests/*.test.mjs
 
 | 本機頁面 | 用途 |
 | --- | --- |
+| [貪吃蛇三維對照](http://127.0.0.1:4173/tests/snake-gallery.html) | 十二關代表場景、單關完整回放、五道具、context 恢復、FPS／繪製成本與原生音效量測 |
 | [打磚塊關卡對照](http://127.0.0.1:4173/tests/breakout-gallery.html) | 30 關初始／機關啟動後共 60 畫面、亮暗切換、PNG 對照圖、音效時長／RMS／峰值 |
 | [三款配樂試聽](http://127.0.0.1:4173/tests/arcade-music.html) | 打磚塊 30 關／首領／三幕，蛇與飛行的加速編曲及密集混音 |
 | [天盾配樂試聽](http://127.0.0.1:4173/tests/missile-music.html) | 20 關、兩個頭目階段、原生合成輸出與大音效疊加 |
@@ -59,7 +64,7 @@ node --test tests/*.test.mjs
 | [突圍驗收](http://127.0.0.1:4173/CashArcade/tests/arena-gallery.html) | 三場景／頭目、亮暗版、減少動態、六首配樂＋三首過載＋密集混音 |
 | [突圍試玩台](http://127.0.0.1:4173/CashArcade/tests/arena-playtest.html) | 選波次實際操作，正常受傷，獨立於正式存檔 |
 
-這些驗收頁不載入付款 SDK，也不保存正式遊戲進度。量測使用瀏覽器 `OfflineAudioContext`；先按產生試聽，再由播放器播放，必要時下載本次合成 WAV。試聽的時長、RMS、peak、clipped 與 PASS／FAIL 會顯示在頁面。關卡對照由程式直接啟動機關建立樣本，不是 30 關真實手動通關紀錄。
+這些驗收頁不載入付款 SDK，也不保存正式遊戲進度。量測使用瀏覽器 `OfflineAudioContext`；貪吃蛇頁直接顯示時長、RMS、peak、clipped，其餘試聽頁可產生播放器與臨時 WAV。打磚塊對照由程式直接啟動機關建立樣本，不是 30 關真實手動通關紀錄；蛇的回放模式則經實際移動和碰撞規則完成本關。
 
 涉及畫面或操作的改動，至少檢查：
 
@@ -132,3 +137,44 @@ node --test tests/*.test.mjs
 | 測試全綠，但聲音仍有異常 | 使用試聽頁做原生輸出量測，檢查瀏覽器播放限制、獨立開關、輸出裝置與藍牙延遲 |
 
 若發布內容需要回復，先確認受影響 commit 與存檔相容性，再以新的回復 commit 走同一驗證流程；避免 reset／force push 抹掉後續工作。尤其存檔版本變更不能只回復前端檔案就假定舊版可讀。
+
+## 霓虹甩尾驗收
+
+執行 `node --test tests/drift-*.test.mjs`，再跑完整 `node --test tests/*.test.mjs`。路徑為 `/CashArcade/drift/`，仍由 main 根目錄發布。桌機測試左右、甩尾／釋放、暫停、失焦、三條賽道及重開；390px 手機檢查雙指同時按住、移出按鈕後放開、pointercancel，以及暗／亮版無溢出。90 秒後顯示名次與勝負；反覆硬撞會爆炸並可免費重試。第一名且未毀車才逐道解鎖；重新整理保留解鎖、紀錄與設定。護欄／AI／競速測試與雲端瀏覽器腳本、完整驗收清單見 `qa/DRIFT_ACCEPTANCE.md`，本輪通過結果須由執行者另行記錄。
+
+## 電路迷城／重力快遞驗收
+
+```sh
+node --test --test-concurrency=1 tests/circuit-*.test.mjs tests/gravity-*.test.mjs
+```
+
+電路迷城的十關回放包含巡邏、相位開關、雷射、隱形及可選碎片，必須在原規則下全部三星完成。重力快遞的十關以實際翻轉座標重播，涵蓋移動月台、雷射時序與碎片加速；也檢查輸入時間容錯。
+
+2026-10-10 Chromium 驗收：兩款在 390px 有真實觸控輸入；第一關透過頁面鍵盤事件完成三星，另在瀏覽器中完成二十關純引擎回放。暫停／繼續、關卡解鎖重載、亮暗版、桌面／手機版面與 JavaScript 錯誤檢查通過。以原生 AnalyserNode 測得只有 BGM 時 RMS 約 0.066（迷城）／0.074（快遞），暫停後低於 0.0001。這是瀏覽器實際音訊資料及觸控模擬，並非實體手機或喇叭的聆聽驗收。
+
+霓虹甩尾修正另經三條原創配樂的 OfflineAudioContext 輸出驗證，RMS 約 0.062–0.064、峰值低於 0.179；實際頁面音樂／音效各自非零，靜音、零音量、暫停、被暫停的 context 喚醒和雙拇指取消皆通過。
+
+## 反應爐彈珠台／光路拼接驗收
+
+```sh
+node --test --test-concurrency=1 tests/reactor-*.test.mjs tests/prism-*.test.mjs
+```
+
+彈珠台檢查高速球體不穿牆、擋板移動碰撞、蓄力發射、救球、三球過載與完整任務循環。觸控必須能同時操作兩個擋板，取消手勢會放開；全任務完成保證充滿反應爐並增加備用球。
+
+光路拼接檢查互通管線必須完全閉合才消除、重力連鎖、暫存、落點、旋轉踢牆與最多八次鎖定延展。`tests/prism-replays.mjs` 以固定種子的 24 次真實放置完成五個迴路、兩段連鎖與第二級速度，不直接修改盤面。
+
+兩款都需要在瀏覽器重新檢查首次操作解鎖配樂、音效／音樂獨立開關、暫停、失焦與觸控取消。不能把建立 AudioContext 或假音訊測試通過視為真正出聲；以原生 AnalyserNode 或 OfflineAudioContext 檢查非零音訊與無削波，再另做實體輸出裝置的聆聽確認。
+
+2026-10-11 Chromium 複驗通過：光路拼接的實際 BGM RMS 0.075、閉合示範迴路、移動／旋轉／暫存、正常放置連鎖回放及暫停恢復；彈珠台的蓄力發射、雙指同按擋板、取消放開、實際碰撞得分及 BGM／暫停恢復。兩款均檢查 390px 與桌面 viewport、亮暗切換，沒有 JavaScript 錯誤。先前已檢視實際畫面；軟體繪圖環境截圖曾逾時，最後重跑將截圖與遊戲／聲音驗證分開。
+
+
+## 雙軌節奏與既有遊戲音訊驗收
+
+執行 `node --test --test-concurrency=1 tests/pulse-*.test.mjs tests/existing-games-audio-audit.test.mjs`。六份完整譜面需全部可解析、時間有序且可無失誤完成；另檢查長音中途暫停、放開、重按、雙軌閘門、音樂靜音不移動時鐘與校正偏移。
+
+瀏覽器驗收需讓實際音訊時鐘跑完整首歌曲，以正常頁面輸入擊中音符，不直接修改分數。校正需用已知偏移測試。每首樂曲要量測原生波形且比較不同編曲，既有遊戲則逐一檢查只有配樂／只有音效、零音量、暫停、visibility handler、被暫停的 AudioContext 恢復與設定重載。測試瀏覽器觸控及音訊資料不等於實體手機、藍牙或喇叭感知延遲的驗收。
+
+2026-10-11 Chromium 音訊驗收：雙軌節奏以正常 DOM 按鍵、實際音訊時鐘完成首曲，111 個判定全 Perfect，包含長音暫停／重按與 AudioContext 中斷恢復；模擬 +120 ms 校正得到 +121 ms，設定及最佳紀錄重載保留。三曲前八小節分別以原生離線音訊量測 RMS 0.0644／0.0659／0.0691，峰值皆低於 0.184，波形雜湊各異。完整遊戲頁的離線渲染曾逾時，改由同一正式樂譜與合成器的獨立頁面完成；這不是三首真人演奏或實體音訊裝置的聆聽測試。
+
+五款既有遊戲也逐一測得真實 BGM 與 SFX 非零，包含獨立靜音、零音量、音量變化、暫停／恢復、context 喚醒、visibility handler、觸控與偏好重載。長時間量測暫停 requestAnimationFrame 以避免角色死亡，觸控 smoke test 恢復真實動畫；隱藏事件使用合成事件，不冒稱 OS 層級背景分頁測試。外部付款 SDK 在隔離免費局中封鎖，沒有進行真實付款。

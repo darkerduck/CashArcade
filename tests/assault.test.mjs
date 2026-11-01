@@ -7,6 +7,15 @@ vm.runInContext(readFileSync(new URL('../assault/engine.js', import.meta.url), '
 const { Game, fresh, valid, W, H } = scope.NeonAssault;
 const advance = (g, seconds, input = {}) => { for (let i = 0; i < Math.ceil(seconds * 120); i++) g.update(1 / 120, input); };
 
+test('complete combat snapshot restores live entities and rejects malformed state', () => {
+    const game = new Game(); advance(game, 2); game.spawnBoss(); game.boss.age = 3;
+    game.bullets.push({ x: 125, y: 430, vx: 9, vy: 80, r: 5, type: 'round' });
+    const saved = game.snapshot(), restored = Game.restore(saved);
+    assert.equal(JSON.stringify(restored.snapshot()), JSON.stringify(saved));
+    saved.player.x = Infinity; assert.throws(() => Game.restore(saved));
+    saved.player.x = 270; saved.bullets[0].type = 'unknown'; assert.throws(() => Game.restore(saved));
+});
+
 test('movement normalizes diagonal input, clamps the playfield, and pointer travel never teleports', () => {
     const a = new Game(), b = new Game(); advance(a, .3, { dx: 1 }); advance(b, .3, { dx: 1, dy: -1 });
     assert.ok(Math.abs(Math.hypot(b.player.x - W / 2, b.player.y - (H - 108)) - (a.player.x - W / 2)) < .001);

@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {read,drawingContext} from './prism-test-helper.mjs';
+const scope=vm.createContext({});for(const file of['engine','renderer'])vm.runInContext(read('prism/'+file+'.js'),scope);const {Game}=scope.PrismStack,{Renderer}=scope.PrismRenderer;
+function fixture(){const {ctx,calls}=drawingContext(),canvas={width:368,height:620,getContext:()=>ctx};return{ctx,calls,renderer:new Renderer(canvas)};}
+test('renderer covers ready, active, ghost, paused, clear and terminal states without mutating game',()=>{const {renderer,calls}=fixture(),g=new Game();for(const state of['ready','active','paused','clear','terminal']){if(state==='active')g.start();if(state==='paused')g.pause();if(state==='clear'){g.resume();g.drop();}if(state==='terminal'){g.state='finished';g.piece=null;}const before=JSON.stringify(g);renderer.render(g);assert.equal(JSON.stringify(g),before);}assert.ok(calls.some(c=>c[0]==='fillText'&&c[1]==='CIRCUIT ×1'));assert.equal(calls.filter(c=>c[0]==='save').length,calls.filter(c=>c[0]==='restore').length);});
+test('light theme changes board palette and reduced motion eliminates glow/pulsing',()=>{const {renderer,calls}=fixture(),g=new Game();g.start();g.drop();renderer.render(g,true,true);assert.ok(calls.some(c=>c[0]==='set'&&c[1]==='fillStyle'&&c[2]==='#e5eff5'));assert.equal(calls.some(c=>c[0]==='set'&&c[1]==='shadowBlur'),false);assert.equal(calls.some(c=>c[0]==='set'&&c[1]==='globalAlpha'&&c[2]!==1),false);});
+test('preview clears stale hold contents, draws both pipes and restores board context',()=>{const {renderer,ctx}=fixture(),preview=drawingContext(),canvas={width:80,height:48,getContext:()=>preview.ctx};renderer.preview(canvas,[6,12]);assert.equal(renderer.ctx,ctx);assert.equal(preview.calls.filter(c=>c[0]==='arc').length,2);renderer.preview(canvas,null);assert.equal(preview.calls.filter(c=>c[0]==='clearRect').length,2);});

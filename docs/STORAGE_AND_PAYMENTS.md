@@ -8,14 +8,15 @@
 
 | 遊戲 | 免費操作 | 需解鎖的新局 | 重載行為 |
 | --- | --- | --- | --- |
-| 貪吃蛇 | 本頁第一局、暫停／繼續 | 本頁開始過遊戲後，重新開始、R、結束後再玩 | 不保存本局或付款旗標；只有最高分、偏好與 SDK 自身資料可能保留 |
-| 打磚塊 | 從開始／發球入口開第一局、恢復有效存檔、暫停／繼續、扣命後發球、換關 | 重新開始、R、再玩一次、結束後的 Space／Enter 等新局路徑 | 最近成功保存的完整本局，先暫停；付款待處理由玩家恢復 |
+| 貪吃蛇 3D | 第0關全部操作／死亡重試、首個正式戰役、正常過關、暫停／觀察／繼續、恢復同一局 | 玩過首個正式戰役後，正式關卡重試、R、新戰役、失敗／勝利後再玩 | 完整三維本局先暫停；付款意圖與已解鎖待恢復狀態一併保存 |
+| 打磚塊 | 從開始／發球入口開第一局、恢復有效存檔、暫停／繼續、扣命後發球、換關 | 重試本關、R、再玩一次、結束後的 Space／Enter；解鎖後重打目前關卡，通關後再玩才從第一關開始 | 最近成功保存的完整本局，先暫停；付款待處理由玩家恢復 |
 | 霓虹飛行 | 所有遊玩與重開 | 無，未載入付款 SDK | 不保存本局；只保留最高分與偏好 |
 | 霓虹天盾 | 首次戰役、失敗前主動重試／新戰役、暫停／繼續、關間升級、通關後再玩 | 六城全毀後的重試、R、新戰役與失敗後開始 | 本關起點或關間升級階段；失敗／付款狀態一併保存 |
+| 霓虹強襲 | 首次遊玩、死亡前主動重試／新戰役、正常過關、通關後再玩、暫停／繼續 | 戰機死亡後的重試、R、新戰役與失敗畫面的開始 | 最近保存的完整局中狀態先暫停；死亡與付款狀態保持待恢復 |
 
-打磚塊的「重新開始」／R 會直接走新局 gate，即使尚未從免費開始按鈕開過第一局也一樣。天盾付款一旦待處理，會保留當時選的「重試本關」或「新戰役」，其他按鈕不改換原訂單意圖。
+打磚塊的「重試本關」／R 會直接走付款 gate，即使尚未從免費開始按鈕開過第一局也一樣。付款意圖的原局 snapshot 保留目標關卡，成功後以三條命、零分與完整初始陣型重試該關；取消、重載、已消耗額度後的保存重試不會改成第一關。只有原局狀態為 `won` 才建立第一關新戰役。天盾付款一旦待處理，會保留當時選的「重試本關」或「新戰役」，其他按鈕不改換原訂單意圖。
 
-三款付費整合的付款用途均為「再來一局」。價格與收款資訊應以 CashLink 付款頁為準；貪吃蛇的較早版 UI 仍有 `1,000 sat` 預設文案，不能把它當成全站固定價格。沒有獎金、抽獎、代幣或可兌現獎勵。
+四款付費整合的付款用途均為「再來一局」。貪吃蛇原有註冊的回傳文案為「死亡或勝利後解鎖下一局遊戲」，本次保留該設定，亦接受「再來一局」；霓虹強襲另接受「死亡後再來一局」。其他用途不接受。價格與用途由 CashLink 伺服器決定，不寫死金額，收款資訊以付款頁為準。沒有獎金、抽獎、代幣或可兌現獎勵。
 
 霓虹強襲（`assault/`）與霓虹突圍（`arena/`）首次遊玩、重試及新戰役全部免費，不載入付款 SDK。重新載入後須按繼續，回到關卡／波次起點；突圍也會恢復波間原本的三張升級卡。
 
@@ -25,8 +26,12 @@
 
 | 儲存位置 | 鍵 | 用途 |
 | --- | --- | --- |
-| localStorage | `casharcade-theme` | 六款遊戲與首頁共用亮暗偏好；無偏好預設暗版 |
-| localStorage | `casharcade-high-score` | 貪吃蛇最高分，名稱沒有 `snake` |
+| localStorage | `casharcade-theme` | 所有遊戲與首頁共用亮暗偏好；無偏好預設暗版 |
+| localStorage | `casharcade-high-score` | 舊平面貪吃蛇最高分，保留但不混入 3D 戰役 |
+| localStorage | `casharcade-snake-3d-high-score` | 三維貪吃蛇戰役最高分 |
+| localStorage | `casharcade-snake-3d-tutorial-v1` | 第0關步驟、完成／跳過標記、當前練習局、步驟起點與速度偏好；不影響正式存檔或付費資格 |
+| localStorage | `casharcade-snake-3d-campaign-v1` | 三維完整本局、played、replay、intent 與 paidSerial |
+| sessionStorage | `casharcade-snake-3d-paid-backup-v1` | 貪吃蛇已消耗額度後、尚待提交的新局備援 |
 | localStorage | `casharcade-breakout-high-score` | 打磚塊最高分 |
 | localStorage | `casharcade-flappy-high-score` | 飛行最高分 |
 | localStorage | `casharcade-missile-high-score` | 天盾最高分 |
@@ -45,7 +50,11 @@
 | localStorage | `casharcade-missile-checkpoint` | 天盾 v2 envelope：關卡 checkpoint 與 replay 狀態 |
 | sessionStorage | `casharcade.missile.loss-lock.v1` | 天盾失敗記錄的分頁備援 |
 | sessionStorage | `casharcade.missile.paid-recovery.v1` | 天盾已消耗額度、尚待完整保存的新局備援 |
-| localStorage，由 SDK 管理 | `cashlink.arcade.v1.<publishableKey>` | SDK 恢復資料；打磚塊只探測此鍵存在，不解析或自行修改內容 |
+| localStorage | `casharcade-assault-round-v2` | 強襲完整局中 snapshot、關卡起點、死亡與付款狀態 |
+| localStorage | `casharcade-assault-checkpoint-v1` | 強襲舊關卡起點存檔；遷移成功後移除 |
+| sessionStorage | `casharcade.assault.recovery.v2` | 強襲主存檔寫入失敗時的局中、死亡或付款狀態備援 |
+| sessionStorage | `casharcade.assault.paid-backup.v2` | 強襲已消耗額度但尚未完成本機提交的新局備援 |
+| localStorage，由 SDK 管理 | `cashlink.arcade.v1.<publishableKey>` | SDK 恢復資料；蛇／打磚塊只探測此鍵存在，不解析或自行修改內容 |
 
 `{game}` 代表 `snake`、`breakout`、`flappy`、`missile`、`assault` 或 `arena`，不是實際鍵中的大括號。SDK 格式由外部版本管理，不能把上表當作可自行重建訂單的規格。
 
@@ -58,6 +67,17 @@
 `upgrade` 保存完成本波後修復一格的血量、分數、種子及原三項 `choices`。選擇後提交下一波起點，單頁狀態門檻阻止雙擊重複套用；重載不重抽。重新載入在待命畫面等待操作，沒有自動戰鬥或配樂。
 
 讀寫例外、靜默寫入失敗均顯示提示；當頁仍能免費玩，不能保證下次恢復。損壞／版本不符的資料以新戰役待命處理。通關移除戰役進度，保留最高分、音樂／音效及主題偏好。沒有跨分頁鎖，請避免兩頁同時推進同一戰役。
+### 霓虹貪吃蛇 3D
+
+第0關使用獨立教學模式與存檔；正式存檔不接受教學快照，舊快照缺少模式欄位時仍視為正式戰役。教學不呼叫unlock、不寫正式最高分，也不修改played、replay、paidSerial或訂單。進入前保存並暫停正式原局；付款中或已消耗額度尚未可靠保存時禁止切換。完成／跳過教學仍保留首次免費正式戰役；返回失敗／待付款原局不免費重置。教學儲存失敗可在當頁練習，正式付款的儲存保護不放寬。
+
+教學快照的 `tutorialSpeed` 保存0.5–2倍速度偏好；缺少此欄位的舊教學存檔預設為0.5倍。即時調速保留格間移動進度，不額外移動或計分；偏好延續至自由練習、免費重試及重新教學，不寫入正式戰役快照。
+
+[storage.mjs](../snake/storage.mjs) 的 v1 記錄包含 `game.snapshot()`、`played`、`replay`、`intent` 與 `paidSerial`。每個邏輯步及重要轉換保存，遊玩計時約每 250 ms 補存；重載完整恢復蛇身、方向、物件、計時、道具與種子，以暫停狀態等玩家繼續。異常關閉最多回到最近成功保存的位置。
+
+付款狀態為 `open` → `pending` → `paid-ready` → 開始後 `open`。`pending` 持久保留原本 retry／new 意圖，執行中的 busy 鎖限制單次 SDK 呼叫；取消或錯誤不開新局、不自動重建訂單。只有 consumed 回傳才建立替代局，先存分頁備援、本機存檔並讀回核對，再提交。遞增 `paidSerial` 防止舊備援覆蓋後續進度。
+
+儲存失敗不開新付款；已消耗額度若存檔失敗，保留記憶體候選局與可用備援，恢復時不再解鎖。兩種儲存皆失敗時必須保留原分頁。存檔損壞不會自動刪除；其他分頁更新戰役會令本頁暫停並要求重載，但這不是跨分頁交易鎖。
 
 ### 打磚塊
 
@@ -75,33 +95,40 @@
 
 `replay.state` 的轉移為：正常 `open` → 城市全毀 `lost` → 玩家請求新局 `payment-pending` → 額度已消耗且存檔完成 `paid-ready`。取消／錯誤保持待處理狀態，`intent` 保留 `retry` 或 `new`。恢復後新的關卡記錄可回到 `open`；下次再次失敗才重新要求解鎖。最終通關會移除戰役 checkpoint，保留最高分與偏好。
 
+### 霓虹強襲
+
+`casharcade-assault-round-v2` 同時保存完整戰鬥 snapshot、關卡起點與階段。遊玩中約每 250 ms 及暫停、死亡、過關、離頁時保存；重載後將局中狀態先暫停，玩家按「繼續戰役」才恢復。舊 v1 關卡起點遷移為待命局；死亡後的付費重試仍從本關起點部署。畫面粒子不屬遊戲規則，不保存在 snapshot。
+
+死亡後先持久保存 `lost`；玩家首次選定重試或新戰役時轉為 `pending`，後續取消、重載或改按其他入口都不改變該意圖。只有 SDK 回傳已消耗額度，才保存 `paid-ready` 候選局；分頁備援與遞增寫入序號避免重載時重複付款或讓舊備援覆蓋較新進度。主存檔寫入失敗時改用分頁備援並暫停遊戲；未能驗證保存時不開始新付款。額度已消耗則保留候選局，恢復保存時不再呼叫 `unlock()`。正常過關、通關後再玩及死亡前主動重開免費。
+
 ### 儲存不可用
 
-音訊／主題偏好寫入失敗可只維持當頁狀態，但不能將這種降級套用到付費存檔。打磚塊與天盾無法確認必要進度或付款意圖時，會阻止相關開局並顯示原因。不要為了讓按鈕可點而移除保存前置檢查。
+音訊／主題偏好寫入失敗可只維持當頁狀態，但不能將這種降級套用到付費存檔。蛇、打磚塊、天盾與強襲無法確認必要進度或付款意圖時，會阻止相關開局並顯示原因。不要為了讓按鈕可點而移除保存前置檢查。
 
 ## SDK 與單一付款入口
 
 SDK URL：`https://linkincash.cc/arcade/sdk/v1.js`。各遊戲 publishable key 是可公開的前端識別，不是管理密鑰；實際設定位置：
 
-- 貪吃蛇：[snake/game.js](../snake/game.js) 的 `CASHLINK_PUBLISHABLE_KEY` 與 `requestRoundStart()`。
+- 貪吃蛇：[snake/storage.mjs](../snake/storage.mjs) 的 `PUBLISHABLE_KEY`；控制器 `requestRound()` → `Campaign.request()` 集中開始路徑，由 [payment.mjs](../snake/payment.mjs) 解鎖。
 - 打磚塊：[breakout/payment-gate.js](../breakout/payment-gate.js) 的 `PUBLISHABLE_KEY`；控制器 `requestNewGame()` 集中提交新局。
 - 天盾：[missile/payment-gate.js](../missile/payment-gate.js) 的 `PUBLISHABLE_KEY`；控制器 `requestStart()` 分流免費／收費，再由 `requestPaid()` 提交。
+- 強襲：[assault/payment-gate.js](../assault/payment-gate.js) 的 `PUBLISHABLE_KEY`；控制器 `requestStart()` 只在死亡後轉入 `requestPaid()`。
 
-打磚塊與天盾的共同保護：
+四款付款遊戲的共同保護：
 
-1. 預先 `handshake()`，核對回傳 `origin === 'https://darkerduck.github.io'`、`unlock_description === '再來一局'`。Origin 不含 `/CashArcade/` 路徑。
+1. 預先 `handshake()`，核對回傳 `origin === 'https://darkerduck.github.io'`、付款用途。打磚塊／天盾要求「再來一局」；蛇另接受上文原有註冊文案，強襲另接受「死亡後再來一局」。Origin 不含 `/CashArcade/` 路徑。
 2. 凍結舊局、清理輸入、保存付款意圖；快速連按由 busy 狀態阻止第二個解鎖請求。
 3. 由玩家明確操作呼叫 `await arcade.unlock()`；若剛完成重連 handshake，要求再次按下，保留 popup 所需的使用者操作。
 4. 只接受回傳 `credit_status === 'consumed'` 後提交新局。`unlocked` 事件、偵測到款項或 `available` 額度都只是提示，不足以開始。
 5. 成功保存新局後才切換遊戲狀態。音效、配樂、暫停／繼續和免費換關不呼叫付款入口。
 
-兩款控制器只展示 `https://linkincash.cc/arcade/checkout/<ID>` 的付款頁，拒絕其他 Origin、query、username 或 password。fragment 可能含訂單憑證，不能記錄、轉放 query 或送到分析服務。
+四款控制器只展示 `https://linkincash.cc/arcade/checkout/<ID>` 的付款頁，拒絕其他 Origin、query、username 或 password。fragment 可能含訂單憑證，不能記錄、轉放 query 或送到分析服務。
 
 `linkincash.cc` 是 CashLink macOS localhost 的公開預覽入口，不是正式 production；GitHub Pages 靜態網站成功部署不代表付款預覽服務可用。本機 `127.0.0.1` 與其他 fork 的 Origin 不同，不能假設原 publishable key 在那裡也能付款。請勿為本機測試鬆綁正式頁面的核對邏輯。
 
 ## 付款問題與復原
 
-以下完整恢復介面適用於打磚塊與天盾；貪吃蛇限制見下一節。
+以下恢復介面適用於貪吃蛇 3D、打磚塊、天盾與強襲。
 
 | 狀況 | 應採取的動作 | 不應做的事 |
 | --- | --- | --- |
@@ -115,6 +142,38 @@ SDK URL：`https://linkincash.cc/arcade/sdk/v1.js`。各遊戲 publishable key �
 
 ## 目前差異與限制
 
-貪吃蛇使用較早的直接整合：同一頁會阻止付款期間的重複開局，但 `roundStarted`、`paymentPending`、`paymentRetryRequired` 只在記憶體；沒有遊戲 checkpoint 或等效的重載付款意圖。程式在 `unlock()` resolve 後直接開局，未像另兩款額外檢查 consumed 回傳、handshake Origin／用途或付款連結白名單。預設價格提示也尚未統一。**不能宣稱貪吃蛇已有相同的跨重載付款保護**；若後續統一實作，需另做程式修改與付款回歸，本次文件補充不更動行為。
+本機備援不是伺服器存檔；清除網站資料、兩種儲存同時失敗後關閉分頁，或 SDK 消耗額度與本機提交之間遭強制終止，仍可能需要 CashLink 端協助核對。不要把瀏覽器備援描述成跨裝置、跨分頁原子交易或任何情況下都能恢復。
 
 純前端資料和 gate 可被使用者改寫，最高分亦不是可信排行榜；這些機制不是防作弊或有金錢獎勵的授權邊界。本專案不包含退款／結算管理、CashLink 後端或真實支付測試憑證。所有自動測試使用假 SDK；真實付款驗收須另行授權。
+
+## 霓虹甩尾
+
+`casharcade-drift-v1` 保存三條賽道的分數、最快單圈、最大連段，以及賽道、音效、音樂、音量與減少動態效果偏好。沒有局中存檔或付款；重開、換賽道、所有遊玩都免費。儲存不可用時不阻止遊玩，頁面會提示。既有遊戲的 CashLink 行為不受影響。
+
+
+## 電路迷城與重力快遞
+
+兩款完全免費，不載入 CashLink SDK、不改變既有遊戲的付款規則。
+
+- `casharcade-circuit-v1`：已解鎖／選擇關卡、各關星等、最高分、最快秒數、通關次數與減少動態設定。
+- `casharcade-gravity-v1`：各關星等、最快秒數、碎片紀錄、送達次數與減少動態設定；解鎖範圍由依序完成的紀錄推導。
+- 各自 `casharcade-{circuit,gravity}-sound-muted` 保存音效靜音；`casharcade-{circuit,gravity}-music-muted`、`-music-volume` 保存配樂偏好。
+- 重載從關卡待命狀態重新開始，不恢復進行中的位置。儲存被封鎖時仍可遊玩，頁面會提示紀錄無法保留。
+
+
+## 反應爐彈珠台與光路拼接
+
+兩款完全免費，沒有付款 SDK 或額外解鎖價格。
+
+- `casharcade-reactor-best-v1`：本機最高分。當局球體、任務與餘球不恢復。
+- `casharcade-prism-v1`：最高分、最長連鎖、減少動態設定。當局棋盤不恢復；進行中離頁會使用瀏覽器的原生離頁提醒。
+- 各自 `casharcade-{reactor,prism}-sound-muted` 與 `casharcade-{reactor,prism}-music-{muted,volume}` 保存獨立聲音偏好。
+- 無效數值會清理；無法儲存時仍可正常免費遊玩。
+
+
+## 雙軌節奏
+
+全程免費、不載入 CashLink SDK。`casharcade-pulse-v1` 保存歌曲、難度、-250 至 +250 ms 校正、減少動態效果、音樂／音效開關與獨立音量，並依六個歌曲難度組合保存最高分、準確率、連段與場次。只保存完成場次紀錄，不恢復進行中的歌曲。資料損壞或儲存不可用時仍可遊玩，頁面會提示無法保存。資料只在目前瀏覽器，不提供雲端同步。
+
+
+霓虹甩尾升級沿用 `casharcade-drift-v1`，新增 `unlocked`（0–2，最高已解鎖賽道索引）。無此欄位的舊存檔僅開放第一道，舊分數、圈速與偏好保留，選道受解鎖範圍約束。僅 90 秒完整有效第一名且耐久大於零解鎖下一道；本頁儲存失敗仍可免費遊玩與解鎖，重載不恢復未完成賽事。

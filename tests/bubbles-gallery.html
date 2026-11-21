@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>光泡連鎖 · 視覺與音訊驗收</title>
+    <link rel="icon" href="../favicon.ico?v=1" type="image/x-icon" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
+    <link rel="icon" href="../assets/brand/favicon-32.png?v=1" type="image/png" sizes="32x32">
+    <link rel="icon" href="../assets/brand/favicon-16.png?v=1" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../assets/brand/apple-touch-icon.png?v=1" sizes="180x180">
+    <link rel="manifest" href="../site.webmanifest?v=1">
+    <link rel="stylesheet" href="../arena/style.css?v=1">
+    <style>
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
+        .panels, .samples { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+        .panels canvas { height: auto; border: 1px solid var(--line); border-radius: 10px; }
+        .panels h2 { margin-bottom: 7px; font-size: 15px; }
+        audio { width: 100%; }
+        pre { white-space: pre-wrap; font-size: 13px; line-height: 1.8; }
+        .layout-check { overflow: auto; margin-top: 12px; }
+        iframe { border: 1px solid var(--line); }
+        @media (max-width: 700px) { .panels, .samples { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body><main class="shell">
+    <h1>光泡連鎖 · 視覺與音訊驗收</h1>
+    <div class="toolbar">
+        <button type="button" id="cascade">切換成消除示範</button>
+        <button type="button" id="theme">切換亮暗主題</button>
+        <button type="button" id="motion" aria-pressed="false">減少動態</button>
+        <button type="button" id="measure">量測三首配樂、加奏及混音</button>
+        <button type="button" id="portrait">390 × 844</button>
+        <button type="button" id="landscape">844 × 390</button>
+    </div>
+    <div id="panels" class="panels"></div>
+    <pre id="result" role="status">尚未量測</pre>
+    <div id="samples" class="samples"></div>
+    <div id="layout-check" class="layout-check"></div>
+    <p><a href="../bubbles/">開啟光泡連鎖 →</a></p>
+</main>
+<script src="../audio.js?v=10" defer></script>
+<script src="../music.js?v=1" defer></script>
+<script src="../bubbles/levels.js?v=1" defer></script>
+<script src="../bubbles/engine.js?v=1" defer></script>
+<script src="../bubbles/renderer.js?v=1" defer></script>
+<script src="../bubbles/music.js?v=1" defer></script>
+<script src="./bubbles-gallery.js?v=1" defer></script>
+</body>
+</html>

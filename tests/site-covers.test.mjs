@@ -5,9 +5,9 @@ import { readFileSync, existsSync } from 'node:fs';
 const root = new URL('../', import.meta.url);
 const html = readFileSync(new URL('index.html', root), 'utf8');
 
-test('homepage resolves thirteen covers, including the approved text-free Assault artwork', () => {
+test('homepage resolves fourteen covers, including the approved text-free Assault artwork', () => {
     const covers = [...html.matchAll(/<img\b[^>]*src="(\.\/assets\/covers\/[^"?]+)(?:\?[^"\s]*)?"[^>]*>/g)];
-    assert.equal(covers.length, 13);
+    assert.equal(covers.length, 14);
     for (const [tag, src] of covers) {
         if (src.endsWith('/arena.svg')) {
             const svg = readFileSync(new URL(src, root), 'utf8');

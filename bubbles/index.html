@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#080f20">
+    <meta name="description" content="光泡連鎖。反彈瞄準、同色消除與泡泡瀑布，和露米一起修復三個星際溫室區域。十八關全程免費。">
+    <title>CashArcade — 光泡連鎖</title>
+    <link rel="icon" href="../favicon.ico?v=1" type="image/x-icon" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
+    <link rel="icon" href="../assets/brand/favicon-32.png?v=1" type="image/png" sizes="32x32">
+    <link rel="icon" href="../assets/brand/favicon-16.png?v=1" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../assets/brand/apple-touch-icon.png?v=1" sizes="180x180">
+    <link rel="manifest" href="../site.webmanifest?v=1">
+    <link rel="stylesheet" href="../arena/style.css?v=1">
+    <link rel="stylesheet" href="../brand.css?v=1">
+    <link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<main class="shell">
+    <header class="site-header">
+        <a class="brand" href="../" aria-label="CashArcade 首頁">
+            <img class="brand-logo" src="../assets/brand/casharcade-logo.png?v=1" width="44" height="44" alt="">
+            <span><strong>CashArcade</strong><small>POCKET-SIZED ARCADE</small></span>
+        </a>
+        <div class="header-controls">
+            <button type="button" id="sound-toggle" aria-label="切換音效">♪</button>
+            <button type="button" id="theme-toggle" aria-label="切換亮暗主題">◐</button>
+        </div>
+    </header>
+    <section class="heading"><h1>光泡連鎖 <span>LIGHTBUBBLE CASCADE</span></h1></section>
+    <div class="bubble-layout">
+        <section class="bubble-machine machine" aria-label="光泡連鎖機台">
+            <div class="bubble-hud">
+                <div><small>關卡</small><strong id="stage">01 / 18</strong></div>
+                <div><small>分數</small><strong id="score">0</strong></div>
+                <div><small>目標剩餘</small><strong id="goal-count">0</strong></div>
+            </div>
+            <div class="well">
+                <canvas id="board" width="404" height="565" tabindex="0" aria-label="泡泡盤面。拖曳瞄準後放手發射，拖至底部取消。鍵盤左右瞄準，空白鍵發射。"></canvas>
+                <div id="overlay" class="overlay" aria-labelledby="overlay-title">
+                    <h2 id="overlay-title">晨光培育槽</h2>
+                    <p id="overlay-message">同色三顆相連就能消除。</p>
+                    <button type="button" class="primary" id="start">開始第 1 關</button>
+                </div>
+            </div>
+            <div class="bubble-controls">
+                <div class="pressure" id="pressure" role="meter" aria-label="降板前的失手次數" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0">
+                    <span>失手</span><span id="ticks" aria-hidden="true"></span><span id="remain">再失手 6 次降板</span>
+                </div>
+                <div class="tools" aria-label="道具與泡泡">
+                    <button type="button" id="swap"><span>⇄</span> 換泡泡</button>
+                    <button type="button" data-tool="rainbow" aria-pressed="false"><span>◎</span> 彩虹 <b>0</b></button>
+                    <button type="button" data-tool="pulse" aria-pressed="false"><span>✦</span> 脈衝 <b>0</b></button>
+                    <button type="button" data-tool="drill" aria-pressed="false"><span>↑</span> 穿透 <b>0</b></button>
+                </div>
+                <div class="secondary-actions">
+                    <button type="button" id="levels">選關</button>
+                    <button type="button" id="pause">暫停</button>
+                    <button type="button" id="retry">重試</button>
+                </div>
+                <p id="feedback" aria-live="polite"></p>
+            </div>
+        </section>
+        <aside class="deck">
+            <section class="mission-panel">
+                <p class="eyebrow" id="sector">霓虹溫室</p>
+                <h2 id="mission">晨光培育槽</h2>
+                <p id="goal">清空所有泡泡。</p>
+                <p id="hint">同色三顆相連就能消除。</p>
+                <p class="build" id="best">尚無通關紀錄</p>
+            </section>
+            <section class="music-panel" aria-label="背景音樂控制">
+                <div class="music-top"><p class="eyebrow">原創 8-BIT</p><button type="button" id="music-toggle">♫ 音樂：開</button></div>
+                <p id="music-track"></p>
+                <label for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output></label>
+                <input id="music-volume" type="range" min="0" max="100" step="5" value="65">
+                <button type="button" id="preview-sound">♪ 試播泡泡連鎖</button>
+            </section>
+            <details class="guide" open>
+                <summary>操作說明</summary>
+                <p>手機拖曳瞄準，放手發射。拖到底部取消區再放手可取消。</p>
+                <p>滑鼠點擊發射。<kbd>←</kbd><kbd>→</kbd> 瞄準，<kbd>Space</kbd> 發射，<kbd>X</kbd> 換泡泡，<kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 選道具，<kbd>P</kbd> 暫停，<kbd>R</kbd> 重試。</p>
+                <p>沒有時間限制。有效消除不會重設失手計數。失手達到門檻時，整面泡泡下降一列。</p>
+                <p><a href="../tests/bubbles-gallery.html">視覺與音訊驗收 ↗</a></p>
+            </details>
+        </aside>
+    </div>
+    <p class="notice" id="save-note" role="status"></p>
+    <footer><a href="../">← 返回 CashArcade</a><a href="https://github.com/darkerduck/CashArcade">原始碼 ↗</a></footer>
+</main>
+<dialog id="level-dialog" aria-labelledby="level-heading">
+    <div class="dialog-title"><h2 id="level-heading">選擇關卡</h2><button type="button" id="close-levels">關閉</button></div>
+    <div id="level-list"></div>
+</dialog>
+<script src="../audio.js?v=10" defer></script>
+<script src="../music.js?v=1" defer></script>
+<script src="./levels.js?v=1" defer></script>
+<script src="./engine.js?v=1" defer></script>
+<script src="./storage.js?v=1" defer></script>
+<script src="./renderer.js?v=1" defer></script>
+<script src="./input.js?v=1" defer></script>
+<script src="./music.js?v=1" defer></script>
+<script src="./game.js?v=1" defer></script>
+</body>
+</html>

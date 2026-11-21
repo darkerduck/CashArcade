@@ -9,6 +9,17 @@
     const LIMIT_KNEE = .9;
     const LIMIT_HEADROOM = .09;
     const EFFECTS = Object.freeze({
+        bubbleLaunch: { tones: [[290, 620, .11, 0, .03, 'triangle']], minGap: 70 },
+        bubbleBounce: { tones: [[895, 730, .085, 0, .021, 'sine']], minGap: 65 },
+        bubbleAttach: { tones: [[520, 345, .080, 0, .02, 'triangle']], minGap: 75 },
+        bubblePop: { tones: [[725, 1050, .11, 0, .045, 'triangle'], [980, 1410, .12, .05, .032, 'sine']], minGap: 100 },
+        bubbleDrop: { tones: [[990, 760, .15, 0, .04, 'square'], [750, 565, .18, .07, .038, 'triangle'], [530, 320, .25, .15, .027, 'sine']], minGap: 125 },
+        bubblePulse: { tones: [[235, 42, .30, 0, .051, 'triangle']], noise: [.19, .019, 1600] },
+        bubbleDrill: { tones: [[350, 1030, .16, 0, .035, 'sawtooth'], [850, 490, .23, .08, .025, 'triangle']] },
+        bubbleCrack: { tones: [[1120, 610, .13, 0, .025, 'square']], noise: [.085, .014, 2350] },
+        bubbleDescend: { tones: [[300, 130, .26, 0, .038, 'triangle'], [245, 100, .2, .09, .031, 'square']] },
+        bubbleWin: { tones: [[523, 523, .12, 0, .039, 'square'], [659, 659, .12, .09, .038, 'triangle'], [784, 784, .14, .19, .042, 'square'], [1047, 1047, .26, .28, .033, 'triangle']] },
+        bubbleLost: { tones: [[390, 262, .19, 0, .039, 'triangle'], [262, 165, .27, .12, .034, 'triangle']] },
         starPulse: { tones: [[645, 285, .085, 0, .026, 'square']], minGap: 115 },
         starSpread: { tones: [[780, 290, .12, 0, .030, 'sawtooth']], minGap: 150 },
         starLaser: { tones: [[1280, 480, .16, 0, .034, 'triangle'], [820, 380, .09, .025, .016, 'square']], minGap: 200 },

@@ -1,0 +1,69 @@
+.shell { max-width: 1000px; }
+.heading { margin: 23px 0 16px; }
+.heading h1 { font: 800 clamp(24px,4vw,40px)/1.15 system-ui,sans-serif; }
+.heading h1 span { font: 600 11px ui-monospace,monospace; letter-spacing: .16em; color: var(--muted); }
+.bubble-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(230px,290px); gap: 18px; align-items: start; }
+.bubble-machine { padding: 9px 12px 0; }
+.bubble-hud, .bubble-controls { width: min(100%, 488px); margin-inline: auto; }
+.bubble-hud { display: grid; grid-template-columns: repeat(3, 1fr); padding: 0 3px 8px; gap: 8px; }
+.bubble-hud div:last-child { text-align: right; }
+.bubble-hud div:nth-child(2) { text-align: center; }
+.bubble-hud small { display: block; color: var(--muted); font: 11px system-ui,sans-serif; }
+.bubble-hud strong { color: var(--cyan); font-size: 18px; }
+.well {
+    position: relative; margin-inline: auto; width: min(100%, 404px, max(240px, calc((100dvh - 216px) * .715)));
+    aspect-ratio: 404/565; overflow: hidden; border: 1px solid var(--line); border-radius: 11px;
+    background: var(--bg);
+}
+.well canvas { cursor: crosshair; }
+.overlay { justify-content: safe center; padding: 17px; gap: 13px; }
+.overlay h2 { color: var(--cyan); }
+.overlay .primary { flex-shrink: 0; }
+.bubble-controls { margin-top: 8px; }
+.pressure { display: flex; align-items: center; gap: 8px; padding: 3px 2px 7px; color: var(--muted); font: 11px system-ui,sans-serif; }
+#ticks { display: flex; gap: 4px; }
+#ticks span { display: block; width: 10px; height: 8px; border-radius: 2px; border: 1px solid var(--line); }
+#ticks .used { background: var(--danger); border-color: var(--danger); }
+#remain { margin-left: auto; }
+.tools, .secondary-actions { display: grid; gap: 6px; }
+.tools { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.secondary-actions { grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 5px; }
+.tools button, .secondary-actions button { min-height: 44px; padding: 5px 2px; font: 12px system-ui,sans-serif; }
+.tools span { color: var(--cyan); }
+.tools b { color: var(--gold); }
+.tools button[aria-pressed="true"] { border-color: var(--violet); color: var(--violet); }
+#feedback { min-height: 19px; margin: 5px 0 3px; color: var(--muted); font: 11px/1.5 system-ui,sans-serif; }
+.mission-panel p:not(.eyebrow) { font: 13px/1.6 system-ui,sans-serif; color: var(--muted); }
+#goal { color: var(--cyan); font-weight: 700; }
+dialog {
+    width: min(94%, 450px); height: min(86dvh, 680px); border: 1px solid var(--line);
+    border-radius: 14px; background: var(--surface); color: var(--ink); padding: 14px 17px;
+}
+dialog::backdrop { background: #060c1bd9; }
+.dialog-title { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.sector-list { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+.sector-list button { padding-inline: 4px; font: 12px/1.4 system-ui,sans-serif; }
+.sector-list button small { display: block; color: var(--muted); }
+#level-list h3 { font: 700 13px system-ui,sans-serif; color: var(--cyan); }
+@media (max-width: 735px) {
+    .shell { max-width: 596px; }
+    .bubble-layout, .deck { grid-template-columns: 1fr; }
+    .well { width: min(100%, 404px); }
+    .bubble-machine { padding-inline: 8px; }
+}
+@media (max-width: 390px) { .tools button { font-size: 11px; } .heading { margin-top: 17px; } }
+@media (orientation: landscape) and (max-height: 520px) and (min-width: 600px) {
+    .shell { max-width: 880px; padding-top: 8px; }
+    .heading { margin: 8px 0; }
+    .bubble-layout { grid-template-columns: minmax(0,1fr) minmax(174px,.54fr); gap: 9px; }
+    .bubble-machine { display: grid; grid-template-columns: minmax(0,1fr) minmax(150px,.82fr); gap: 6px; }
+    .bubble-hud { grid-column: 1/-1; padding-bottom: 0; }
+    .bubble-controls { margin: 0; }
+    .well { align-self: start; width: min(100%,calc((100dvh - 125px) * .715)); }
+    .tools { grid-template-columns: 1fr 1fr; }
+    .overlay { padding: 8px; gap: 6px; }
+    .overlay p { line-height: 1.4; font-size: 12px; }
+    .overlay h2 { font-size: 16px; }
+    .overlay .primary { padding: 5px 10px; }
+    .pressure { flex-wrap: wrap; gap: 5px; }
+}

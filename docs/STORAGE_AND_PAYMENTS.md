@@ -58,6 +58,10 @@
 
 `{game}` 代表 `snake`、`breakout`、`flappy`、`missile`、`assault` 或 `arena`，不是實際鍵中的大括號。SDK 格式由外部版本管理，不能把上表當作可自行重建訂單的規格。
 
+### 光泡連鎖
+
+全程免費。`casharcade-bubbles-records-v1` 保存已解鎖關卡、最後選擇的關卡、每關最高分及最少發數。選關或重載從該關初始盤面開始。通關立即解鎖下一關，重試恢復本關固定道具。儲存失敗時提醒玩家，當頁遊戲與選關仍可用。音效鍵為 `casharcade-bubbles-sound-muted`，音樂鍵為 `casharcade-bubbles-muted` 和 `casharcade-bubbles-volume`。
+
 ### 碎星獵手
 
 全程免費。獨立 `casharcade-asteroids-checkpoint-v1` 保存關卡起點的船體、分數、戰鬥時間、種子、武器及等級、護航機和護盾。完成關卡後立即保存下一關起點，重新載入按「繼續戰役」才恢復。失敗或重試還原起點，通關清除存檔。

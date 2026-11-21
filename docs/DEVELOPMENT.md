@@ -72,6 +72,10 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 
 ## 音效與配樂介面
 
+碎星獵手位於 `asteroids/`。`NeonAsteroids.Game` 提供 `start(checkpoint)`、`update(dt,input)`、`retry()`、`checkpoint()`、`nextCheckpoint()` 與 `drain()`。控制器以 120 Hz 執行四個布林操作，引擎以最短環繞距離推進、掃掠碰撞和計算引力。渲染器繪製跨界副影，頭目部件及武器的受擊結果由引擎管理。關卡資料包含生成時間、敵艦、井位置與頭目類型。
+
+`StarshardScore` 使用既有 `profile` 與 `notesForStep` 介面。六首原創八小節樂曲共用合成混音，第九關低血量排入下一小節過載版。推進聲由唯一的合成聲源送入共用匯流排。封面為 imagegen 原創無字 JPEG，提示保存於 [asteroids-prompt.txt](../assets/covers/asteroids-prompt.txt)。
+
 短音效由 `CashArcadeAudio.create({ storageKey, toggleButton, outputLevel, musicMix })` 建立：
 
 - `play(effectName, delay = 0)`：只接受 `audio.js` 的 `EFFECTS` 白名單，delay 單位秒、限制在 0–1；未知音效安靜忽略。

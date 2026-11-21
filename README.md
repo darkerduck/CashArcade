@@ -1,6 +1,6 @@
 # CashArcade
 
-一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有十二款遊戲、原創合成配樂與獨立音效設定。
+一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有十三款遊戲、原創合成配樂與獨立音效設定。
 
 🎮 **[進入 CashArcade](https://darkerduck.github.io/CashArcade/)** · [GitHub 原始碼](https://github.com/darkerduck/CashArcade)
 
@@ -8,7 +8,7 @@
 
 | 想了解什麼 | 文件 |
 | --- | --- |
-| 十二款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
+| 十三款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
 | 本機環境、檔案分工、關卡、音訊介面與素材維護 | [開發指南](docs/DEVELOPMENT.md) |
 | 哪些操作收費、哪些進度可恢復、儲存鍵與付款錯誤 | [存檔與付款](docs/STORAGE_AND_PAYMENTS.md) |
 | 測試指令、瀏覽器驗收、GitHub Pages 發布與排錯 | [測試與發布](docs/TESTING_AND_DEPLOYMENT.md) |
@@ -65,6 +65,9 @@ Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母
 - [霓虹強襲](https://darkerduck.github.io/CashArcade/assault/)：三關直向射擊戰役，自動開火，拾取散射、雷射和雙翼護航，拆解三大機械頭目。電腦與手機皆可玩；死亡後再開局須解鎖。
 
 - [霓虹突圍](arena/)：12 波競技場射擊，電弧、衝刺與三選一升級，六首原創 8-bit 配樂，全程免費。
+- [碎星獵手](asteroids/)：九關慣性太空射擊，四邊環繞、隕石分裂、致命黑洞與三艘可分段擊破的頭目。全程免費。
+
+執行 `node tests/serve.mjs` 後可開啟[碎星獵手本機版](http://127.0.0.1:4173/CashArcade/asteroids/)和[視覺與音訊驗收頁](http://127.0.0.1:4173/CashArcade/tests/asteroids-gallery.html)。鍵盤使用左右鍵轉向、上鍵推進、空白鍵開火。手機按住下方四鍵操作，支援同時旋轉、推進和射擊。
 
 所有遊戲都支援亮暗主題、暫停、重新開始與瀏覽器本機最高分。沒有儲存主題偏好時一律使用暗版。
 

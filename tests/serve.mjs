@@ -10,4 +10,4 @@ http.createServer((req,res)=>{
     if(file!==path.resolve(root)&&!file.startsWith(path.resolve(root)+path.sep)){res.writeHead(403).end();return;}
     if(fs.existsSync(file)&&fs.statSync(file).isDirectory())file=path.join(file,'index.html');
     fs.readFile(file,(error,data)=>{if(error){res.writeHead(404).end('Not found');return;}res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'}).end(data);});
-}).listen(4173,'127.0.0.1',()=>console.log('CashArcade preview: http://127.0.0.1:4173/CashArcade/arena/'));
+}).listen(4173,'127.0.0.1',()=>console.log('CashArcade preview: http://127.0.0.1:4173/CashArcade/'));

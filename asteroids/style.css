@@ -1,0 +1,59 @@
+.heading h1 { color: var(--ink); }
+.machine:not(:fullscreen):not(.fullscreen-fallback) .battlefield {
+    max-width: min(720px, max(235px, calc(100dvh - 164px)));
+}
+.overlay { justify-content: safe center; }
+.overlay .primary, .overlay button { flex-shrink: 0; }
+.overlay h2 { color: var(--cyan); }
+.overlay p { max-width: 350px; }
+.flight-tip {
+    position: absolute; inset: auto 12px 10px; margin: 0; padding: 8px 12px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--violet);
+    border-radius: 8px; font: 13px/1.5 system-ui, sans-serif; text-align: center; pointer-events: none;
+}
+.flight-buttons { display: flex; gap: 8px; }
+.flight-buttons button {
+    width: clamp(55px, 16vw, 78px); min-height: 61px; padding: 4px;
+    border-color: var(--line); color: var(--cyan); font-size: 22px; touch-action: none;
+}
+.flight-buttons button small { display: block; font: 10px system-ui, sans-serif; color: var(--muted); }
+.flight-buttons button[data-action="fire"] { color: var(--violet); border-color: var(--violet); }
+.flight-buttons button[data-held="true"] { background: var(--cyan); color: var(--button-ink); }
+.flight-buttons button[data-held="true"] small { color: var(--button-ink); }
+.machine-expanded { overflow: hidden; }
+.machine.fullscreen-fallback {
+    position: fixed; z-index: 10; inset: 0; width: 100%; height: 100dvh;
+    border: 0; border-radius: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; overflow: auto;
+}
+.machine.fullscreen-fallback > :is(.hud, .combat-bar, .touch-controls, .actions) {
+    width: min(100%, 720px); flex-shrink: 0;
+}
+.machine.fullscreen-fallback .hud { padding: 8px 18px; }
+.machine.fullscreen-fallback .hud strong { font-size: 18px; }
+.machine.fullscreen-fallback .actions { padding: 6px; }
+.machine.fullscreen-fallback .battlefield { width: min(100%, calc(100dvh - 180px)); flex-shrink: 0; }
+@media (max-width: 760px), (pointer: coarse) {
+    .machine.fullscreen-fallback .battlefield { width: min(100%, calc(100dvh - 270px)); }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+    .machine.fullscreen-fallback {
+        display: grid; grid-template-columns: minmax(0, 1fr) 178px;
+        grid-template-rows: 49px minmax(0, 1fr) 79px; align-content: start;
+        justify-items: center; overflow: hidden;
+    }
+    .machine.fullscreen-fallback .hud { grid-column: 1 / -1; width: 100%; height: 49px; padding: 5px 15px; }
+    .machine.fullscreen-fallback .battlefield { grid-column: 1; grid-row: 2; width: min(100%, calc(100dvh - 128px)); }
+    .machine.fullscreen-fallback .combat-bar { grid-column: 2; grid-row: 2; align-self: start; flex-direction: column; border: 0; }
+    .machine.fullscreen-fallback .actions {
+        grid-column: 2; grid-row: 2 / 4; align-self: end;
+        grid-template-columns: 1fr; gap: 4px; padding: 8px;
+    }
+    .machine:is(:fullscreen, .fullscreen-fallback) .actions button { min-height: 36px; }
+    .machine:is(:fullscreen, .fullscreen-fallback) .touch-controls {
+        grid-column: 1; grid-row: 3; width: min(100%, 400px); height: 79px; align-self: start; padding: 4px 8px;
+    }
+}
+@media (max-width: 590px) and (orientation: landscape) {
+    .layout { grid-template-columns: 1fr; }
+}

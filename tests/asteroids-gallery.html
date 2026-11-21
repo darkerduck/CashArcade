@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>碎星獵手 · 視覺與音訊驗收</title>
+    <link rel="icon" href="../favicon.ico?v=1" type="image/x-icon" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
+    <link rel="icon" href="../assets/brand/favicon-32.png?v=1" type="image/png" sizes="32x32">
+    <link rel="icon" href="../assets/brand/favicon-16.png?v=1" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../assets/brand/apple-touch-icon.png?v=1" sizes="180x180">
+    <link rel="manifest" href="../site.webmanifest?v=1">
+    <link rel="stylesheet" href="../arena/style.css?v=1">
+    <style>
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0; }
+        .scenes, .tracks { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+        .scenes canvas { height: auto; border: 1px solid var(--line); border-radius: 10px; }
+        .scenes h2 { margin: 0 0 8px; font-size: 16px; }
+        audio { width: 100%; }
+        pre { white-space: pre-wrap; font-size: 13px; line-height: 1.8; }
+        .layout-preview { overflow: auto; margin: 16px 0; }
+        .layout-preview iframe { border: 1px solid var(--line); }
+        @media (max-width: 680px) { .scenes, .tracks { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body><main class="shell">
+    <h1>碎星獵手 · 視覺與音訊驗收</h1>
+    <div class="toolbar">
+        <button id="scene" type="button">切換至三場頭目</button>
+        <button id="theme" type="button">切換亮暗主題</button>
+        <button id="motion" type="button" aria-pressed="false">減少動態</button>
+        <button id="audio-check" type="button">量測六首配樂、過載與密集混音</button>
+        <button id="portrait" type="button">檢查 390 × 844 版面</button>
+        <button id="landscape" type="button">檢查 844 × 390 版面</button>
+    </div>
+    <div class="scenes" id="scenes"></div>
+    <pre id="audio-result" role="status">尚未量測</pre>
+    <div class="tracks" id="tracks"></div>
+    <div class="layout-preview" id="layout-preview"></div>
+    <p><a href="../asteroids/">開啟碎星獵手 →</a></p>
+</main>
+<script src="../audio.js?v=9" defer></script>
+<script src="../music.js?v=1" defer></script>
+<script src="../asteroids/data.js?v=1" defer></script>
+<script src="../asteroids/storage.js?v=1" defer></script>
+<script src="../asteroids/engine.js?v=1" defer></script>
+<script src="../asteroids/renderer.js?v=1" defer></script>
+<script src="../asteroids/music.js?v=1" defer></script>
+<script src="../asteroids/sound.js?v=1" defer></script>
+<script src="./asteroids-gallery.js?v=1" defer></script>
+</body></html>

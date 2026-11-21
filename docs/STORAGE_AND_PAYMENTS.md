@@ -58,6 +58,12 @@
 
 `{game}` 代表 `snake`、`breakout`、`flappy`、`missile`、`assault` 或 `arena`，不是實際鍵中的大括號。SDK 格式由外部版本管理，不能把上表當作可自行重建訂單的規格。
 
+### 碎星獵手
+
+全程免費。獨立 `casharcade-asteroids-checkpoint-v1` 保存關卡起點的船體、分數、戰鬥時間、種子、武器及等級、護航機和護盾。完成關卡後立即保存下一關起點，重新載入按「繼續戰役」才恢復。失敗或重試還原起點，通關清除存檔。
+
+`casharcade-asteroids-high-score` 保存最高分，`casharcade-asteroids-tutorial-v1` 記錄練習完成或跳過。音效鍵為 `casharcade-asteroids-sound-muted`，音樂鍵為 `casharcade-asteroids-muted` 和 `casharcade-asteroids-volume`。練習不寫戰役或分數。驗證失敗或儲存不可用時仍可在當頁遊玩，系統會提示讀寫失敗。
+
 ### 霓虹突圍
 
 [storage.js](../arena/storage.js) 驗證 `version: 1`、`kind: wave | upgrade`、1–12 波、血量／分數／累計秒數、32-bit 種子及能力等級。已取得升級總數必須等於 `wave - 1`；待選卡必須為三個不同、尚未滿級的項目，且不能出現在第 12 波後。

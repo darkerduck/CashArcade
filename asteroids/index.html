@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#080f20">
+    <meta name="description" content="碎星獵手：九關免費慣性太空射擊。手動駕駛戰機，擊碎隕石、逃離黑洞，拆解三艘旗艦。">
+    <title>CashArcade — 碎星獵手</title>
+    <link rel="icon" href="../favicon.ico?v=1" type="image/x-icon" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
+    <link rel="icon" href="../assets/brand/favicon-32.png?v=1" type="image/png" sizes="32x32">
+    <link rel="icon" href="../assets/brand/favicon-16.png?v=1" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../assets/brand/apple-touch-icon.png?v=1" sizes="180x180">
+    <link rel="manifest" href="../site.webmanifest?v=1">
+    <link rel="stylesheet" href="../arena/style.css?v=1">
+    <link rel="stylesheet" href="../brand.css?v=1">
+    <link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<main class="shell">
+    <header class="site-header">
+        <a class="brand" href="../" aria-label="CashArcade 首頁">
+            <img class="brand-logo" src="../assets/brand/casharcade-logo.png?v=1" width="44" height="44" alt="">
+            <span><strong>CashArcade</strong><small>POCKET-SIZED ARCADE</small></span>
+        </a>
+        <div class="header-controls">
+            <button type="button" id="sound-toggle" aria-label="切換音效" aria-pressed="true">♪</button>
+            <button type="button" id="theme-toggle" aria-label="切換亮暗主題">◐</button>
+        </div>
+    </header>
+    <section class="heading"><h1>碎星獵手 <span>STARSHARD HUNTER</span></h1></section>
+    <div class="layout">
+        <section class="machine" id="machine" aria-label="碎星獵手機台">
+            <div class="hud">
+                <div><small>分數 / SCORE</small><strong id="score">000000</strong></div>
+                <div><small>單局最高 / BEST</small><strong id="best">000000</strong></div>
+                <div><small>船體 / HULL</small><strong id="hull">3 / 3</strong></div>
+            </div>
+            <div class="battlefield">
+                <canvas id="game-canvas" width="720" height="720" tabindex="0" aria-label="環繞星域。左右鍵旋轉，上鍵推進，空白鍵開火。"></canvas>
+                <div class="overlay" id="overlay" aria-labelledby="overlay-title">
+                    <h2 id="overlay-title">碎星邊境</h2>
+                    <p id="overlay-message">旋轉船頭、推進與開火。放開推進後，飛船仍會漂移。</p>
+                    <button type="button" id="start" class="primary">開始飛行練習</button>
+                    <button type="button" id="skip">跳過練習</button>
+                </div>
+                <p id="flight-tip" class="flight-tip" hidden></p>
+            </div>
+            <div class="combat-bar"><span id="weapon">脈衝主砲</span><span id="gear">護盾 — · 護航 0</span><span id="speed">0 px/s</span></div>
+            <div class="touch-controls" aria-label="觸控飛行">
+                <div class="flight-buttons">
+                    <button type="button" data-action="left" aria-label="左轉">↶ <small>左轉</small></button>
+                    <button type="button" data-action="right" aria-label="右轉">↷ <small>右轉</small></button>
+                </div>
+                <div class="flight-buttons">
+                    <button type="button" data-action="thrust" aria-label="推進">▲ <small>推進</small></button>
+                    <button type="button" data-action="fire" aria-label="開火">✦ <small>開火</small></button>
+                </div>
+            </div>
+            <div class="actions">
+                <button type="button" id="pause" disabled>暫停</button>
+                <button type="button" id="retry" disabled>重試本關</button>
+                <button type="button" id="new">新戰役</button>
+                <button type="button" id="fullscreen">全螢幕</button>
+            </div>
+        </section>
+        <aside class="deck">
+            <section class="mission-panel">
+                <p class="eyebrow" id="sector">碎星礦帶</p>
+                <div class="mission-title"><h2 id="mission">碎星邊境</h2><span id="level">01 / 09</span></div>
+                <p id="status">擊碎隕石。穿過邊界會從另一側出現。</p>
+                <p class="build" id="objective">等待部署</p>
+            </section>
+            <section class="music-panel" aria-label="背景音樂控制">
+                <div class="music-top"><p class="eyebrow">原創 8-BIT</p><button type="button" id="music-toggle">♫ 音樂：開</button></div>
+                <p id="music-track"></p>
+                <label for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output></label>
+                <input id="music-volume" type="range" min="0" max="100" step="5" value="65">
+                <button type="button" id="preview-sound">♪ 試播碎裂與主砲</button>
+            </section>
+            <details class="guide" open>
+                <summary>飛行手冊</summary>
+                <p><kbd>←</kbd><kbd>→</kbd> 或 <kbd>A</kbd><kbd>D</kbd> 轉向<br>
+                    <kbd>↑</kbd> 或 <kbd>W</kbd> 推進 · <kbd>Space</kbd> 開火<br>
+                    <kbd>P</kbd> 或 <kbd>Esc</kbd> 暫停 · <kbd>R</kbd> 重試</p>
+                <p>實線指向船頭，紫色虛線指向目前速度。要減速，先轉向速度的反方向再推進。</p>
+                <p>橘色黑洞核心會立即毀船，護盾也無法抵擋。金色道具提供散射、雷射、護航、護盾或修復。</p>
+                <button type="button" id="practice">飛行練習</button>
+                <p><a href="../tests/asteroids-gallery.html">視覺與音訊驗收</a></p>
+            </details>
+        </aside>
+    </div>
+    <p id="storage-note" class="notice" role="status"></p>
+    <footer><a href="../">← 返回 CashArcade</a><a href="https://github.com/darkerduck/CashArcade">原始碼 ↗</a></footer>
+</main>
+<script src="../audio.js?v=9" defer></script>
+<script src="../music.js?v=1" defer></script>
+<script src="./data.js?v=1" defer></script>
+<script src="./storage.js?v=1" defer></script>
+<script src="./engine.js?v=1" defer></script>
+<script src="./renderer.js?v=1" defer></script>
+<script src="./input.js?v=1" defer></script>
+<script src="./music.js?v=1" defer></script>
+<script src="./sound.js?v=1" defer></script>
+<script src="./game.js?v=1" defer></script>
+</body>
+</html>

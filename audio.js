@@ -9,6 +9,18 @@
     const LIMIT_KNEE = .9;
     const LIMIT_HEADROOM = .09;
     const EFFECTS = Object.freeze({
+        starPulse: { tones: [[645, 285, .085, 0, .026, 'square']], minGap: 115 },
+        starSpread: { tones: [[780, 290, .12, 0, .030, 'sawtooth']], minGap: 150 },
+        starLaser: { tones: [[1280, 480, .16, 0, .034, 'triangle'], [820, 380, .09, .025, .016, 'square']], minGap: 200 },
+        starRock: { tones: [[230, 73, .17, 0, .035, 'triangle']], noise: [.13, .028, 1700], minGap: 60 },
+        starBurst: { tones: [[160, 54, .26, 0, .055, 'triangle']], noise: [.20, .040, 1100], minGap: 85 },
+        starPickup: { tones: [[460, 690, .12, 0, .045, 'square'], [690, 1035, .16, .11, .043, 'triangle']] },
+        starShield: { tones: [[370, 1050, .19, 0, .052, 'sine'], [780, 470, .12, .08, .024, 'triangle']] },
+        starHurt: { tones: [[180, 63, .29, 0, .062, 'sawtooth']], noise: [.18, .025, 1050], minGap: 145 },
+        starHole: { tones: [[570, 33, .64, 0, .058, 'triangle'], [138, 37, .52, .06, .026, 'square']], noise: [.48, .034, 850] },
+        starBoss: { tones: [[103, 138, .31, 0, .042, 'square'], [138, 96, .37, .24, .042, 'triangle']], minGap: 1000 },
+        starBossDown: { tones: [[160, 31, .76, 0, .058, 'triangle'], [398, 797, .31, .34, .032, 'square']], noise: [.47, .047, 890] },
+        starClear: { tones: [[523, 523, .14, 0, .044, 'square'], [659, 659, .14, .13, .040, 'square'], [784, 784, .27, .26, .038, 'triangle']] },
         arenaArc: { tones: [[580, 210, .10, 0, .025, 'square']], minGap: 180 },
         arenaChain: { tones: [[920, 470, .075, 0, .023, 'triangle'], [660, 320, .07, .04, .018, 'square']], minGap: 200 },
         arenaDash: { tones: [[180, 720, .18, 0, .055, 'triangle']], noise: [.14, .025, 2000], minGap: 150 },

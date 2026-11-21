@@ -6,6 +6,8 @@
 
 霓虹突圍本次的全站回歸、瀏覽器檢查、原生音訊數值及尚待人工調校項目，見[驗收紀錄](ARENA_ACCEPTANCE.md)。
 
+碎星獵手的測試結果、正常操作回放及裝置驗收範圍見[碎星獵手驗收紀錄](ASTEROIDS_ACCEPTANCE.md)。
+
 ## 自動測試
 
 測試使用 Node.js 內建 `node:test`，不需 npm 套件、不啟動資料庫、不連真實付款服務。先跑直接受影響的檔案，例如：
@@ -62,6 +64,7 @@ node --test tests/*.test.mjs
 | [天盾配樂試聽](http://127.0.0.1:4173/tests/missile-music.html) | 20 關、兩個頭目階段、原生合成輸出與大音效疊加 |
 | [強襲驗收](http://127.0.0.1:4173/tests/assault-gallery.html) | 三關場景、頭目階段、12 組配樂 |
 | [突圍驗收](http://127.0.0.1:4173/CashArcade/tests/arena-gallery.html) | 三場景／頭目、亮暗版、減少動態、六首配樂＋三首過載＋密集混音 |
+| [碎星獵手驗收](http://127.0.0.1:4173/CashArcade/tests/asteroids-gallery.html) | 星域與頭目、直橫向、亮暗版、六首配樂、過載與密集混音 |
 | [突圍試玩台](http://127.0.0.1:4173/CashArcade/tests/arena-playtest.html) | 選波次實際操作，正常受傷，獨立於正式存檔 |
 
 這些驗收頁不載入付款 SDK，也不保存正式遊戲進度。量測使用瀏覽器 `OfflineAudioContext`；貪吃蛇頁直接顯示時長、RMS、peak、clipped，其餘試聽頁可產生播放器與臨時 WAV。打磚塊對照由程式直接啟動機關建立樣本，不是 30 關真實手動通關紀錄；蛇的回放模式則經實際移動和碰撞規則完成本關。

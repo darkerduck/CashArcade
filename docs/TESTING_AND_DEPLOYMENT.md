@@ -10,6 +10,8 @@
 
 光泡連鎖的十八關回放、瀏覽器尺寸及原生音訊數值見[光泡連鎖驗收紀錄](BUBBLES_ACCEPTANCE.md)。
 
+極光疾馳的九關回放、手機版面與原生音訊數值見[極光疾馳驗收紀錄](AURORA_ACCEPTANCE.md)。
+
 ## 自動測試
 
 測試使用 Node.js 內建 `node:test`，不需 npm 套件、不啟動資料庫、不連真實付款服務。先跑直接受影響的檔案，例如：
@@ -68,6 +70,7 @@ node --test tests/*.test.mjs
 | [突圍驗收](http://127.0.0.1:4173/CashArcade/tests/arena-gallery.html) | 三場景／頭目、亮暗版、減少動態、六首配樂＋三首過載＋密集混音 |
 | [碎星獵手驗收](http://127.0.0.1:4173/CashArcade/tests/asteroids-gallery.html) | 星域與頭目、直橫向、亮暗版、六首配樂、過載與密集混音 |
 | [光泡連鎖驗收](http://127.0.0.1:4173/CashArcade/tests/bubbles-gallery.html) | 三場景、落點及掉落、390 px 直向與橫向、三首配樂及密集混音 |
+| [極光疾馳驗收](http://127.0.0.1:4173/CashArcade/tests/aurora-gallery.html) | 三段公路、不同車速光流、直橫向、終段配樂及引擎混音 |
 | [突圍試玩台](http://127.0.0.1:4173/CashArcade/tests/arena-playtest.html) | 選波次實際操作，正常受傷，獨立於正式存檔 |
 
 這些驗收頁不載入付款 SDK，也不保存正式遊戲進度。量測使用瀏覽器 `OfflineAudioContext`；貪吃蛇頁直接顯示時長、RMS、peak、clipped，其餘試聽頁可產生播放器與臨時 WAV。打磚塊對照由程式直接啟動機關建立樣本，不是 30 關真實手動通關紀錄；蛇的回放模式則經實際移動和碰撞規則完成本關。

@@ -58,6 +58,10 @@
 
 `{game}` 代表 `snake`、`breakout`、`flappy`、`missile`、`assault` 或 `arena`，不是實際鍵中的大括號。SDK 格式由外部版本管理，不能把上表當作可自行重建訂單的規格。
 
+### 極光疾馳
+
+全程免費。`casharcade-aurora-records-v1` 保存已解鎖和最後選擇的關卡，以及各關最快完賽時間、最高分與最多超車數。重載回到該關待命畫面。儲存失敗不妨礙當頁遊玩及解鎖。音效鍵為 `casharcade-aurora-sound-muted`，音樂鍵為 `casharcade-aurora-muted` 和 `casharcade-aurora-volume`。
+
 ### 光泡連鎖
 
 全程免費。`casharcade-bubbles-records-v1` 保存已解鎖關卡、最後選擇的關卡、每關最高分及最少發數。選關或重載從該關初始盤面開始。通關立即解鎖下一關，重試恢復本關固定道具。儲存失敗時提醒玩家，當頁遊戲與選關仍可用。音效鍵為 `casharcade-bubbles-sound-muted`，音樂鍵為 `casharcade-bubbles-muted` 和 `casharcade-bubbles-volume`。

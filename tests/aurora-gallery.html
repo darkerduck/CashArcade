@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>極光疾馳 · 視覺與音訊驗收</title>
+    <link rel="icon" href="../favicon.ico?v=1" type="image/x-icon" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
+    <link rel="icon" href="../assets/brand/favicon-32.png?v=1" type="image/png" sizes="32x32">
+    <link rel="icon" href="../assets/brand/favicon-16.png?v=1" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../assets/brand/apple-touch-icon.png?v=1" sizes="180x180">
+    <link rel="manifest" href="../site.webmanifest?v=1">
+    <link rel="stylesheet" href="../arena/style.css?v=1">
+    <style>
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 17px 0; }
+        .shots,.samples { display: grid; gap: 13px; grid-template-columns: repeat(3,minmax(0,1fr)); }
+        .shots canvas { height: auto; border: 1px solid var(--line); border-radius: 9px; }
+        .shots h2 { font-size: 15px; margin-bottom: 8px; }
+        .samples audio { width: 100%; }
+        pre { white-space: pre-wrap; font-size: 13px; line-height: 1.7; }
+        #layout-frame { border: 1px solid var(--line); }
+        #layout-check { overflow: auto; }
+        @media(max-width:690px) { .shots,.samples { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body><main class="shell">
+    <h1>極光疾馳 · 視覺與音訊驗收</h1>
+    <div class="toolbar">
+        <button type="button" id="speed">光流：靜止</button>
+        <button type="button" id="theme">切換亮暗</button>
+        <button type="button" id="motion" aria-pressed="false">減少動態</button>
+        <button type="button" id="audio">量測三首配樂、終段與混音</button>
+        <button type="button" id="portrait">390 × 844</button>
+        <button type="button" id="landscape">844 × 390</button>
+    </div>
+    <div id="shots" class="shots"></div>
+    <pre id="result" role="status">尚未量測</pre>
+    <div id="samples" class="samples"></div>
+    <div id="layout-check"></div>
+    <p><a href="../aurora/">開啟極光疾馳 →</a></p>
+</main>
+<script src="../audio.js?v=11" defer></script>
+<script src="../music.js?v=1" defer></script>
+<script src="../aurora/levels.js?v=1" defer></script>
+<script src="../aurora/engine.js?v=1" defer></script>
+<script src="../aurora/renderer.js?v=1" defer></script>
+<script src="../aurora/music.js?v=1" defer></script>
+<script src="../aurora/sound.js?v=1" defer></script>
+<script src="./aurora-gallery.js?v=1" defer></script>
+</body>
+</html>

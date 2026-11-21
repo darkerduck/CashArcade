@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#080f20">
+    <meta name="description" content="極光疾馳。九條雨夜霓虹公路，自動油門、手動轉向、獨立氮氣加速。超越車流並在限時內抵達終點。">
+    <title>CashArcade — 極光疾馳</title>
+    <link rel="icon" href="../favicon.ico?v=1" type="image/x-icon" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
+    <link rel="icon" href="../assets/brand/favicon-32.png?v=1" type="image/png" sizes="32x32">
+    <link rel="icon" href="../assets/brand/favicon-16.png?v=1" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../assets/brand/apple-touch-icon.png?v=1" sizes="180x180">
+    <link rel="manifest" href="../site.webmanifest?v=1">
+    <link rel="stylesheet" href="../arena/style.css?v=1">
+    <link rel="stylesheet" href="../brand.css?v=1">
+    <link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<main class="shell">
+    <header class="site-header">
+        <a class="brand" href="../" aria-label="CashArcade 首頁">
+            <img class="brand-logo" src="../assets/brand/casharcade-logo.png?v=1" width="44" height="44" alt="">
+            <span><strong>CashArcade</strong><small>POCKET-SIZED ARCADE</small></span>
+        </a>
+        <div class="header-controls">
+            <button type="button" id="sound-toggle" aria-label="切換音效">♪</button>
+            <button type="button" id="theme-toggle" aria-label="切換亮暗主題">◐</button>
+        </div>
+    </header>
+    <section class="heading"><h1>極光疾馳 <span>AURORA SPRINT</span></h1></section>
+    <div class="drive-layout">
+        <section class="machine" id="machine" aria-label="極光疾馳機台">
+            <div class="drive-hud">
+                <div><small>倒數 / TIME</small><strong id="time">72.0</strong><span class="unit"> 秒</span></div>
+                <div><small>剩餘 / DISTANCE</small><strong id="distance">2.84</strong><span class="unit"> km</span></div>
+                <div><small>速度 / SPEED</small><strong id="speed">0</strong><span class="unit"> km/h</span></div>
+            </div>
+            <div class="drive-view">
+                <canvas id="road" width="720" height="450" tabindex="0" aria-label="公路賽車。左右轉向、下鍵煞車，空白鍵氮氣。"></canvas>
+                <div class="overlay" id="overlay" aria-labelledby="overlay-title">
+                    <h2 id="overlay-title">霓雨大道</h2>
+                    <p id="overlay-message">在倒數內抵達終點。</p>
+                    <button type="button" id="launch" class="primary">開始第 1 關</button>
+                </div>
+            </div>
+            <div class="drive-controls">
+                <div class="drive-meter" id="nitro-meter" role="meter" aria-label="氮氣能量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42">
+                    <span>氮氣</span><div class="fill"><i id="nitro-fill"></i></div><span id="nitro-value">42%</span>
+                </div>
+                <div class="pedals" aria-label="觸控方向與踏板">
+                    <div class="steering">
+                        <button type="button" aria-label="左轉" data-drive="left">◀ <small>左轉</small></button>
+                        <button type="button" aria-label="右轉" data-drive="right">▶ <small>右轉</small></button>
+                    </div>
+                    <div class="pedal-pair">
+                        <button type="button" aria-label="煞車" data-drive="brake">◉ <small>煞車</small></button>
+                        <button type="button" aria-label="氮氣" data-drive="nitro">ϟ <small>氮氣</small></button>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button type="button" id="routes">選關</button>
+                    <button type="button" id="pause">暫停</button>
+                    <button type="button" id="retry">重試</button>
+                    <button type="button" id="fullscreen">全螢幕</button>
+                </div>
+                <p id="status" aria-live="polite">等待出發</p>
+            </div>
+        </section>
+        <aside class="deck">
+            <section class="mission-panel">
+                <p class="eyebrow" id="sector">雨夜市區</p>
+                <div class="mission-title"><h2 id="mission">霓雨大道</h2><span id="stage">01 / 09</span></div>
+                <p id="hint"></p>
+                <p class="build" id="result">超車 0 · 碰撞 0 · 0 分</p>
+                <p id="best">尚無完賽紀錄</p>
+            </section>
+            <section class="music-panel" aria-label="背景音樂控制">
+                <div class="music-top"><p class="eyebrow">原創 8-BIT</p><button type="button" id="music-toggle">♫ 音樂：開</button></div>
+                <p id="music-track"></p>
+                <label for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output></label>
+                <input id="music-volume" type="range" min="0" max="100" step="5" value="65">
+                <button type="button" id="preview-sound">♪ 試播氮氣與超車</button>
+            </section>
+            <details class="guide" open>
+                <summary>操作說明</summary>
+                <p>車輛自動加速。<kbd>←</kbd><kbd>→</kbd> 或 <kbd>A</kbd><kbd>D</kbd> 自由轉向，<kbd>↓</kbd> 或 <kbd>S</kbd> 煞車，按住 <kbd>Space</kbd> 或 <kbd>Shift</kbd> 使用氮氣。</p>
+                <p>手機左拇指控制方向，右拇指按煞車或氮氣。乾淨超車與拾取青色能量補充氮氣。碰撞會減速，仍可在時間內完賽。</p>
+                <p><kbd>P</kbd> 或 <kbd>Esc</kbd> 暫停，<kbd>R</kbd> 免費重試。<a href="../tests/aurora-gallery.html">視覺與音訊驗收 ↗</a></p>
+            </details>
+        </aside>
+    </div>
+    <p class="notice" role="status" id="save-note"></p>
+    <footer><a href="../">← 返回 CashArcade</a><a href="https://github.com/darkerduck/CashArcade">原始碼 ↗</a></footer>
+</main>
+<dialog id="routes-dialog" aria-labelledby="route-heading">
+    <div class="dialog-title"><h2 id="route-heading">選擇關卡</h2><button type="button" id="close-routes">關閉</button></div>
+    <div id="route-list"></div>
+</dialog>
+<script src="../audio.js?v=11" defer></script>
+<script src="../music.js?v=1" defer></script>
+<script src="./levels.js?v=1" defer></script>
+<script src="./engine.js?v=1" defer></script>
+<script src="./input.js?v=1" defer></script>
+<script src="./storage.js?v=1" defer></script>
+<script src="./renderer.js?v=1" defer></script>
+<script src="./music.js?v=1" defer></script>
+<script src="./sound.js?v=1" defer></script>
+<script src="./game.js?v=1" defer></script>
+</body>
+</html>

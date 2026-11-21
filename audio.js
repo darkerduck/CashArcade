@@ -9,6 +9,15 @@
     const LIMIT_KNEE = .9;
     const LIMIT_HEADROOM = .09;
     const EFFECTS = Object.freeze({
+        auroraStart: { tones: [[330, 440, .16, 0, .031, 'square'], [550, 660, .22, .15, .044, 'triangle']] },
+        auroraBoost: { tones: [[128, 710, .36, 0, .052, 'sawtooth'], [210, 1020, .38, .05, .036, 'triangle']], noise: [.25, .023, 2500], minGap: 240 },
+        auroraPass: { tones: [[420, 805, .12, 0, .026, 'triangle'], [720, 1050, .09, .045, .018, 'square']], minGap: 120 },
+        auroraCell: { tones: [[540, 720, .11, 0, .035, 'square'], [720, 1060, .15, .11, .043, 'triangle']] },
+        auroraCrash: { tones: [[165, 37, .34, 0, .063, 'sawtooth']], noise: [.29, .044, 910], minGap: 300 },
+        auroraBrake: { tones: [[350, 119, .29, 0, .023, 'triangle']], noise: [.24, .028, 2200], minGap: 260 },
+        auroraTunnel: { tones: [[170, 305, .26, 0, .026, 'triangle'], [310, 495, .25, .11, .025, 'sine']] },
+        auroraWin: { tones: [[523, 523, .13, 0, .04, 'square'], [659, 659, .14, .12, .035, 'triangle'], [880, 880, .34, .24, .036, 'triangle']] },
+        auroraLost: { tones: [[367, 220, .22, 0, .035, 'triangle'], [196, 92, .33, .19, .037, 'triangle']] },
         bubbleLaunch: { tones: [[290, 620, .11, 0, .03, 'triangle']], minGap: 70 },
         bubbleBounce: { tones: [[895, 730, .085, 0, .021, 'sine']], minGap: 65 },
         bubbleAttach: { tones: [[520, 345, .080, 0, .02, 'triangle']], minGap: 75 },

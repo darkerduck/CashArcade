@@ -29,8 +29,8 @@ export class Renderer {
       const px=LEFT+x*TILE,py=TOP+y*TILE,tile=level.rows[y][x];
       if(tile==='#'){
         rounded(ctx,px+2,py+2,TILE-4,TILE-4,6);ctx.fillStyle=light?'#a6bed6':'#16253f';ctx.fill();
-        ctx.strokeStyle=light?'#6b90b5':'#2c4970';ctx.lineWidth=1;ctx.stroke();
-        ctx.strokeStyle=light?'#e9f6ff':'#4777a74d';ctx.beginPath();ctx.moveTo(px+8,py+5);ctx.lineTo(px+TILE-8,py+5);ctx.stroke();
+        ctx.strokeStyle=light?'#6b90b5':'#3d82c6';ctx.lineWidth=1.25;ctx.stroke();
+        ctx.strokeStyle=light?'#e9f6ff':'#7fd4ff8c';ctx.beginPath();ctx.moveTo(px+8,py+5);ctx.lineTo(px+TILE-8,py+5);ctx.stroke();
         if((x+y*3)%5===0){ctx.fillStyle=light?'#789ab7':'#31516d';ctx.fillRect(px+11,py+17,4,9);ctx.fillRect(px+18,py+17,4,9);ctx.fillRect(px+25,py+17,4,9);}
       } else {
         ctx.fillStyle=light?'#eaf3fa':'#0a1830';ctx.fillRect(px+1,py+1,TILE-2,TILE-2);

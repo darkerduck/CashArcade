@@ -12,6 +12,7 @@
     applyTheme();
     const restored=storage.load();let game=new NeonArena.Game(restored||fresh()),best=storage.best(),mode='ready',previous=0,accumulator=0,transition=0,pausedMode='running',hudTime=0,renderDirty=true;
     const renderer=new NeonArenaRenderer($('game-canvas'));
+    const GLOW={strength:1.1,spread:1.1};
     const sound=CashArcadeAudio.create({storageKey:'casharcade-arena-sound-muted',toggleButton:$('sound-toggle'),outputLevel:.6,musicMix:true});
     const music=CashArcadeMusic.create({score:NeonArenaScore,storagePrefix:'casharcade-arena-music',toggleButton:$('music-toggle'),volumeInput:$('music-volume'),volumeLabel:$('music-volume-value'),trackLabel:$('music-track'),audioOutput:sound.musicOutput,initialLevel:game.wave});
     const input=NeonArenaInput.create({canvas:$('game-canvas'),joystick:$('joystick'),knob:$('stick-knob'),dash:$('dash'),onDash:dash,onPause:togglePause,onRetry:retry,active:()=>mode==='running'});
@@ -74,7 +75,7 @@
             if(game.state!=='running'){music.pause();persist();clear();if(game.state==='lost')settle();else {mode='transition';transition=1.1;}}
         }else if(mode==='transition'){renderer.update(dt);transition-=dt;if(transition<=0)settle();}
         if(animated){hudTime+=dt;if(hudTime>=.1){hud();hudTime=0;}}
-        if(animated||renderDirty){renderer.draw(game,document.documentElement.dataset.theme);renderDirty=false;}requestAnimationFrame(frame);
+        if(animated||renderDirty){const theme=document.documentElement.dataset.theme;renderer.draw(game,theme);globalThis.CashArcadeNeon?.apply(renderer.canvas,{theme,...GLOW});renderDirty=false;}requestAnimationFrame(frame);
     }
     if(restored)overlay('機甲記錄已恢復',restored.kind==='upgrade'?`第 ${game.wave} 波已完成。繼續選擇已保存的三項升級。`:`從第 ${game.wave} 波起點恢復：裝甲 ${game.hp}，分數 ${game.score}。`,'繼續戰役');
     hud();requestAnimationFrame(frame);

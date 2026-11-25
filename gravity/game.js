@@ -108,7 +108,7 @@
         if (['delivered', 'lost'].includes(game.state) && !reported) finished();
         const reducedMotion = settings.reducedMotion || motionQuery.matches;
         const nextKey = [game.levelIndex, game.state, theme, reducedMotion, innerWidth, innerHeight, Boolean(document.fullscreenElement)].join(':');
-        if ((game.state === 'running' && now - lastRender >= 1000 / 30) || nextKey !== renderKey) { renderer.render(game, { theme, reducedMotion }); lastRender = now; renderKey = nextKey; }
+        if ((game.state === 'running' && now - lastRender >= 1000 / 30) || nextKey !== renderKey) { renderer.render(game, { theme, reducedMotion }); globalThis.CashArcadeNeon?.apply(renderer.canvas,{theme,strength:1.2}); lastRender = now; renderKey = nextKey; }
         if (now - lastHud >= 80) { sync(); lastHud = now; }
         requestAnimationFrame(frame);
     }

@@ -243,7 +243,7 @@
             }
         }
         if (dirty) {
-            renderer.draw(game, { ...guide, theme, guide: view === 'playing' });
+            renderer.draw(game, { ...guide, theme, guide: view === 'playing' }); globalThis.CashArcadeNeon?.apply(board,{theme,strength:1});
             dirty = false;
         }
         requestAnimationFrame(frame);

@@ -224,13 +224,13 @@
     function loop(timestamp) {
         const delta = lastFrame ? Math.min(.1, Math.max(0, (timestamp - lastFrame) / 1000)) : 0; lastFrame = timestamp;
         if (!pending && !storageBlocked && !replayGate.busy) game.tick(delta, (keys.right ? 1 : 0) - (keys.left ? 1 : 0));
-        processEvents(); const drawStart=performance.now(); renderer.draw(game, { light: document.documentElement.dataset.theme === 'light' });
+        processEvents(); const drawStart=performance.now(); renderer.draw(game, { light: document.documentElement.dataset.theme === 'light' }); globalThis.CashArcadeNeon?.apply(canvas,{theme:document.documentElement.dataset.theme,strength:1});
         drawAverage=drawAverage*.96+(performance.now()-drawStart)*.04;
         if(drawAverage>18) renderer.lowFX=true; else if(drawAverage<7) renderer.lowFX=false;
         if (timestamp - uiTick > 80) { updateHud(); uiTick = timestamp; }
         if (timestamp - lastSave > 250 && game.state === 'running') { checkpoint(); lastSave = timestamp; }
         requestAnimationFrame(loop);
     }
-    updateHud(true); renderer.draw(game, { light: document.documentElement.dataset.theme === 'light' }); requestAnimationFrame(loop);
+    updateHud(true); renderer.draw(game, { light: document.documentElement.dataset.theme === 'light' }); globalThis.CashArcadeNeon?.apply(canvas,{theme:document.documentElement.dataset.theme,strength:1}); requestAnimationFrame(loop);
     replayGate.initialize().then(() => { if (storageBlocked) paymentStatus.textContent = '存檔或瀏覽器儲存無法確認。進度不會被覆蓋，也不會自動建立付款訂單。'; });
 })();

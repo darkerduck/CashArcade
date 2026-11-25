@@ -198,7 +198,7 @@
         if (!$('toast').hidden && now > toastUntil) $('toast').hidden = true;
         // Physics stays at 120 Hz; draw active play at 30 Hz and idle only on change.
         const renderKey = [game.state, theme, globalThis.innerWidth || 0, globalThis.innerHeight || 0].join(':');
-        if ((game.state === 'running' && now - lastRender >= 1000 / 30) || renderKey !== lastRenderKey) { renderer.draw(game, lastRender ? Math.min(.1, (now - lastRender) / 1000) : delta, theme); lastRender = now; lastRenderKey = renderKey; }
+        if ((game.state === 'running' && now - lastRender >= 1000 / 30) || renderKey !== lastRenderKey) { renderer.draw(game, lastRender ? Math.min(.1, (now - lastRender) / 1000) : delta, theme); globalThis.CashArcadeNeon?.apply(canvas,{theme,strength:1}); lastRender = now; lastRenderKey = renderKey; }
         requestAnimationFrame(frame);
     }
     hud(); requestAnimationFrame(frame);

@@ -234,6 +234,7 @@
     function draw() {
         renderer.draw({ player, gates, time: worldTime, speed: gateSpeed, state: gameState,
             light: document.documentElement.dataset.theme === 'light' });
+        globalThis.CashArcadeNeon?.apply(canvas,{theme:document.documentElement.dataset.theme,strength:.85,spread:.5});
     }
 
     function clamp(value, minimum, maximum) {

@@ -116,7 +116,7 @@ function frame(now) {
         else if (event.type === 'rotate') play('flap');
     }
     if (dirty || (game.state === 'running' && now - lastDraw > (saved.motion ? 100 : 50))) {
-        render.render(game,saved.motion,document.documentElement.dataset.theme === 'light'); hud(); lastDraw = now; dirty = false;
+        render.render(game,saved.motion,document.documentElement.dataset.theme === 'light'); globalThis.CashArcadeNeon?.apply(render.canvas,{theme:document.documentElement.dataset.theme,strength:1.15}); hud(); lastDraw = now; dirty = false;
     }
     requestAnimationFrame(frame);
 }

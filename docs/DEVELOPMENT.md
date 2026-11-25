@@ -15,6 +15,7 @@
 | [index.html](../index.html)、[style.css](../style.css)、[app.js](../app.js) | 首頁遊戲卡、版面、共用主題偏好 |
 | [audio.js](../audio.js) | 遊戲共用的短音效合成、音效靜音、聲部上限與峰值限制 |
 | [music.js](../music.js)、[music-scores.js](../music-scores.js)、[music.css](../music.css) | 配樂合成／排程與控制；蛇、飛行、打磚塊的原創樂譜 |
+| [neon-glow.js](../neon-glow.js) | 14 款 Canvas 遊戲共用的霓虹光暈後製（bloom）與遊戲區邊光標記 |
 | [snake/game.js](../snake/game.js)、[snake/audio-events.mjs](../snake/audio-events.mjs) | 六方向輸入、介面、保存協調、音效與四階段配樂 |
 | [snake/levels.mjs](../snake/levels.mjs)、[snake/engine.mjs](../snake/engine.mjs) | 十二關地形／種子、純三維規則、機關／道具、固定步進及 snapshot |
 | [snake/tutorial.mjs](../snake/tutorial.mjs) | 獨立第0關、固定引導目標、免費重試、自由練習及教學存檔；無SDK依賴 |
@@ -95,6 +96,22 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 配樂由 `CashArcadeMusic.create()` 接收 UI 元素、`score`、`storagePrefix` 及可選 `audioOutput`，回傳 `start(level, phase)`、`pause()`、`resume()`、`phase(value)`、`duck()`、`wake()`。樂譜提供 `profile(level, phase)` 及 `notesForStep(profile, index)`。階段變化於下一小節接續，重開／換關重設樂句，暫停後續播不能重複建立排程。
 
 蛇、飛行及打磚塊傳入 `sound.musicOutput`，共用音訊 context 與最終混音限制；天盾目前透過 `NeonDefenseMusic` 轉接，共用合成器但不傳這個音效匯流排。音樂開關、音量與音效靜音是獨立儲存鍵。待命、重載提示、付款、失敗及勝利不啟動背景配樂，音樂程式不得直接呼叫 `unlock()`。
+
+## 霓虹光暈
+
+除 3D 貪吃蛇（Three.js `UnrealBloomPass`）外，其餘 14 款 2D Canvas 遊戲都在 renderer 畫完一幀後呼叫共用的 `neon-glow.js`：
+
+```js
+renderer.draw(game, theme);
+globalThis.CashArcadeNeon?.apply(canvas, { theme, strength: 1 });
+```
+
+- 流程只用 `drawImage` 與合成模式，不依賴 `ctx.filter`：縮小到 1/4 解析度 → 以 `darken`＋`difference` 做亮度門檻 `max(x − threshold, 0)` → `lighter` 增益 → 再縮小兩級取得中、遠距光暈 → 以 `lighter` 疊回主畫布。主畫布的 transform、合成模式與 alpha 都會還原。
+- 參數：`strength`（整體強度，預設 1）、`threshold`（0–0.95，預設 0.45，越高越只剩最亮物件發光）、`spread`（中遠距光暈比例，預設 1）、`gain`（門檻後加倍次數，預設 1）。大片亮色背景（如碎星獵手的星雲、霓虹飛行的月亮）要提高 `threshold`、降低 `spread` 或把背景調暗到門檻以下，避免整片發白。
+- 淺色主題、沒有 DOM、或 context 不完整（Node 測試的假 ctx）時為 no-op；呼叫處一律用 `?.`，所以 vm 載入 `game.js` 的頁面測試不需要載入此檔。
+- 效能保護：`apply` 連續 24 幀超過 4 ms 會降到 1/8 解析度，仍過慢就停用到換頁。`CashArcadeNeon.stats(canvas)` 可查看目前解析度與最後一幀耗時。
+- 第一次套用時，若 canvas 的父容器已定位，會加上 `neon-glow-host`；`brand.css` 在深色主題下以 `::after` 內陰影畫出燈管邊光，不改版面、不攔截指標事件。
+- 新遊戲：頁面在 `game.js` 之前載入 `<script src="../neon-glow.js?v=1" defer></script>`，並在每次實際重畫後呼叫一次 `apply`（只在畫面變動時重畫的遊戲不要每幀都呼叫，否則光暈會重複疊加）。
 
 ## 路徑、圖像與版本
 

@@ -40,6 +40,6 @@
             overlay(game.state==='destroyed'?'車輛爆炸，維修後再戰。':game.won?'第一名！'+(next?'下一條賽道已解鎖。':'三條賽道全部征服。'):'這次未奪冠，再挑戰一次。',stats+(game.won?'':'。須完整有效繞圈、贏得第一名且車未毀才能晉級。'),next?'前往下一賽道 →':'免費重試 →',game.state==='destroyed'?'CAR DESTROYED':game.won?'RACE WON':'RACE COMPLETE');
             $('live').textContent=$('overlay-title').textContent+' '+stats;
         }
-        audio.update(game);const reducedMotion=settings.reducedMotion||systemMotion.matches;const renderKey=[game.track.id,game.state,theme,reducedMotion,innerWidth,innerHeight,Boolean(document.fullscreenElement)].join(':');if((game.state==='running'&&now-lastRender>=1000/30)||renderKey!==lastRenderKey){renderer.render(game,{theme,reducedMotion});lastRender=now;lastRenderKey=renderKey;}if(now-lastHud>80){updateHud();lastHud=now;}requestAnimationFrame(frame);}
+        audio.update(game);const reducedMotion=settings.reducedMotion||systemMotion.matches;const renderKey=[game.track.id,game.state,theme,reducedMotion,innerWidth,innerHeight,Boolean(document.fullscreenElement)].join(':');if((game.state==='running'&&now-lastRender>=1000/30)||renderKey!==lastRenderKey){renderer.render(game,{theme,reducedMotion});globalThis.CashArcadeNeon?.apply(renderer.canvas,{theme,strength:1});lastRender=now;lastRenderKey=renderKey;}if(now-lastHud>80){updateHud();lastHud=now;}requestAnimationFrame(frame);}
     renderTracks();soundUI();updateHud();requestAnimationFrame(frame);
 })();

@@ -276,7 +276,7 @@
             if (mode === 'running' && now - lastSave >= 250) { saveCurrent(); lastSave = now; }
         }
         hudTime += elapsed; if (hudTime >= .1) { hud(); hudTime = 0; }
-        renderer.draw(game, document.documentElement.dataset.theme); requestAnimationFrame(frame);
+        renderer.draw(game, document.documentElement.dataset.theme); globalThis.CashArcadeNeon?.apply(renderer.canvas,{theme:document.documentElement.dataset.theme,strength:1}); requestAnimationFrame(frame);
     }
     if (loadBlocked) {
         $('storage-note').textContent = '無法讀取有效的戰役存檔。為避免重載略過付款，請保留網站資料並修復瀏覽器儲存；目前不能開始新局。';

@@ -8,7 +8,7 @@ const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8'
 const html = read('gravity/index.html'), controller = read('gravity/game.js');
 test('page has local ordered scripts, standalone free play, shared music and all favicons', () => {
     const scripts = [...html.matchAll(/<script src="([^"?]+)/g)].map(m => m[1]);
-    assert.deepEqual(scripts, ['../audio.js', '../music.js', '../expansion-scores.js', './engine.js', './storage.js', './renderer.js', './game.js']);
+    assert.deepEqual(scripts, ['../audio.js', '../music.js', '../expansion-scores.js', './engine.js', './storage.js', './renderer.js', '../neon-glow.js', './game.js']);
     for (const path of scripts) assert.ok(existsSync(new URL('../gravity/' + path, import.meta.url)));
     assert.doesNotMatch(html + controller, /cashlink|payment|https?:\/\/[^" ]+\.js/i);
     for (const pattern of [/favicon-32\.png/, /favicon-16\.png/, /sizes="180x180"/, /manifest/, /brand\.css/, /aria-live="polite"/]) assert.match(html, pattern);

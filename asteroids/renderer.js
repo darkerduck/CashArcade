@@ -5,9 +5,9 @@
     const TAU = Math.PI * 2;
     const icons = { spread: 'Ｓ', laser: 'Ｌ', escort: '◇', shield: '⬡', repair: '+' };
     const themes = [
-        { glow: '44,122,202', rock: '#c09bf6', label: 'MINERAL BELT' },
-        { glow: '121,60,207', rock: '#b29fff', label: 'GRAVITY NEBULA' },
-        { glow: '112,53,126', rock: '#eba3bd', label: 'FLEET GRAVEYARD' }
+        { glow: '35,98,162', rock: '#c09bf6', label: 'MINERAL BELT' },
+        { glow: '97,48,166', rock: '#b29fff', label: 'GRAVITY NEBULA' },
+        { glow: '90,42,101', rock: '#eba3bd', label: 'FLEET GRAVEYARD' }
     ];
     const stars = Array.from({ length: 135 }, (_, i) => ({
         x: (i * 191.39 + i * i * 7.337) % size, y: (i * 67.77 + i * i * 0.79) % size,

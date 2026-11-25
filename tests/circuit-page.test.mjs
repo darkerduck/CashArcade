@@ -4,8 +4,8 @@ import {readFileSync,existsSync} from 'node:fs';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8'),html=read('circuit/index.html'),controller=read('circuit/game.mjs'),css=read('circuit/style.css');
 test('circuit has local module dependencies and no payment or external runtime',()=>{
   assert.match(html,/<html lang="zh-Hant">/);assert.doesNotMatch(html,/cashlink|linkincash|https?:\/\/[^" ]+\.js/i);
-  const scripts=[...html.matchAll(/<script src="([^"?]+)/g)].map(m=>m[1]);assert.deepEqual(scripts,['../audio.js','../music.js','../expansion-scores.js','./game.mjs']);for(const src of scripts)assert.ok(existsSync(new URL('../circuit/'+src,import.meta.url)),src);
-  assert.match(html,/game\.mjs\?v=1" type="module"/);for(const m of controller.matchAll(/from '([^']+)'/g))assert.ok(existsSync(new URL('../circuit/'+m[1],import.meta.url)));
+  const scripts=[...html.matchAll(/<script src="([^"?]+)/g)].map(m=>m[1]);assert.deepEqual(scripts,['../audio.js','../music.js','../expansion-scores.js','../neon-glow.js','./game.mjs']);for(const src of scripts)assert.ok(existsSync(new URL('../circuit/'+src,import.meta.url)),src);
+  assert.match(html,/game\.mjs\?v=2" type="module"/);for(const m of controller.matchAll(/from '([^']+)'/g))assert.ok(existsSync(new URL('../circuit/'+m[1],import.meta.url)));
 });
 test('every controller ID resolves uniquely and essential controls are accessible',()=>{
   const ids=[...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]);assert.equal(new Set(ids).size,ids.length);

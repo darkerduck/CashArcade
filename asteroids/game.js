@@ -280,7 +280,7 @@
             if (aftermath <= 0) { view = game.mode; show(); }
             dirty = true;
         }
-        if (dirty) { renderer.draw(game, theme); dirty = false; }
+        if (dirty) { renderer.draw(game, theme); globalThis.CashArcadeNeon?.apply(canvas,{theme,strength:1.2,threshold:.68}); dirty = false; }
         requestAnimationFrame(frame);
     }
     displayTheme();

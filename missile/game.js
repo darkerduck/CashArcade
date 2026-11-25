@@ -222,7 +222,7 @@
         // Let the final city collapse play out, without advancing gameplay or payment.
         const visualDt=mode === 'running' ? dt : mode === 'lost' && !document.hidden ? Math.min(dt,settleTime) : 0;
         if (mode === 'lost') settleTime=Math.max(0,settleTime-visualDt);
-        renderer.draw(game, aim, visualDt); requestAnimationFrame(loop);
+        renderer.draw(game, aim, visualDt); globalThis.CashArcadeNeon?.apply(renderer.canvas,{theme:document.documentElement.dataset.theme,strength:1}); requestAnimationFrame(loop);
     }
     function point(event) {
         const rect = $('game-canvas').getBoundingClientRect();

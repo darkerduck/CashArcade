@@ -123,7 +123,7 @@ function frame(now){
       overlay(last?'ALL CIRCUITS COMPLETE':'CIRCUIT CLEARED',last?'十道防線，全部點亮。':'出口已開。漂亮的逃脫。',`${'★'.repeat(game.stars)}${'☆'.repeat(3-game.stars)} · ${game.score} 分 · ${game.elapsed.toFixed(1)} 秒。${last?'每一道電路都記得你的光。回頭挑戰三星，讓紀錄更漂亮。':'下一道防線已解鎖。'}`,last?'再闖最終關 →':'前往下一關 →');announce(`第 ${game.level.id+1} 關完成，${game.stars} 顆星。`);hud();
     }
   }
-  if(dirty||(game.state==='running'&&now-lastRender>=1000/30)){renderer.render(game,{theme,reducedMotion:settings.reducedMotion||systemMotion.matches});lastRender=now;dirty=false;}
+  if(dirty||(game.state==='running'&&now-lastRender>=1000/30)){renderer.render(game,{theme,reducedMotion:settings.reducedMotion||systemMotion.matches});globalThis.CashArcadeNeon?.apply(canvas,{theme,strength:1});lastRender=now;dirty=false;}
   if(game.state==='running'&&now-lastHud>100){hud();lastHud=now;}requestAnimationFrame(frame);
 }
 levelMenu();hud();requestAnimationFrame(frame);

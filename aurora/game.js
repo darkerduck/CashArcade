@@ -213,7 +213,7 @@
             if (game.mode !== 'running') { view = game.mode; stop(); show(); }
         }
         if (dirty || (view === 'running' && now - lastPaint >= (coarse.matches ? 30 : 15))) {
-            renderer.draw(game, { theme, reduced: reduced.matches });
+            renderer.draw(game, { theme, reduced: reduced.matches }); globalThis.CashArcadeNeon?.apply(canvas,{theme,strength:1});
             dirty = false; lastPaint = now;
         }
         requestAnimationFrame(frame);

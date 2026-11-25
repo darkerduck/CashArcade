@@ -8,6 +8,8 @@
     const OUTPUT_BOOST = 10 ** (18 / 20);
     const LIMIT_KNEE = .9;
     const LIMIT_HEADROOM = .09;
+    const PANS = [0, -.22, .22, -.12, .12];
+    const ROOM_SEND = .2;
     const EFFECTS = Object.freeze({
         auroraStart: { tones: [[330, 440, .16, 0, .031, 'square'], [550, 660, .22, .15, .044, 'triangle']] },
         auroraBoost: { tones: [[128, 710, .36, 0, .052, 'sawtooth'], [210, 1020, .38, .05, .036, 'triangle']], noise: [.25, .023, 2500], minGap: 240 },
@@ -132,6 +134,7 @@
         let context;
         let output;
         let mix;
+        let input;
         let unavailable = false;
         const lastPlayed = new Map();
         let voiceEnds = [];
@@ -167,6 +170,23 @@
                 }
                 output = context.createGain();
                 output.gain.value = MASTER_LEVEL;
+                input = output;
+                if (typeof context.createConvolver === 'function') {
+                    // A short room gives every effect a tail without touching dry levels.
+                    try {
+                        const room = context.createConvolver(), length = Math.ceil(context.sampleRate * .55);
+                        const impulse = context.createBuffer(2, length, context.sampleRate);
+                        for (let channel = 0; channel < 2; channel += 1) {
+                            const data = impulse.getChannelData(channel);
+                            for (let index = 0; index < length; index += 1) data[index] = (Math.random() * 2 - 1) * (1 - index / length) ** 3;
+                        }
+                        room.buffer = impulse;
+                        const send = context.createGain();
+                        input = context.createGain();
+                        send.gain.value = ROOM_SEND;
+                        input.connect(output); input.connect(send); send.connect(room); room.connect(output);
+                    } catch { input = output; }
+                }
                 if (typeof context.createWaveShaper === 'function') {
                     const limiter = context.createWaveShaper();
                     limiter.curve = limiterCurve();
@@ -205,7 +225,27 @@
             gain.exponentialRampToValueAtTime(.0001, start + duration);
         }
 
-        function tone(audio, spec, base) {
+        // Extra layers ride the same pitch sweep and envelope as the authored tone:
+        // a detuned unison for body, a sub-octave under low impacts, and an octave
+        // sparkle on rising chimes. Each layer is [detune cents, level, wave].
+        function layersFor(from, to, wave) {
+            const layers = [];
+            if (wave !== 'sine') layers.push([8, .42, wave]);
+            if (wave !== 'sine' && Math.min(from, to) < 170) layers.push([-1200, .5, 'sine']);
+            if (to > from && Math.min(from, to) >= 380) layers.push([1200, .16, 'sine']);
+            return layers;
+        }
+
+        function connectOut(audio, node, pan) {
+            if (pan && typeof audio.createStereoPanner === 'function') {
+                const panner = audio.createStereoPanner();
+                panner.pan.value = pan;
+                node.connect(panner);
+                panner.connect(input);
+            } else node.connect(input);
+        }
+
+        function tone(audio, spec, base, index = 0) {
             const [from, to, duration, delay, level, wave, hold] = spec;
             const start = base + delay;
             const oscillator = audio.createOscillator();
@@ -215,7 +255,20 @@
             oscillator.frequency.exponentialRampToValueAtTime(to, start + duration);
             envelope(gain.gain, start, duration, level, hold);
             oscillator.connect(gain);
-            gain.connect(output);
+            if (oscillator.detune) {
+                for (const [cents, amount, type] of layersFor(from, to, wave)) {
+                    const layer = audio.createOscillator(), mix = audio.createGain();
+                    layer.type = type;
+                    layer.frequency.setValueAtTime(from, start);
+                    layer.frequency.exponentialRampToValueAtTime(to, start + duration);
+                    layer.detune.value = cents;
+                    mix.gain.value = amount;
+                    layer.connect(mix); mix.connect(gain);
+                    layer.start(start); layer.stop(start + duration + .015);
+                }
+            }
+            // Multi-tone effects fan out slightly so chords and sweeps read as width.
+            connectOut(audio, gain, PANS[index % PANS.length]);
             oscillator.start(start);
             oscillator.stop(start + duration + .015);
         }
@@ -234,7 +287,7 @@
             envelope(gain.gain, base, duration, level);
             source.connect(filter);
             filter.connect(gain);
-            gain.connect(output);
+            gain.connect(input);
             source.start(base);
             source.stop(base + duration + .015);
         }
@@ -252,7 +305,7 @@
                 voiceEnds = voiceEnds.filter(end => end > audio.currentTime);
                 const needed = effect.tones.length + (effect.noise ? 1 : 0);
                 if (voiceEnds.length + needed > 40) return; // Bound dense multiball/polyphonic bursts.
-                effect.tones.forEach(spec => tone(audio, spec, start));
+                effect.tones.forEach((spec, index) => tone(audio, spec, start, index));
                 if (effect.noise) noise(audio, effect.noise, start);
                 effect.tones.forEach(spec => voiceEnds.push(start + spec[3] + spec[2] + .015));
                 if (effect.noise) voiceEnds.push(start + effect.noise[0] + .015);

@@ -95,6 +95,15 @@ CSS 顯示尺寸不等於遊戲座標。修改拖曳／瞄準時，先用 Canvas
 
 配樂由 `CashArcadeMusic.create()` 接收 UI 元素、`score`、`storagePrefix` 及可選 `audioOutput`，回傳 `start(level, phase)`、`pause()`、`resume()`、`phase(value)`、`duck()`、`wake()`。樂譜提供 `profile(level, phase)` 及 `notesForStep(profile, index)`。階段變化於下一小節接續，重開／換關重設樂句，暫停後續播不能重複建立排程。
 
+`CashArcadeMusic.synth(context, destination, { fills })` 是所有遊戲共用的音色層，樂譜仍是唯一的旋律與和聲來源：
+
+- 主旋律為方波＋微走音鋸齒波，經濾波包絡；長音才加延遲顫音。echo、琶音、鼓組分別放在不同聲像位置。貝斯為三角波疊低通方波。大鼓有起音 click，小鼓是高通噪音加音高本體，hi-hat 偏右。
+- 衍生編曲：每小節第一拍若有 bass，就加一組慢起音 pad（bass 音高 +24、+31 半音，只疊八度與五度，不改作曲和聲）；每四小節樂句的最後三個十六分音符若沒有小鼓，就補一段 snare pickup，下一句開頭補一記 crash。節奏遊戲（`pulse/audio.js`）以 `{ fills: false }` 關閉補鼓，避免干擾判定拍點。
+- 空間：瀏覽器支援時，會建立 1.7 秒立體聲房間殘響，以及依 BPM 同步的附點八分回音（回授經低通）。兩者都回到 compressor 之前，所以仍受原本的 limiter 約束；`silence()` 會同時靜音殘響與回音的回送，暫停時不會留下尾音。
+- `createConvolver`、`createDelay`、`createStereoPanner` 與 oscillator `detune` 都做功能偵測；缺少時退回乾聲、置中，舊瀏覽器與 Node 測試的假 context 照常運作。
+
+`audio.js` 的音效定義格式不變。播放時，每個 tone 依掃頻自動加層：非正弦波加 +8 cents 同度、低於 170 Hz 的撞擊加 sub-octave 正弦、從 380 Hz 以上往上掃的提示音加高八度閃光。同一音效的第 2 個以後的 tone 會左右展開；整體再經 0.55 秒房間殘響。聲部上限仍以作者定義的 tone 計算。可用 `tests/arcade-music.html` 的離線渲染量測峰值與削波。
+
 蛇、飛行及打磚塊傳入 `sound.musicOutput`，共用音訊 context 與最終混音限制；天盾目前透過 `NeonDefenseMusic` 轉接，共用合成器但不傳這個音效匯流排。音樂開關、音量與音效靜音是獨立儲存鍵。待命、重載提示、付款、失敗及勝利不啟動背景配樂，音樂程式不得直接呼叫 `unlock()`。
 
 ## 霓虹光暈

@@ -6,15 +6,17 @@
         x, y, lethal, range: lethal ? 176 : 152, core: lethal ? 23 : 0,
         strength: lethal ? 138 : 100
     });
+    // Waves arrive from 0.3 s and are packed into ~55% of the authored duration, so the
+    // field fills quickly and groups overlap instead of trickling in one at a time.
     const field = (name, goal, duration, groups, wells = []) => ({
-        name, goal, wells, groups: groups.map((types, i) => ({ at: 1 + i * (duration - 1) / (groups.length - 1), types }))
+        name, goal, wells, groups: groups.map((types, i) => ({ at: 0.3 + i * (duration * 0.55 - 0.3) / (groups.length - 1), types }))
     });
     const boss = (name, goal, id, wells = []) => ({ name, goal, boss: id, wells, groups: [] });
     const levels = [
-        field('碎星邊境', '擊碎隕石。穿過邊界會從另一側出現。', 60,
-            [['large', 'small'], ['medium'], ['large'], ['medium', 'small'], ['large'], ['medium']]),
-        field('獵航航道', '擊落砲艇，收集金色武器模組。', 64,
-            [['fighter', 'medium'], ['gunship'], ['large', 'fighter'], ['fighter', 'medium'], ['gunship'], ['large', 'fighter']]),
+        field('碎星邊境', '擊碎隕石。穿過邊界會從另一側出現。', 64,
+            [['large', 'small'], ['medium', 'small'], ['large'], ['medium', 'small', 'small'], ['large', 'medium'], ['medium', 'small'], ['large', 'small'], ['medium', 'medium']]),
+        field('獵航航道', '擊落砲艇，收集金色武器模組。', 66,
+            [['fighter', 'medium'], ['gunship', 'small'], ['large', 'fighter'], ['fighter', 'medium', 'small'], ['gunship', 'small'], ['large', 'fighter'], ['medium', 'fighter']]),
         boss('採掘巨艦', '拆除兩側砲塔，露出中央核心。', 1),
         field('引力花園', '青紫引力圈會彎折飛船與彈道。', 66,
             [['large', 'medium'], ['gunship', 'fighter'], ['large'], ['medium', 'gunship'], ['fighter', 'fighter'], ['large', 'medium']], [well(355, 230)]),

@@ -15,11 +15,12 @@
         ['shield', '生存', '相位護盾', 3, n => `每波一次護盾擋下首擊，破盾無敵 ${1 + n * .5} → ${1.5 + n * .5} 秒`],
     ].map(([id, route, name, max, effect]) => Object.freeze({ id, route, name, max, effect }));
     const waves = [
-        [14,35,['swarm']], [20,35,['swarm','charger']], [26,35,['swarm','charger','shooter']],
+        // [count, seconds to deploy the whole wave, kinds]: early waves deploy in 15–22 s so the arena fills fast.
+        [14,15,['swarm']], [20,19,['swarm','charger']], [26,22,['swarm','charger','shooter']],
         [0,0,[], '鋸輪監工'],
-        [32,40,['swarm','charger','shooter','guard']], [38,40,['swarm','shooter','splitter']], [44,40,['swarm','charger','shooter','guard','splitter']],
+        [32,26,['swarm','charger','shooter','guard']], [38,28,['swarm','shooter','splitter']], [44,30,['swarm','charger','shooter','guard','splitter']],
         [0,0,[], '磁暴核心'],
-        [50,45,['swarm','charger','shooter','guard','splitter']], [58,45,['swarm','charger','shooter','guard','splitter']], [66,45,['swarm','charger','shooter','guard','splitter']],
+        [50,32,['swarm','charger','shooter','guard','splitter']], [58,34,['swarm','charger','shooter','guard','splitter']], [66,36,['swarm','charger','shooter','guard','splitter']],
         [0,0,[], '封鎖主機'],
     ].map(([count, duration, enemies, boss], i) => Object.freeze({ wave: i + 1, count, duration, enemies, boss, sector: Math.floor(i / 4) }));
     const enemies = Object.freeze({

@@ -70,7 +70,7 @@
     window.addEventListener('pagehide',()=>{persist();music.pause();});window.addEventListener('resize',()=>{clear();renderer.resize();});
     function frame(now){const dt=Math.min(.1,Math.max(0,(now-(previous||now))/1000)),animated=mode==='running'||mode==='transition';previous=now;
         if(mode==='running'){
-            accumulator+=dt;while(accumulator>=1/120&&game.state==='running'){game.update(1/120,input.value());accumulator-=1/120;}
+            accumulator+=dt*(renderer.timeScale?.()??1);while(accumulator>=1/120&&game.state==='running'){game.update(1/120,input.value());accumulator-=1/120;}
             consume();renderer.update(dt);
             if(game.state!=='running'){music.pause();persist();clear();if(game.state==='lost')settle();else {mode='transition';transition=1.1;}}
         }else if(mode==='transition'){renderer.update(dt);transition-=dt;if(transition<=0)settle();}

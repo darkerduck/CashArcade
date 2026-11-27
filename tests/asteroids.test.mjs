@@ -117,9 +117,10 @@ test('weapon ranks persist through swapping, capped pickups score, checkpoint re
 });
 
 test('same seed replays warning positions and unsafe deployment is deferred', () => {
+    // First group warns at 0.3 s and deploys 0.8 s later, so sample mid-warning.
     const a = make(2), b = make(2);
-    advance(a, 1.1);
-    advance(b, 1.1);
+    advance(a, .6);
+    advance(b, .6);
     assert.deepEqual(a.warnings, b.warnings);
     assert.ok(distance(a.player, a.warnings[0]) >= 180);
     const warning = a.warnings[0];
@@ -128,7 +129,7 @@ test('same seed replays warning positions and unsafe deployment is deferred', ()
     assert.ok(a.warnings.includes(warning));
     assert.ok(warning.ttl > 0);
     a.retry();
-    advance(a, 1.1);
+    advance(a, .6);
     assert.deepEqual(a.warnings, b.warnings);
 });
 

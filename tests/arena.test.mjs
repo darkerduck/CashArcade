@@ -21,7 +21,8 @@ test('mobile auto aim shares ray and damage rules and excludes pillars from near
     assert.equal(g.player.aimX,1);assert.equal(g.player.aimY,0);assert.equal(e.maxHp-e.hp,24);
 });
 test('pillars and death blasts queue across ticks, terminate, do not hurt player or score twice',()=>{
-    const g=isolated();g.upgrades.deathBlast=3;g.stats=stats(g.upgrades);g.player.x=360;g.player.y=360;
+    // The isolated fixture still queues one opening warning; mark it spawned so only blasts are measured.
+    const g=isolated();g.spawned=1;g.upgrades.deathBlast=3;g.stats=stats(g.upgrades);g.player.x=360;g.player.y=360;
     g.pillars=[0,1,2,3].map((n)=>({id:++g.serial,kind:'pillar',x:330+n*25,y:360,hp:20,r:18,dead:false}));
     for(let i=0;i<7;i++)g.addEnemy('swarm',340+i*8,420);
     const first=g.pillars[0];g.damage(first,30);assert.equal(g.explosions.length,1);g.damage(first,300);assert.equal(g.explosions.length,1);
@@ -49,7 +50,7 @@ test('overlapping trail samples apply damage once per enemy per tick',()=>{
 test('spawn warnings are safe, visible before enemies, and all ordinary counts match design',()=>{
     const expected=[14,20,26,32,38,44,50,58,66];assert.deepEqual(plain(scope.NeonArenaData.waves.filter(w=>!w.boss).map(w=>w.count)),expected);
     const g=new Game(fresh(123));g.update(1/120);assert.equal(g.enemies.length,0);assert.equal(g.warnings.length,1);const w=g.warnings[0];
-    assert.ok(Math.hypot(w.x-g.player.x,w.y-g.player.y)>=230);step(g,1);assert.equal(g.enemies.length,0);step(g,.2);assert.equal(g.enemies.length,1);
+    assert.ok(Math.hypot(w.x-g.player.x,w.y-g.player.y)>=230);step(g,.6);assert.equal(g.enemies.length,0);step(g,.2);assert.equal(g.enemies.length,1); // 0.7 s warning
     g.warn('swarm');const next=g.warnings[0];g.player.x=next.x;g.player.y=next.y;step(g,1.2);assert.ok(g.warnings.length);assert.ok(g.warnings.some(w=>w.time>0));
 });
 test('charger telegraphs a fixed direction and splitter creates exactly two children once',()=>{

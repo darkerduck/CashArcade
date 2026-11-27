@@ -1,6 +1,6 @@
 # CashArcade
 
-一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有十五款遊戲、原創合成配樂與獨立音效設定。深色主題下每款遊戲都有霓虹燈光暈（2D 遊戲共用 [neon-glow.js](neon-glow.js) 後製，3D 貪吃蛇使用 Three.js bloom）；淺色主題自動關閉光暈。配樂與音效共用合成器，具有疊層音色、立體聲聲像、房間殘響與回音、衍生 pad 與樂句過門鼓。
+一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有十五款遊戲、原創合成配樂與獨立音效設定。深色主題下每款遊戲都有霓虹燈光暈（2D 遊戲共用 [neon-glow.js](neon-glow.js) 後製，3D 貪吃蛇使用 Three.js bloom）；淺色主題自動關閉光暈。碎星獵手、霓虹突圍、重力快遞、光路拼接與電路迷城另有共用的街機手感特效（命中停頓、震動、粒子、得分飄字、關卡字卡），並支援高解析度螢幕。配樂與音效共用合成器，具有疊層音色、立體聲聲像、房間殘響與回音、衍生 pad 與樂句過門鼓。
 
 🎮 **[進入 CashArcade](https://darkerduck.github.io/CashArcade/)** · [GitHub 原始碼](https://github.com/darkerduck/CashArcade)
 

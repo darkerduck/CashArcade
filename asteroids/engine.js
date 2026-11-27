@@ -124,7 +124,7 @@
                 if (!safest || clearance > safest.clearance) safest = { ...point, clearance };
             }
             if (safest.clearance < 0) return false;
-            this.warnings.push({ ...safest, type, drop, ttl: 1.25 });
+            this.warnings.push({ ...safest, type, drop, ttl: 0.8 });
             return true;
         }
         addEnemy(type, x, y, options = {}) {
@@ -360,7 +360,7 @@
                 projectile.struck.add(target.id);
                 if (!this.locked(target)) {
                     target.hp -= projectile.damage;
-                    this.emit('hit', target);
+                    this.emit('hit', target, { id: target.id });
                     if (target.hp <= 0) this.destroy(target);
                 } else this.emit('deflect', target);
                 if (--projectile.hits <= 0) { projectile.dead = true; break; }
@@ -377,7 +377,7 @@
             }
             const spec = units[target.type], isRock = rocks.includes(target.type);
             this.score += spec.points;
-            this.emit(isRock ? 'shatter' : 'destroy', target, { radius: target.radius, rock: target.type });
+            this.emit(isRock ? 'shatter' : 'destroy', target, { radius: target.radius, rock: target.type, points: spec.points });
             if (spec.split) {
                 for (const sign of [-1, 1]) {
                     const angle = target.angle + sign * Math.PI / 2, speed = units[spec.split].speed;

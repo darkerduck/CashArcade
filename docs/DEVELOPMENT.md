@@ -16,6 +16,7 @@
 | [audio.js](../audio.js) | 遊戲共用的短音效合成、音效靜音、聲部上限與峰值限制 |
 | [music.js](../music.js)、[music-scores.js](../music-scores.js)、[music.css](../music.css) | 配樂合成／排程與控制；蛇、飛行、打磚塊的原創樂譜 |
 | [neon-glow.js](../neon-glow.js) | 14 款 Canvas 遊戲共用的霓虹光暈後製（bloom）與遊戲區邊光標記 |
+| [arcade-fx.js](../arcade-fx.js) | 共用街機手感：鏡頭震動、命中停頓／慢動作、閃光、粒子、得分飄字、關卡字卡、CRT 疊層與高解析度畫布 |
 | [snake/game.js](../snake/game.js)、[snake/audio-events.mjs](../snake/audio-events.mjs) | 六方向輸入、介面、保存協調、音效與四階段配樂 |
 | [snake/levels.mjs](../snake/levels.mjs)、[snake/engine.mjs](../snake/engine.mjs) | 十二關地形／種子、純三維規則、機關／道具、固定步進及 snapshot |
 | [snake/tutorial.mjs](../snake/tutorial.mjs) | 獨立第0關、固定引導目標、免費重試、自由練習及教學存檔；無SDK依賴 |
@@ -121,6 +122,28 @@ globalThis.CashArcadeNeon?.apply(canvas, { theme, strength: 1 });
 - 效能保護：`apply` 連續 24 幀超過 4 ms 會降到 1/8 解析度，仍過慢就停用到換頁。`CashArcadeNeon.stats(canvas)` 可查看目前解析度與最後一幀耗時。
 - 第一次套用時，若 canvas 的父容器已定位，會加上 `neon-glow-host`；`brand.css` 在深色主題下以 `::after` 內陰影畫出燈管邊光，不改版面、不攔截指標事件。
 - 新遊戲：頁面在 `game.js` 之前載入 `<script src="../neon-glow.js?v=1" defer></script>`，並在每次實際重畫後呼叫一次 `apply`（只在畫面變動時重畫的遊戲不要每幀都呼叫，否則光暈會重複疊加）。
+
+## 街機手感模組（arcade-fx）
+
+`arcade-fx.js` 提供 `globalThis.CashArcadeFX`，目前用於碎星獵手、霓虹突圍、重力快遞、光路拼接、電路迷城：
+
+- `fitCanvas(canvas, w, h, maxDpr = 2)`：依 devicePixelRatio 設定實際像素並回傳倍率；renderer 以 `setTransform(ratio, …)` 用邏輯座標作畫，Retina 不再模糊。
+- `createFx({ reduced })`：以秒推進，與幀率無關。
+  - `shake(amount)`：trauma 平方衰減的鏡頭震動，有上限。
+  - `hitStop(s)`、`slowMotion(s, scale)` 與 `timeScale()`：遊戲迴圈以 `accumulator += dt * (renderer.timeScale?.() ?? 1)` 套用，只縮放模擬時間。
+  - `flash`、`popup`、`burst`（spark／shard／ring／smoke，以加色繪製）與 `banner`。
+  - 在 renderer 開頭呼叫 `apply(ctx)` 套用震動，結尾呼叫 `draw(ctx, w, h)` 畫出特效。
+- 開啟減少動態效果時，不震動、不做命中停頓、粒子減到 1/4，字卡改為淡入淡出。
+- `crt(ctx, w, h, strength)`：淡掃描線與暗角，只在深色主題使用。
+- 沒有 DOM 或 Canvas 時，以上全部安全退化，renderer 的 Node 測試不需載入此檔。
+- 呼叫順序：renderer 先用 FX 畫完，`neon-glow.js` 再對整個畫面做光暈。
+
+節奏調整（第一批）：
+- 碎星獵手：群組從 0.3 秒開始，在原時長約 55% 內部署完；第 1、2 關增加群組；預警 0.8 秒。
+- 霓虹突圍：各波部署時間縮短約 45–57%，敵人數不變；預警 0.7 秒。
+- 重力快遞：整條路線依首個障礙位置前移最多 300 px，首個危險約在 0.7–1.3 秒出現；雷射與浮台的相位同步前移，所有既有 replay 路線（含 ±8 px 容差）照樣成立。
+- 光路拼接：第 1 關落速 0.85 → 0.70 秒、每級 −0.05；消除停頓 0.5 → 0.3 秒，改用動畫填滿。
+- 電路迷城：每步 0.15 秒不變，因為三星時間門檻綁在這個數值上。
 
 ## 路徑、圖像與版本
 

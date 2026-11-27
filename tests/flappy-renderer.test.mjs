@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-function harness() {
+function harness(withFx = false) {
     const ops=[], media={matches:false}, canvases=[];
     function canvas() {
         const operations=[], state={};
@@ -19,6 +19,7 @@ function harness() {
     }
     const scope=vm.createContext({matchMedia:()=>media,document:{createElement:()=>canvas()},devicePixelRatio:3});
     scope.window=scope;
+    if(withFx)vm.runInContext(readFileSync(new URL('../arcade-fx.js',import.meta.url),'utf8'),scope);
     vm.runInContext(readFileSync(new URL('../flappy/renderer.js',import.meta.url),'utf8'),scope);
     const main=canvas(),preview=canvas(),r=new scope.NeonFlightRenderer(main,preview);
     const state={player:{y:260,rotation:-.2},gates:[{x:300,gapTop:170,gapBottom:330}],time:4,speed:190,state:'running',light:false};
@@ -71,4 +72,17 @@ test('reduced motion freezes scenery and wing pose, skips particles and keeps co
     r.flap(260);r.pass(400,260);r.lose(260);assert.equal(r.particles.length,0);assert.equal(r.rings.length,0);
     r.draw(state);ops[0].length=0;r.draw(state);const first=JSON.stringify(ops[0]);
     ops[0].length=0;r.advance(1);r.draw({...state,time:25});assert.equal(JSON.stringify(ops[0]),first);assert.equal(r.pose(),.35);
+});
+
+test('arcade FX: a crash freezes time briefly, passes light the gate and every effect expires',()=>{
+    const {r,ops,state}=harness(true);
+    assert.equal(r.timeScale(),1);
+    r.pass(338,250,{gate:state.gates[0],score:10,perfect:true});r.speedUp(1.3);
+    assert.ok(r.fx.stats().popups>=3);assert.ok(r.lit.has(state.gates[0]));
+    r.lose(250);assert.equal(r.timeScale(),0);assert.ok(r.busy);
+    for(let i=0;i<4;i++){r.tick(1/60);r.advance(1/60*r.timeScale());r.draw(state);}
+    for(const list of ops)assert.equal(list.filter(op=>op[0]==='save').length,list.filter(op=>op[0]==='restore').length);
+    for(let i=0;i<120;i++)r.tick(1/30);
+    assert.equal(r.timeScale(),1);assert.equal(r.busy,false);
+    r.pass(338,250);r.reset();assert.equal(r.fx.stats().particles,0);
 });

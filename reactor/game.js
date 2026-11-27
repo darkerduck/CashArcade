@@ -193,12 +193,12 @@
     window.addEventListener('pagehide', () => { pause(); record(); });
     function frame(now) {
         const delta = previous ? Math.min(.1, (now - previous) / 1000) : 0; previous = now;
-        if (game.state === 'running') { game.update(delta, input()); consume(); }
+        if (game.state === 'running') { game.update(delta * (renderer.timeScale?.() ?? 1), input()); consume(); }
         if (now - lastHud > 60) { hud(); lastHud = now; }
         if (!$('toast').hidden && now > toastUntil) $('toast').hidden = true;
-        // Physics stays at 120 Hz; draw active play at 30 Hz and idle only on change.
+        // Physics stays at 120 Hz; draw active play (and fading effects) at display rate, idle only on change.
         const renderKey = [game.state, theme, globalThis.innerWidth || 0, globalThis.innerHeight || 0].join(':');
-        if ((game.state === 'running' && now - lastRender >= 1000 / 30) || renderKey !== lastRenderKey) { renderer.draw(game, lastRender ? Math.min(.1, (now - lastRender) / 1000) : delta, theme); globalThis.CashArcadeNeon?.apply(canvas,{theme,strength:1}); lastRender = now; lastRenderKey = renderKey; }
+        if (((game.state === 'running' || renderer.busy) && now - lastRender >= 1000 / 61) || renderKey !== lastRenderKey) { renderer.draw(game, lastRender ? Math.min(.1, (now - lastRender) / 1000) : delta, theme); globalThis.CashArcadeNeon?.apply(canvas,{theme,strength:1}); lastRender = now; lastRenderKey = renderKey; }
         requestAnimationFrame(frame);
     }
     hud(); requestAnimationFrame(frame);

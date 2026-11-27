@@ -46,6 +46,8 @@
     let animationFrame;
     let previousTime;
     let worldTime;
+    let lastGapCenter;
+    let dyingTime;
 
     function readHighScore() {
         try {
@@ -74,8 +76,11 @@
         gateGap = INITIAL_GAP;
         worldTime = 0;
         previousTime = 0;
-        addGate(WIDTH + 120);
-        addGate(WIDTH + 120 + GATE_SPACING);
+        dyingTime = 0;
+        lastGapCenter = HEIGHT / 2 - 10;
+        // The first gate is already on screen and centred, so the first decision comes within about two seconds.
+        addGate(WIDTH - 40, 0);
+        addGate(WIDTH - 40 + GATE_SPACING);
         gameState = 'ready';
         pauseButton.disabled = true;
         pauseButton.textContent = '暫停';
@@ -85,7 +90,7 @@
     }
 
     function startGame() {
-        if (gameState === 'running') return;
+        if (gameState === 'running' || gameState === 'dying') return;
         if (gameState === 'over') resetGame();
 
         sound.play('flap');
@@ -145,12 +150,27 @@
     }
 
     function loop(time) {
-        if (gameState !== 'running') return;
-        const delta = Math.min((time - previousTime) / 1000, .034);
+        if (gameState !== 'running' && gameState !== 'dying') return;
+        const raw = Math.min((time - previousTime) / 1000, .034);
         previousTime = time;
-        update(delta);
+        renderer.tick?.(raw);
+        const delta = raw * (renderer.timeScale?.() ?? 1);
+        if (gameState === 'running') update(delta); else updateDying(delta);
         draw();
-        if (gameState === 'running') animationFrame = requestAnimationFrame(loop);
+        if (gameState === 'running' || gameState === 'dying') animationFrame = requestAnimationFrame(loop);
+    }
+
+    // Crash beat: the bird tumbles to the ground before the result card appears.
+    function updateDying(delta) {
+        renderer.advance(delta);
+        dyingTime += delta;
+        if (player.y + PLAYER_RADIUS < GROUND_Y) {
+            player.velocity += GRAVITY * 1.2 * delta;
+            player.y = Math.min(GROUND_Y - PLAYER_RADIUS, player.y + player.velocity * delta);
+            player.rotation = Math.min(1.6, player.rotation + delta * 7);
+        }
+        const grounded = player.y + PLAYER_RADIUS >= GROUND_Y - .5;
+        if ((grounded && dyingTime > .5) || dyingTime > 1.3) finishGame();
     }
 
     function update(delta) {
@@ -171,7 +191,8 @@
                 gate.scored = true;
                 score += 1;
                 sound.play('pass');
-                renderer.pass(gate.x + GATE_WIDTH / 2, (gate.gapTop + gate.gapBottom) / 2);
+                const center = (gate.gapTop + gate.gapBottom) / 2;
+                renderer.pass(gate.x + GATE_WIDTH / 2, center, { gate, score, perfect: Math.abs(player.y - center) < 18 });
                 music.duck(); music.phase(Math.floor(score / 10));
                 if (score % 5 === 0) sound.play('speed');
                 highScore = Math.max(highScore, score);
@@ -184,11 +205,14 @@
         if (hasCollision()) endGame();
     }
 
-    function addGate(x) {
+    function addGate(x, shift = 1) {
         const safeMargin = 72;
         const minimumCenter = safeMargin + gateGap / 2;
         const maximumCenter = GROUND_Y - safeMargin - gateGap / 2;
-        const gapCenter = minimumCenter + Math.random() * (maximumCenter - minimumCenter);
+        // Consecutive gaps move at most 170 px up or 200 px down, so every gate is reachable from the last.
+        const low = Math.max(minimumCenter, lastGapCenter - 170 * shift), high = Math.min(maximumCenter, lastGapCenter + 200 * shift);
+        const gapCenter = clamp(low + Math.random() * (high - low), minimumCenter, maximumCenter);
+        lastGapCenter = gapCenter;
         gates.push({ x, gapTop: gapCenter - gateGap / 2, gapBottom: gapCenter + gateGap / 2, scored: false });
     }
 
@@ -197,6 +221,7 @@
         gateSpeed = Math.min(INITIAL_SPEED + tier * 12, MAX_SPEED);
         gateGap = Math.max(INITIAL_GAP - tier * 5, MIN_GAP);
         if (score > 0 && score % 5 === 0) {
+            renderer.speedUp?.(gateSpeed / INITIAL_SPEED);
             updateStatus(`速度 ×${(gateSpeed / INITIAL_SPEED).toFixed(1)}`);
             liveRegion.textContent = `已穿越 ${score} 道閘門，速度提升`;
         }
@@ -221,11 +246,19 @@
 
     function endGame() {
         music.pause();
-        cancelAnimationFrame(animationFrame);
         sound.play('lose');
         renderer.lose(player.y);
-        gameState = 'over';
+        gameState = 'dying';
+        dyingTime = 0;
+        player.velocity = player.y < 60 ? 140 : Math.min(player.velocity, -160);
         pauseButton.disabled = true;
+        updateStatus('墜落');
+    }
+
+    function finishGame() {
+        cancelAnimationFrame(animationFrame);
+        gameState = 'over';
+        draw();
         showOverlay('FLIGHT ENDED', `本局穿越 ${score} 道閘門`, `最高紀錄 ${highScore} 分。再試一次，飛得更遠。`, '再飛一次');
         updateStatus('飛行結束');
         liveRegion.textContent = `飛行結束，本局得分 ${score}`;

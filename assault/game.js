@@ -268,7 +268,7 @@
     function frame(now) {
         const elapsed = Math.min(.1, Math.max(0, (now - (previous || now)) / 1000)); previous = now;
         if (mode === 'running') {
-            accumulator += elapsed;
+            accumulator += elapsed * (renderer.timeScale?.() ?? 1);
             const input = target || { dx: (keys.has('arrowright') || keys.has('d') ? 1 : 0) - (keys.has('arrowleft') || keys.has('a') ? 1 : 0),
                 dy: (keys.has('arrowdown') || keys.has('s') ? 1 : 0) - (keys.has('arrowup') || keys.has('w') ? 1 : 0), focus: keys.has('shift') };
             while (accumulator >= 1 / 120) { game.update(1 / 120, input); accumulator -= 1 / 120; }

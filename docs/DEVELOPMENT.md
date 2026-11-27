@@ -145,6 +145,20 @@ globalThis.CashArcadeNeon?.apply(canvas, { theme, strength: 1 });
 - 光路拼接：第 1 關落速 0.85 → 0.70 秒、每級 −0.05；消除停頓 0.5 → 0.3 秒，改用動畫填滿。
 - 電路迷城：每步 0.15 秒不變，因為三星時間門檻綁在這個數值上。
 
+## 蒸汽前線模組（cogfront）
+
+| 檔案 | 職責 |
+| --- | --- |
+| `cogfront/data.js` | 主角、五種兵種、五種敵人、兩名頭目、8 關波次（駐軍、高峰、細流）與升級表 |
+| `cogfront/engine.js` | 120 Hz 固定步長規則，以 seed 決定隨機；輸入以 `attack()`、`skill()`、`dodge()`、`deploy()`、`toggleOrder()` 排入下一步，事件由 `drain()` 輸出 |
+| `cogfront/renderer.js` | 五層視差場景、程式關節動畫角色、頭目預警、HUD；使用 `arcade-fx.js`，不套霓虹光暈與 CRT |
+| `cogfront/art.js`、`cogfront/art/files.js` | 74 個 CG 槽位；只載入 `files.js` 列出的檔案，其餘維持程式繪製 |
+| `cogfront/storage.js`、`input.js`、`music.js`、`game.js` | 存檔與工坊、鍵盤／觸控、四首原創進行曲、頁面流程 |
+
+關卡格式：`garrisons` 是戰線上待命的駐軍（前線接近 430 px 內啟動），`peaks` 是依時間送出的增援（從畫面右外側進場），`trickle` 是穩定的細流。閘門與頭目受隊長傷害分別只吃 40%、60%，攻城靠士兵。`tests/cogfront-balance.mjs` 的自動駕駛只送出玩家按鍵，用來確認每關可過、首次接敵在 5 秒內、各關用時。
+
+美術 CG 由 [COGFRONT 美術規格](COGFRONT_ART_SPEC.md) 定義（該文件由 `cogfront/art.js` 的槽位產生）。新增圖檔時只需放進 `cogfront/art/` 並列入 `files.js`；`tests/cogfront-art-spec.test.mjs` 會檢查列出的檔案確實存在且是定義過的槽位。封面暫用無文字 SVG `assets/covers/cogfront.svg`，生成 JPEG 後依規格替換。
+
 ## 路徑、圖像與版本
 
 公開網站位於 `/CashArcade/`，所以站內資源使用 `./`、`../`；不要用 `/audio.js` 或 `/snake/` 這類會跑到網域根目錄的絕對路徑。付款 Origin 是網域層級，和遊戲路徑不同，詳見[付款文件](STORAGE_AND_PAYMENTS.md)。

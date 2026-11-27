@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-test('homepage exposes fifteen games and resolves local assets under the Pages subpath',()=>{
-    const home=readFileSync(new URL('../index.html',import.meta.url),'utf8');assert.equal([...home.matchAll(/class="game-card /g)].length,15);assert.match(home,/15 MACHINES ONLINE/);assert.match(home,/href="\.\/arena\/"/);assert.match(home,/href="\.\/asteroids\/"/);assert.match(home,/href="\.\/bubbles\/"/);assert.match(home,/href="\.\/aurora\/"/);
-    for(const page of ['index.html','arena/index.html','tests/arena-gallery.html','tests/arena-playtest.html','asteroids/index.html','tests/asteroids-gallery.html','bubbles/index.html','tests/bubbles-gallery.html','aurora/index.html','tests/aurora-gallery.html']){
+test('homepage exposes sixteen games and resolves local assets under the Pages subpath',()=>{
+    const home=readFileSync(new URL('../index.html',import.meta.url),'utf8');assert.equal([...home.matchAll(/class="game-card /g)].length,16);assert.match(home,/16 MACHINES ONLINE/);assert.match(home,/href="\.\/cogfront\/"/);assert.match(home,/href="\.\/arena\/"/);assert.match(home,/href="\.\/asteroids\/"/);assert.match(home,/href="\.\/bubbles\/"/);assert.match(home,/href="\.\/aurora\/"/);
+    for(const page of ['index.html','arena/index.html','tests/arena-gallery.html','tests/arena-playtest.html','asteroids/index.html','tests/asteroids-gallery.html','bubbles/index.html','tests/bubbles-gallery.html','aurora/index.html','tests/aurora-gallery.html','cogfront/index.html']){
         const html=readFileSync(new URL('../'+page,import.meta.url),'utf8'),base=new URL(page,'https://example.test/CashArcade/');
         for(const [,value] of html.matchAll(/(?:src|href)="([^"]+)"/g)){
             const url=new URL(value,base);if(url.origin!==base.origin)continue;assert.ok(url.pathname.startsWith('/CashArcade/'),url.href);

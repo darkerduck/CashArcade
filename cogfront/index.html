@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#140d08"><meta name="description" content="蒸汽前線 COGFRONT：免費橫向推線戰鬥。操縱黃銅隊長在最前線連斬放招，派出發條士兵跟進，攻破齒輪叛軍的八道防線與兩名頭目。">
+    <title>CashArcade — 蒸汽前線</title>
+    <link rel="icon" href="../favicon.ico?v=1" type="image/x-icon" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
+    <link rel="icon" href="../assets/brand/favicon-32.png?v=1" type="image/png" sizes="32x32">
+    <link rel="icon" href="../assets/brand/favicon-16.png?v=1" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../assets/brand/apple-touch-icon.png?v=1" sizes="180x180">
+    <link rel="manifest" href="../site.webmanifest?v=1">
+    <link rel="stylesheet" href="../arena/style.css?v=1"><link rel="stylesheet" href="../brand.css?v=2"><link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body><main class="shell">
+    <header class="site-header"><a class="brand" href="../" aria-label="CashArcade 首頁"><img class="brand-logo" src="../assets/brand/casharcade-logo.png?v=1" width="44" height="44" alt="" aria-hidden="true"><span><strong>CashArcade</strong><small>POCKET-SIZED ARCADE</small></span></a><div class="header-controls"><button id="sound-toggle" aria-label="關閉音效" aria-pressed="true">♪</button><button id="theme-toggle" aria-label="切換亮暗主題">◐</button></div></header>
+    <section class="heading"><div><p class="eyebrow">ARCADE 016 / STEAM LANE BATTLE</p><h1>蒸汽前線 <span>COGFRONT</span></h1></div><span class="online"><i></i> BOILER PRESSURE NOMINAL</span></section>
+    <div class="layout">
+        <section class="machine" id="machine" aria-label="蒸汽前線遊戲機台">
+            <div class="hud"><div><small>STAGE / 關卡</small><strong id="stage-label">01 / 08</strong></div><div><small>COINS / 齒輪幣</small><strong id="coins">0</strong></div><div><small>KILLS / 擊破</small><strong id="kills">0</strong></div></div>
+            <div class="battlefield">
+                <canvas id="game-canvas" width="960" height="540" tabindex="0" aria-label="橫向戰線。A／D 或方向鍵移動，J 連斬，K 衝擊波，L 突進，U 超載，空白鍵翻滾，1–5 派兵，Q 切換陣形。"></canvas>
+                <div class="overlay" id="overlay">
+                    <p class="eyebrow" id="overlay-kicker">LEAD FROM THE FRONT</p>
+                    <div class="emblem" aria-hidden="true">⚙</div>
+                    <h2 id="overlay-title">黃銅隊長，前線需要你。</h2>
+                    <p id="overlay-message">在最前線揮刃開路，用蒸汽壓派出發條士兵跟進，攻破齒輪叛軍的鑄造閘門。</p>
+                    <p id="overlay-stars" class="stars" hidden></p>
+                    <div id="stage-grid" class="stage-grid" hidden></div>
+                    <div class="overlay-buttons"><button id="start" class="primary">出擊 →</button><button id="secondary" hidden>選擇關卡</button></div>
+                    <small id="overlay-hint">全程免費 · 8 關戰役 · 進度自動保存</small>
+                </div>
+            </div>
+            <div class="steam-bar" aria-label="蒸汽壓"><span>蒸汽壓</span><div class="meter" id="steam" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="45"><b id="steam-fill"></b></div><strong id="steam-text">45</strong></div>
+            <div class="troop-bar" id="troops" role="group" aria-label="派兵"></div>
+            <div class="touch-pad" role="group" aria-label="觸控操作">
+                <div class="pad-move"><button id="t-left" aria-label="向左">◀</button><button id="t-right" aria-label="向右">▶</button></div>
+                <div class="pad-skills"><button id="t-attack" class="blade" aria-label="連斬">斬<small>J</small></button><button id="t-burst" aria-label="蒸汽衝擊波">衝擊<small>K</small></button><button id="t-charge" aria-label="活塞突進">突進<small>L</small></button><button id="t-over" aria-label="超載">超載<small>U</small></button><button id="t-dodge" aria-label="翻滾">翻滾<small>␣</small></button><button id="t-order" aria-label="切換陣形">陣形<small>Q</small></button></div>
+            </div>
+            <div class="actions"><button id="pause" disabled>暫停</button><button id="retry" disabled>重打本關</button><button id="stages">關卡</button><button id="fullscreen">全螢幕</button></div>
+        </section>
+        <aside class="deck">
+            <section class="mission-panel"><p class="eyebrow" id="zone">城郊鐵道</p><div class="mission-title"><h2 id="stage-name">鐵道郊線</h2><span id="stage-stars">☆☆☆</span></div><p id="status" role="status">選擇關卡後出擊</p><div class="progress" id="progress" role="progressbar" aria-label="戰線推進" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress-fill"></span></div><p class="best" id="best">最佳時間 —</p></section>
+            <section class="shop" aria-label="工坊升級"><div class="shop-top"><p class="eyebrow">WORKSHOP / 工坊</p><strong id="shop-coins">0 ⚙</strong></div><p class="shop-note" id="shop-note">關卡之間用齒輪幣升級隊長、招式與兵種。</p><div id="shop-list" class="shop-list"></div></section>
+            <section class="music-panel" aria-label="背景音樂控制"><div class="music-top"><p class="eyebrow">ORIGINAL BRASS CHIP</p><button id="music-toggle" aria-label="關閉背景音樂" aria-pressed="true">♫ 音樂：開</button></div><p id="music-track">鐵道進行曲 · 待命</p><label for="music-volume">音樂音量 <output id="music-volume-value" for="music-volume">65%</output></label><input id="music-volume" type="range" min="0" max="100" step="5" value="65"><button id="preview-sound">♪ 試播連斬與派兵</button></section>
+            <details class="guide"><summary>戰地手冊 ＋</summary>
+                <p><kbd>A</kbd><kbd>D</kbd> / <kbd>←</kbd><kbd>→</kbd> 移動 · <kbd>J</kbd> 連斬（按住連續）· <kbd>K</kbd> 蒸汽衝擊波 · <kbd>L</kbd> 活塞突進 · <kbd>U</kbd> 超載 · <kbd>Space</kbd> 翻滾 · <kbd>1</kbd>–<kbd>5</kbd> 派兵 · <kbd>Q</kbd> 陣形 · <kbd>P</kbd>/<kbd>Esc</kbd> 暫停 · <kbd>R</kbd> 重打</p>
+                <p>士兵預設跟在隊長身後推進；「衝鋒」全軍往前壓，「固守」停在目前集結線。閘門與頭目對隊長的刀刃有裝甲，攻城要靠士兵——鉚釘槍兵對重甲加倍。隊長陣亡 5 秒後從列車重新出擊；列車被毀才算失敗。</p>
+                <p>紅色地面是頭目預警，翻滾或後退閃開。過關星章：完成、時間內、列車耐久 70% 以上。</p>
+                <label class="check"><input type="checkbox" id="motion"> 減少動態效果（關閉震動與停頓）</label>
+            </details>
+        </aside>
+    </div>
+    <p id="storage-note" class="notice" role="status"></p><p id="live" class="sr-only" aria-live="polite"></p>
+    <footer><a href="../">← ALL GAMES</a><span>LEAD THE LINE. THE LINE FOLLOWS.</span><a href="https://github.com/darkerduck/CashArcade">SOURCE ↗</a></footer>
+</main>
+<script src="../audio.js?v=11" defer></script><script src="../music.js?v=3" defer></script><script src="../arcade-fx.js?v=1" defer></script>
+<script src="./data.js?v=1" defer></script><script src="./engine.js?v=1" defer></script><script src="./storage.js?v=1" defer></script><script src="./art/files.js?v=1" defer></script><script src="./art.js?v=1" defer></script><script src="./renderer.js?v=1" defer></script><script src="./input.js?v=1" defer></script><script src="./music.js?v=1" defer></script><script src="./game.js?v=1" defer></script>
+</body></html>

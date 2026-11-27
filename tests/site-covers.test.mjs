@@ -5,11 +5,12 @@ import { readFileSync, existsSync } from 'node:fs';
 const root = new URL('../', import.meta.url);
 const html = readFileSync(new URL('index.html', root), 'utf8');
 
-test('homepage resolves fifteen covers, including the approved text-free Assault artwork', () => {
+test('homepage resolves sixteen covers, including the approved text-free Assault artwork', () => {
     const covers = [...html.matchAll(/<img\b[^>]*src="(\.\/assets\/covers\/[^"?]+)(?:\?[^"\s]*)?"[^>]*>/g)];
-    assert.equal(covers.length, 15);
+    assert.equal(covers.length, 16);
     for (const [tag, src] of covers) {
-        if (src.endsWith('/arena.svg')) {
+        // Text-free SVG covers: Arena, and COGFRONT until its generated JPEG (docs/COGFRONT_ART_SPEC.md) lands.
+        if (src.endsWith('/arena.svg') || src.endsWith('/cogfront.svg')) {
             const svg = readFileSync(new URL(src, root), 'utf8');
             assert.match(svg, /<svg/); assert.doesNotMatch(svg, /<text[ >]/i);
             continue;

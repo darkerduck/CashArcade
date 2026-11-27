@@ -78,6 +78,7 @@ h1 span { color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--
 .asteroids-card .play-link { color: var(--cyan); }
 .bubbles-card .play-link { color: var(--cyan); }
 .aurora-card .play-link { color: var(--cyan); }
+.cogfront-card .play-link { color: #e0b25a; }
 .flappy-card .play-link { color: var(--green); }
 .play-link span { font-size: 1.25rem; transition: transform 130ms ease; }
 footer { justify-content: space-between; gap: 16px; padding: 28px 4px 0; color: var(--muted); font-size: .63rem; letter-spacing: .08em; }

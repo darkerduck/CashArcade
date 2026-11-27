@@ -58,6 +58,10 @@
 
 `{game}` 代表 `snake`、`breakout`、`flappy`、`missile`、`assault` 或 `arena`，不是實際鍵中的大括號。SDK 格式由外部版本管理，不能把上表當作可自行重建訂單的規格。
 
+### 蒸汽前線
+
+全程免費，不載入 CashLink SDK。`casharcade-cogfront-v1` 保存已解鎖關卡、齒輪幣、各項升級等級、每關最高星章與最快時間、過關次數，以及減少動態效果設定。只保存關卡之間的進度，不恢復進行中的戰鬥；重載後從關卡選單出擊。資料損壞或儲存不可用時從新進度開始，仍可遊玩，頁面會提示。音效與音樂沿用 `casharcade-cogfront-sound-muted`、`casharcade-cogfront-music-*`。
+
 ### 極光疾馳
 
 全程免費。`casharcade-aurora-records-v1` 保存已解鎖和最後選擇的關卡，以及各關最快完賽時間、最高分與最多超車數。重載回到該關待命畫面。儲存失敗不妨礙當頁遊玩及解鎖。音效鍵為 `casharcade-aurora-sound-muted`，音樂鍵為 `casharcade-aurora-muted` 和 `casharcade-aurora-volume`。

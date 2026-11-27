@@ -1,6 +1,6 @@
 # CashArcade
 
-一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有十五款遊戲、原創合成配樂與獨立音效設定。深色主題下每款遊戲都有霓虹燈光暈（2D 遊戲共用 [neon-glow.js](neon-glow.js) 後製，3D 貪吃蛇使用 Three.js bloom）；淺色主題自動關閉光暈。碎星獵手、霓虹突圍、重力快遞、光路拼接與電路迷城另有共用的街機手感特效（命中停頓、震動、粒子、得分飄字、關卡字卡），並支援高解析度螢幕。配樂與音效共用合成器，具有疊層音色、立體聲聲像、房間殘響與回音、衍生 pad 與樂句過門鼓。
+一座使用 HTML、CSS、JavaScript、Canvas 與 Web Audio API 製作的純前端瀏覽器街機，目前有十六款遊戲、原創合成配樂與獨立音效設定。深色主題下每款遊戲都有霓虹燈光暈（2D 遊戲共用 [neon-glow.js](neon-glow.js) 後製，3D 貪吃蛇使用 Three.js bloom）；淺色主題自動關閉光暈。碎星獵手、霓虹突圍、重力快遞、光路拼接與電路迷城另有共用的街機手感特效（命中停頓、震動、粒子、得分飄字、關卡字卡），並支援高解析度螢幕。配樂與音效共用合成器，具有疊層音色、立體聲聲像、房間殘響與回音、衍生 pad 與樂句過門鼓。
 
 🎮 **[進入 CashArcade](https://darkerduck.github.io/CashArcade/)** · [GitHub 原始碼](https://github.com/darkerduck/CashArcade)
 
@@ -8,7 +8,7 @@
 
 | 想了解什麼 | 文件 |
 | --- | --- |
-| 十五款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
+| 十六款遊戲的鍵盤／手機操作、玩法、聲音與常見問題 | [玩家指南](docs/PLAYER_GUIDE.md) |
 | 本機環境、檔案分工、關卡、音訊介面與素材維護 | [開發指南](docs/DEVELOPMENT.md) |
 | 哪些操作收費、哪些進度可恢復、儲存鍵與付款錯誤 | [存檔與付款](docs/STORAGE_AND_PAYMENTS.md) |
 | 測試指令、瀏覽器驗收、GitHub Pages 發布與排錯 | [測試與發布](docs/TESTING_AND_DEPLOYMENT.md) |
@@ -64,6 +64,7 @@ Logo以內建image_gen（imagegen技能）生成，採青藍／薄荷綠CA字母
 
 - [霓虹強襲](https://darkerduck.github.io/CashArcade/assault/)：三關直向射擊戰役，自動開火，拾取散射、雷射和雙翼護航，拆解三大機械頭目。電腦與手機皆可玩；死亡後再開局須解鎖。
 
+- [蒸汽前線](cogfront/)：蒸汽龐克橫向推線戰鬥。親自操縱黃銅隊長在最前線連斬、放蒸汽衝擊波與活塞突進，用蒸汽壓派出五種發條士兵在身後跟進，攻破 8 道防線與兩名巨械頭目；關間用齒輪幣升級。全程免費。美術目前由 Canvas 程式繪製，CG 規格與提示詞見 [COGFRONT 美術規格](docs/COGFRONT_ART_SPEC.md)。
 - [霓虹突圍](arena/)：12 波競技場射擊，電弧、衝刺與三選一升級，六首原創 8-bit 配樂，全程免費。
 - [碎星獵手](asteroids/)：九關慣性太空射擊，四邊環繞、隕石分裂、致命黑洞與三艘可分段擊破的頭目。全程免費。
 - [光泡連鎖](bubbles/)：十八關泡泡射擊。反彈瞄準、同色消除、掉落連鎖與三種道具。各關不計時，累積失手才降板。全程免費。

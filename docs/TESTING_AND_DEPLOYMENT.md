@@ -22,6 +22,8 @@ node --test tests/snake-tutorial.test.mjs tests/snake-tutorial-ui.test.mjs
 node --test tests/breakout-engine.test.mjs tests/breakout-payment.test.mjs
 node --test tests/missile.test.mjs tests/missile-ui.test.mjs
 node --test tests/arena*.test.mjs tests/audio.test.mjs
+node --test tests/cogfront-*.test.mjs   # 規則、平衡自動駕駛、畫面、CG 規格
+node tests/cogfront-balance.mjs         # 列出三個 seed 的每關用時、首次接敵、隊長陣亡次數
 node --test tests/assault.test.mjs tests/assault-ui.test.mjs tests/assault-renderer.test.mjs
 git diff --check
 ```

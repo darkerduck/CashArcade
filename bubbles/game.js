@@ -230,7 +230,8 @@
                 }
                 dirty = true;
             } else accumulator = 0;
-            if (renderer.offset || renderer.badge || renderer.parts.length || renderer.rings.length) {
+            // Keep drawing while effects run, and while playing so the mascot stays alive.
+            if (renderer.busy || (view === 'playing' && !renderer.reduced)) {
                 const wasDescending = renderer.offset;
                 renderer.update(dt);
                 if (wasDescending && !renderer.offset) hud();

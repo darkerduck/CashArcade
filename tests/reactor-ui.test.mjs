@@ -48,7 +48,7 @@ function harness(denyStorage = false) {
 test('page has Traditional Chinese controls, ordered local scripts and no checkout dependency', () => {
     assert.match(html, /lang="zh-Hant"/); assert.match(html, /永遠免費/);
     const scripts = [...html.matchAll(/<script src="([^"?]+)/g)].map(m => m[1]);
-    assert.deepEqual(scripts, ['../audio.js', '../music.js', '../expansion-scores.js', './engine.js', './renderer.js', '../neon-glow.js', './game.js']);
+    assert.deepEqual(scripts, ['../audio.js', '../music.js', '../expansion-scores.js', './engine.js', '../arcade-fx.js', './renderer.js', '../neon-glow.js', './game.js']);
     for (const path of scripts) assert.ok(existsSync(new URL('../reactor/' + path, import.meta.url)), path);
     assert.doesNotMatch(html, /https?:\/\/[^" ]+\.js|payment-gate|CashLink/i);
     const ids = [...html.matchAll(/id="([^"]+)"/g)].map(m => m[1]); assert.equal(new Set(ids).size, ids.length);
@@ -163,7 +163,7 @@ test('nudge has a separate mobile row, visible penalty, keyboard shortcut and fr
     assert.match(html, /class="touch-controls"[\s\S]*id="right"[\s\S]*class="nudge-controls"/);
     assert.match(html, /id="nudge"[^>]*type="button"[^>]*aria-keyshortcuts="Z"[^>]*aria-describedby="nudge-status nudge-help"/);
     assert.match(html, /id="nudge-help">Z 或點按搖晃。[^<]*TILT[^<]*擋板、得分與救球/);
-    for (const [asset, version] of [['style.css', 2], ['engine.js', 3], ['renderer.js', 2], ['game.js', 3]]) assert.ok(html.includes(`./${asset}?v=${version}`));
+    for (const [asset, version] of [['style.css', 2], ['engine.js', 3], ['renderer.js', 3], ['game.js', 4]]) assert.ok(html.includes(`./${asset}?v=${version}`));
     const css = source('reactor/style.css');
     assert.match(css, /\.nudge-controls\{display:grid;grid-template-columns:minmax\(135px,\.9fr\) minmax\(0,1fr\)/);
     assert.match(css, /\.nudge-controls button\{min-height:48px/);

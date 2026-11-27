@@ -22,16 +22,41 @@
             this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.elapsed = 0;
             this.particles = []; this.pulses = []; this.labels = []; this.trails = new Map(); this.cache = null; this.shake = 0;
             this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+            this.fx = root.CashArcadeFX ? root.CashArcadeFX.createFx({ reduced: this.reduced, maxParticles: 260, maxShake: 11 }) : null;
+            this.punch = new Map(); this.corePunch = 0; this.ratio = 1;
         }
-        reset() { this.particles.length = 0; this.pulses.length = 0; this.labels.length = 0; this.trails.clear(); this.shake = 0; }
+        reset() { this.particles.length = 0; this.pulses.length = 0; this.labels.length = 0; this.trails.clear(); this.shake = 0; this.punch.clear(); this.corePunch = 0; if (this.fx) this.fx.clear(); }
+        timeScale() { return this.fx ? this.fx.timeScale() : 1; }
+        get busy() { return Boolean(this.fx && this.fx.busy); }
+        // Big-hit feedback: bumper squash, core punch, hit-stop, shake and table-wide cards.
+        impact(e) {
+            const fx = this.fx;
+            if (e.type === 'bumper') { this.punch.set(e.index, 1); if (fx) fx.shake(.1); }
+            if (e.type === 'core') { this.corePunch = 1; if (fx) { fx.shake(.28); fx.hitStop(.035); } }
+            if (!fx) return;
+            if (e.type === 'launch') { fx.shake(.18); fx.burst(e.x, e.y, { color: '#ffd08b', count: 10, speed: 260, angle: -Math.PI / 2, spread: 1, life: .4 }); }
+            if (e.type === 'rail') fx.burst(e.x, e.y, { kind: 'ring', color: '#61efff', size: 70, life: .4 });
+            if (e.type === 'overload') {
+                fx.hitStop(.12); fx.slowMotion(.7, .35); fx.shake(.85); fx.flash('#ffc875', .3, .4);
+                fx.banner('OVERLOAD', 'MULTIBALL ×' + (e.balls || 3), { color: '#ffc875', duration: 1.4 });
+            }
+            if (e.type === 'mission') { fx.banner('MISSION ' + ((e.index ?? 0) + 1) + ' CLEAR', e.name || '', { color: '#5ce4e6', duration: 1.3 }); fx.flash('#5ce4e6', .12, .25); }
+            if (e.type === 'extraBall') { fx.banner('EXTRA BALL', '', { color: '#7de8ba', duration: 1.3 }); fx.shake(.3); }
+            if (e.type === 'drain') { fx.shake(.35); fx.flash('#ff789b', .18, .3); fx.burst(e.x, H - 30, { color: '#ff789b', count: 14, speed: 240, angle: -Math.PI / 2, spread: 1.4, life: .5 }); }
+            if (e.type === 'save') fx.popup(291, 820, 'BALL SAVED', { color: '#7de8ba', size: 18 });
+            if (e.type === 'tilt') { fx.shake(.7); fx.flash('#ff789b', .3, .35); }
+            if (e.type === 'gameover') fx.banner('GAME OVER', String(e.score ?? ''), { color: '#ff789b', duration: 1.8 });
+        }
         consume(events) {
             for (const e of events) {
+                this.impact(e);
                 if (e.type === 'nudge') {
                     if (!this.reduced) this.shake = .22;
                     this.pulses.push({ x: 291, y: 720, life: .5, color: '#ffd08b', big: false });
                 }
                 if (e.type === 'score') {
-                    this.labels.push({ x: e.x || 290, y: e.y || 460, text: '+' + e.points, life: .9, color: e.points >= 1800 ? '#ffc875' : '#c2f8ff' });
+                    if (this.fx && e.points >= 600) this.fx.popup(e.x || 290, (e.y || 460) - 10, '+' + e.points, { color: e.points >= 1800 ? '#ffc875' : '#c2f8ff', size: e.points >= 1800 ? 24 : 18 });
+                    else this.labels.push({ x: e.x || 290, y: e.y || 460, text: '+' + e.points, life: .9, color: e.points >= 1800 ? '#ffc875' : '#c2f8ff' });
                 }
                 if (['bumper', 'core', 'rail', 'flipper', 'sling', 'overload'].includes(e.type)) {
                     const color = e.type === 'overload' ? '#ffc875' : e.color || '#61efff';
@@ -45,9 +70,10 @@
             this.particles = this.particles.slice(-140); this.labels = this.labels.slice(-14); this.pulses = this.pulses.slice(-20);
         }
         background(theme) {
-            if (this.cache && this.theme === theme) return this.cache;
-            this.theme = theme;
-            const c = document.createElement('canvas'); c.width = W; c.height = H; const ctx = c.getContext('2d');
+            if (this.cache && this.theme === theme && this.cacheRatio === this.ratio) return this.cache;
+            this.theme = theme; this.cacheRatio = this.ratio;
+            const c = document.createElement('canvas'); c.width = Math.round(W * this.ratio); c.height = Math.round(H * this.ratio); const ctx = c.getContext('2d');
+            if (ctx.setTransform) ctx.setTransform(this.ratio, 0, 0, this.ratio, 0, 0);
             const bg = ctx.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#11253e'); bg.addColorStop(.5, '#081323'); bg.addColorStop(1, '#16142e');
             ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
             // The playfield is built from layered metal, etched circuits and rubber rails.
@@ -111,7 +137,13 @@
             this.cache = c; return c;
         }
         bumper(ctx, item, i, game) {
-            const lit = game.litBumpers[i] || game.overload > 0, t = this.elapsed, color = item.color;
+            const punch = this.reduced ? 0 : this.punch.get(i) || 0;
+            if (punch > 0) { ctx.save(); ctx.translate(item.x, item.y); ctx.scale(1 + punch * .14, 1 + punch * .14); ctx.translate(-item.x, -item.y); }
+            this.bumperBody(ctx, item, i, game, punch);
+            if (punch > 0) { ctx.globalAlpha = punch * .7; circle(ctx, item.x, item.y - 3, item.r - 4, '#ffffff'); ctx.globalAlpha = 1; ctx.restore(); }
+        }
+        bumperBody(ctx, item, i, game, punch) {
+            const lit = game.litBumpers[i] || game.overload > 0 || punch > .3, t = this.elapsed, color = item.color;
             circle(ctx, item.x + 4, item.y + 8, item.r + 8, '#020a13');
             const metal = ctx.createLinearGradient(item.x, item.y - item.r, item.x, item.y + item.r);
             metal.addColorStop(0, '#6a869c'); metal.addColorStop(.18, '#293953'); metal.addColorStop(1, '#111726');
@@ -152,13 +184,22 @@
         }
         draw(game, delta = 0, theme = 'dark') {
             const dt = Math.max(0, Math.min(.04, delta)); if (game.state === 'running') this.elapsed += dt;
-            const ctx = this.ctx; ctx.clearRect(0, 0, W, H); ctx.save();
-            if (game.state === 'running' && this.shake > 0) {
+            if (this.fx) { this.fx.setReduced(this.reduced); this.fx.update(Math.max(0, Math.min(.1, delta))); }
+            for (const [k, v] of this.punch) { const next = v - dt * 5; if (next <= 0) this.punch.delete(k); else this.punch.set(k, next); }
+            this.corePunch = Math.max(0, this.corePunch - dt * 4);
+            this.ratio = root.CashArcadeFX ? root.CashArcadeFX.fitCanvas(this.canvas, W, H) : 1;
+            const ctx = this.ctx; if (ctx.setTransform) ctx.setTransform(this.ratio, 0, 0, this.ratio, 0, 0); ctx.clearRect(0, 0, W, H); ctx.save();
+            if (this.fx) this.fx.apply(ctx);
+            else if (game.state === 'running' && this.shake > 0) {
                 this.shake = Math.max(0, this.shake - dt);
                 ctx.translate(Math.sin(this.elapsed * 75) * this.shake * 14, -Math.sin(this.shake / .22 * Math.PI) * 3);
             }
-            ctx.drawImage(this.background(theme), 0, 0);
-            BUMPERS.forEach((b, i) => this.bumper(ctx, b, i, game)); this.core(ctx, game);
+            ctx.drawImage(this.background(theme), 0, 0, W, H);
+            BUMPERS.forEach((b, i) => this.bumper(ctx, b, i, game));
+            const cp = this.reduced ? 0 : this.corePunch;
+            if (cp > 0) { ctx.save(); ctx.translate(CORE.x, CORE.y); ctx.scale(1 + cp * .1, 1 + cp * .1); ctx.translate(-CORE.x, -CORE.y); }
+            this.core(ctx, game);
+            if (cp > 0) { ctx.globalAlpha = cp * .5; circle(ctx, CORE.x, CORE.y, CORE.r, '#ffffff'); ctx.globalAlpha = 1; ctx.restore(); }
             // A dotted route ties each mission to its corresponding mechanism.
             const active = game.missionIndex;
             for (const [i, x, y] of [[0, 291, 161], [1, 83, 440], [1, 491, 440], [2, 291, 588]]) {
@@ -222,7 +263,9 @@
             }
             if (game.ballSave > 0 && !game.staged) text(ctx, 'BALL SAVE  ·  ' + Math.ceil(game.ballSave), 291, 865, 10, '#7de8ba', 700);
             else if (game.balls.length > 1) text(ctx, 'MULTIBALL  ·  ' + game.balls.length, 291, 865, 10, '#ffcc83', 700);
+            if (this.fx) this.fx.draw(ctx, W, H);
             ctx.restore();
+            if (theme !== 'light' && root.CashArcadeFX) root.CashArcadeFX.crt(ctx, W, H, .045);
         }
     }
     root.ReactorPinballRenderer = { Renderer };

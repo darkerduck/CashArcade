@@ -12,10 +12,40 @@
         constructor(canvas, { reducedMotion = false } = {}) {
             this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.reduced = reducedMotion;
             this.particles = []; this.rings = []; this.bolts = []; this.trails = new Map(); this.shake = 0; this.lowFX = false;
+            this.fx = globalThis.CashArcadeFX?.createFx({ reduced: reducedMotion, maxParticles: 320, maxShake: 10 }) ?? null;
+            this.ghosts = []; this.kick = 0; this.last = 0;
+        }
+        timeScale() { return this.fx?.timeScale() ?? 1; }
+        // Arcade feedback layered on top of the original rings/particles: shards, popups, shake, hit-stop and stage cards.
+        punch(e, game) {
+            const fx = this.fx, color = game.level.palette; if (!fx) return;
+            const x = e.x ?? W / 2, y = e.y ?? H / 2;
+            if (e.name === 'brick') {
+                const b = game.bricks.find(b => b.hp === 0 && Math.abs(b.x + b.w / 2 - x) < .5 && Math.abs(b.y + b.h / 2 - y) < .5);
+                if (b) { this.ghosts.push({ x: b.x, y: b.y, w: b.w, h: b.h, hex: b.hex, born: game.time, color: color[b.id % 3] }); this.ghosts = this.ghosts.slice(-24); }
+                if (!this.lowFX) fx.burst(x, y, { kind: 'shard', color: color[0], count: 6, speed: 190, life: .5, angle: Math.atan2(-(e.ny || -1), e.nx || 0), spread: 2.4, gravity: 300 });
+                if ((e.combo || 0) > 2) fx.popup(x, y - 6, `×${e.combo}`, { color: color[2], size: 14 + Math.min(10, e.combo) });
+            } else if (e.name === 'crack') fx.burst(x, y, { color: '#ffffff', count: 4, speed: 150, life: .25, size: 1.6 });
+            else if (e.name === 'paddle' || e.name === 'strong') {
+                this.kick = 1;
+                fx.burst(x, PADDLE_Y, { color: e.name === 'strong' ? '#ffdd73' : color[0], count: e.name === 'strong' ? 12 : 5, speed: 180, angle: -Math.PI / 2, spread: 1.8, life: .3, size: 1.8 });
+                if (e.name === 'strong') { fx.shake(.22); fx.hitStop(.035); }
+            } else if (e.name === 'explosion' || e.name === 'fire') { fx.shake(.32); fx.hitStop(.03); fx.burst(x, y, { kind: 'ring', color: '#ff936c', size: 80, life: .4 }); }
+            else if (e.name === 'power') fx.popup(x, y - 30, POWERS[e.power]?.name ?? '', { color: POWERS[e.power]?.bad ? '#ff6688' : '#79ffcd', size: 15 });
+            else if (e.name === 'life') { fx.shake(.65); fx.flash('#ff5f7e', .3, .3); }
+            else if (e.name === 'wave') fx.banner(`WAVE ${e.wave + 1}/${game.level.waves}`, game.level.name, { color: color[0], duration: 1 });
+            else if (e.name === 'boss') { fx.banner('WARNING', `CORE PHASE ${(e.phase ?? 0) + 1}`, { color: '#ff6688', duration: 1.2 }); fx.shake(.4); }
+            else if (e.name === 'bossDown') {
+                fx.hitStop(.18); fx.slowMotion(.9, .3); fx.shake(1); fx.flash('#ffffff', .45, .4);
+                for (const k of [0, 1, 2]) fx.burst(x, y, { color: color[k], count: 26, speed: 380, life: .9, size: 2.6 });
+                fx.burst(x, y, { kind: 'ring', color: color[1], size: 220, life: .8 });
+            } else if (e.name === 'level') fx.flash(color[0], .18, .35);
+            else if (e.name === 'switch') fx.popup(x, y - 10, 'GATE OPEN', { color: color[1], size: 13 });
         }
         accept(events, game) {
             const color = game.level.palette;
             for (const e of events) {
+                this.punch(e, game);
                 if (['brick','crack','explosion','power','strong','switch','bossDown','level','win'].includes(e.name)) {
                     const large = ['explosion','bossDown','win'].includes(e.name);
                     this.rings.push({ x: e.x ?? W / 2, y: e.y ?? H / 2, born: game.time, color: e.name === 'power' ? color[2] : color[0], life: large ? 1 : .5, size: large ? 140 : 46 });
@@ -27,7 +57,7 @@
                     if (!this.reduced && (large || e.name === 'strong')) this.shake = Math.min(5, this.shake + 2);
                 }
                 if (e.name === 'lightning') this.bolts.push({ ...e, born: game.time });
-                if ((e.combo || 0) > 2) this.rings.push({ x: e.x, y: e.y, born: game.time, life: .6, text: `×${e.combo}`, color: color[2] });
+                if ((e.combo || 0) > 2 && !this.fx) this.rings.push({ x: e.x, y: e.y, born: game.time, life: .6, text: `×${e.combo}`, color: color[2] });
             }
             this.particles = this.particles.slice(this.lowFX ? -100 : -400); this.rings = this.rings.slice(this.lowFX ? -16 : -48); this.bolts = this.bolts.slice(-18);
         }
@@ -144,14 +174,27 @@
         }
         draw(g, { light = false } = {}) {
             const c = this.ctx, t = g.time, colors = g.level.palette;
+            const now = globalThis.performance?.now?.() ?? 0, dt = this.last ? Math.min(.1, Math.max(0, (now - this.last) / 1000)) : 0; this.last = now;
+            this.fx?.update(dt); this.kick = Math.max(0, this.kick - dt * 6);
+            const ratio = globalThis.CashArcadeFX?.fitCanvas(this.canvas, W, H) ?? 1;
+            if (typeof c.setTransform === 'function') c.setTransform(ratio, 0, 0, ratio, 0, 0);
             c.save(); this.background(g, light);
-            if (!this.reduced && g.state === 'running' && this.shake > .1) { c.translate((Math.random() - .5) * this.shake, (Math.random() - .5) * this.shake); this.shake *= .86; }
+            if (this.fx) this.fx.apply(c);
+            else if (!this.reduced && g.state === 'running' && this.shake > .1) { c.translate((Math.random() - .5) * this.shake, (Math.random() - .5) * this.shake); this.shake *= .86; }
             this.fixtures(g, light);
             if (g.level.boss) {
                 const core = g.bricks.find(b => b.bossRole === 'core'), locked = g.bricks.some(b => b.bossRole === 'node' && b.hp > 0);
                 if (core && locked) { c.save(); c.lineWidth = 2; this.glow(light ? '#8b4c88' : colors[1], 15); c.setLineDash([12, 7]); c.beginPath(); c.ellipse(core.x + core.w / 2, core.y + core.h / 2, core.w / 2 + 26, core.h / 2 + 20, 0, 0, TAU); c.stroke(); c.restore(); }
             }
             for (const b of g.bricks) if (b.hp !== 0) this.drawBrick(b, g, light);
+            this.ghosts = this.ghosts.filter(q => g.time - q.born < .28 && g.time >= q.born);
+            for (const q of this.ghosts) {
+                const a = (g.time - q.born) / .28, grow = 1 + a * .35;
+                c.save(); c.globalAlpha = 1 - a; this.glow(light ? '#4b5b80' : '#ffffff', 14); c.lineWidth = 2.4 * (1 - a) + .5;
+                c.fillStyle = q.color + (light ? '44' : '88');
+                this.rect(q.x + q.w / 2 - q.w * grow / 2, q.y + q.h / 2 - q.h * grow / 2, q.w * grow, q.h * grow, 3);
+                if (a < .35) c.fill(); c.stroke(); c.restore();
+            }
             if(g.levelIndex===2)this.text('按住壓板 → 接球時放開 ↑',W/2,400,light?'#6a5198':colors[2],12);
             for (const i of g.items) { const p = POWERS[i.name], color = p.bad ? (light ? '#b91f53' : '#ff6688') : (light ? '#076f60' : '#79ffcd'); c.save(); this.glow(color, 14); this.rect(i.x - 15, i.y - 12, 30, 24, 5); c.fillStyle = light ? '#fff9ee' : '#092727'; c.fill(); c.stroke(); this.text(p.icon, i.x, i.y + 6, color, 17); c.restore(); }
             for (const s of g.shots) { this.glow(light ? '#985188' : '#ff73d7', 10); this.line(s.x, s.y, s.x, s.y + 16, c.strokeStyle, 3); }
@@ -162,19 +205,27 @@
                 const color = b.strongUntil > t ? '#ffdd73' : g.has('fire') ? '#ff936c' : g.has('pierce') ? '#d0a1ff' : light ? '#087f95' : '#aefff6';
                 c.save(); this.glow(color, 12);
                 for (let j = 1; j < trail.length; j++) { c.globalAlpha = j / trail.length * .55; this.line(trail[j-1].x, trail[j-1].y, trail[j].x, trail[j].y, color, b.r * (j / trail.length)); }
-                c.globalAlpha = 1; this.circle(b.x, b.y, b.r, color, true); this.circle(b.x - b.r * .2, b.y - b.r * .2, b.r * .32, light ? '#ffffff' : '#f6ffff', true);
+                c.globalAlpha = 1;
+                const speed = Math.hypot(b.vx || 0, b.vy || 0), stretch = this.reduced || b.attached ? 0 : Math.min(.35, speed / 2600);
+                if (stretch > .02) { c.beginPath(); c.ellipse(b.x, b.y, b.r * (1 + stretch), b.r * (1 - stretch * .45), Math.atan2(b.vy, b.vx), 0, TAU); c.fillStyle = color; c.fill(); }
+                else this.circle(b.x, b.y, b.r, color, true); this.circle(b.x - b.r * .2, b.y - b.r * .2, b.r * .32, light ? '#ffffff' : '#f6ffff', true);
                 if (b.strongUntil > t) { c.lineWidth = 1.5; this.circle(b.x, b.y, b.r + 5, color); } c.restore();
             }
             const charge = g.paddle.charging ? Math.min(1, (t - g.paddle.chargeAt) / .45) : 0;
             const release = g.paddle.releaseUntil > t;
-            c.save(); this.glow(light ? '#186c83' : release ? colors[2] : colors[0], 15); c.lineWidth = 2;
-            this.rect(g.paddle.x, PADDLE_Y + charge * 5, g.paddle.w, 14 - charge * 3, 6); c.fillStyle = light ? '#12617d' : '#0a5061'; c.fill(); c.stroke();
+            const kick = this.reduced ? 0 : this.kick * this.kick;
+            c.save(); this.glow(light ? '#186c83' : release ? colors[2] : colors[0], 15 + kick * 12); c.lineWidth = 2;
+            this.rect(g.paddle.x - kick * 4, PADDLE_Y + charge * 5 + kick * 3, g.paddle.w + kick * 8, 14 - charge * 3 - kick * 2, 6); c.fillStyle = light ? '#12617d' : '#0a5061'; c.fill(); c.stroke();
             this.line(g.paddle.x + 6, PADDLE_Y + 4 + charge * 5, g.paddle.x + g.paddle.w - 6, PADDLE_Y + 4 + charge * 5, release ? '#ffed91' : '#94fff3', 2);
             if (charge) { this.rect(g.paddle.x, PADDLE_Y + 21, g.paddle.w * charge, 3, 1); c.fillStyle = light ? '#9b6d1c' : '#ffe18c'; c.fill(); } c.restore();
             if (g.shield) { c.save(); this.glow(light ? '#796b27' : '#ffe89c', 12); this.line(0, H - 15, W, H - 15, c.strokeStyle, 3); this.text(`◇ ${g.shield}`, W - 30, H - 22, c.strokeStyle, 11); c.restore(); }
             this.particles = this.particles.filter(p => t - p.born < p.life);
             c.shadowBlur = 0;
-            for (const p of this.particles) { const a = t - p.born; c.globalAlpha = Math.max(0, 1 - a / p.life); c.fillStyle = p.color; c.fillRect(p.x + p.vx * a, p.y + p.vy * a + a * a * 75, p.size * 2, p.size); }
+            c.lineCap = 'round';
+            for (const p of this.particles) {
+                const a = t - p.born, x = p.x + p.vx * a, y = p.y + p.vy * a + a * a * 75;
+                c.globalAlpha = Math.max(0, 1 - a / p.life); this.line(x, y, x - p.vx * .04, y - (p.vy + a * 150) * .04, p.color, p.size * .9);
+            }
             this.rings = this.rings.filter(r => t - r.born < r.life);
             for (const r of this.rings) { const a = (t - r.born) / r.life; c.globalAlpha = 1 - a; if (r.text) this.text(r.text, r.x, r.y - a * 35, r.color, 18); else { c.lineWidth = 2 * (1 - a); this.circle(r.x, r.y, 6 + a * r.size, r.color); } }
             this.bolts = this.bolts.filter(b => t - b.born < .18);
@@ -183,7 +234,9 @@
             this.text(`${String(g.levelIndex + 1).padStart(2,'0')} / 30  ${g.level.name}${g.level.waves > 1 ? ` · ${g.wave + 1}/3 幕` : ''}`, 16, 25, light ? '#465775' : '#d7e4fa', 12, 'left');
             if (g.level.boss) this.text(`BOSS · ${g.bossPhase + 1}/${g.level.boss.phases}`, W - 16, 25, light ? '#a55570' : colors[1], 11, 'right');
             else this.text(`${g.bricks.filter(b => b.hp > 0).length} TARGETS`, W - 16, 25, light ? '#52718b' : colors[0], 10, 'right');
+            this.fx?.draw(c, W, H);
             c.restore();
+            if (!light && !this.lowFX) globalThis.CashArcadeFX?.crt(c, W, H, .05);
         }
     }
     api.Renderer = Renderer;

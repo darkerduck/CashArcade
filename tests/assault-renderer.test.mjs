@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-function fixture(reduced = false) {
+function fixture(reduced = false, withFx = false) {
     const ops = [], state = {}, ctx = new Proxy(state, { get: (obj, name) => name in obj ? obj[name] : (...args) => {
         ops.push([name, ...args]); for (const n of args) if (typeof n === 'number') assert.ok(Number.isFinite(n), name);
         if (String(name).startsWith('create')) return { addColorStop() {} };
     }, set: (obj, name, value) => { obj[name] = value; ops.push([name, value]); return true; } });
     const scope = vm.createContext({ matchMedia: () => ({ matches: reduced, addEventListener() {} }), devicePixelRatio: 3 });
+    if (withFx) vm.runInContext(readFileSync(new URL('../arcade-fx.js', import.meta.url), 'utf8'), scope);
     for (const file of ['engine', 'renderer']) vm.runInContext(readFileSync(new URL(`../assault/${file}.js`, import.meta.url), 'utf8'), scope);
     const canvas = { getContext: () => ctx }, renderer = new scope.NeonAssaultRenderer(canvas);
     return { renderer, canvas, ops, scope };
@@ -54,4 +55,16 @@ test('original 8-bit scores have distinct motifs, stable notes and rising boss t
         assert.deepEqual([...voices].sort(), ['arp', 'bass', 'hat', 'kick', 'lead', 'snare']);
     }
     assert.equal(motifs.size, 3);
+});
+
+test('arcade FX: kills pop their score, enemies warp in and bank, and the boss kill freezes then slows time', () => {
+    const { renderer: r, ops, scope } = fixture(false, true), g = new scope.NeonAssault.Game(scope.NeonAssault.fresh());
+    const e = g.spawn('fighter', 200, 200); e.age = .05;
+    r.consume([{ type: 'explode', x: 100, y: 100, size: 30, points: 250 }, { type: 'shoot', x: 270, y: 800 }]);
+    assert.equal(r.fx.stats().popups, 1); assert.equal(r.timeScale(), 0); assert.ok(r.muzzle > 0);
+    r.draw(g); assert.ok(ops.some(o => o[0] === 'scale'), 'young enemies warp in');
+    r.consume([{ type: 'bossDown', x: 270, y: 150 }]); assert.equal(r.fx.stats().banner, 'TARGET DESTROYED');
+    for (let i = 0; i < 3; i++) r.update(.1); assert.ok(r.timeScale() > 0 && r.timeScale() < 1, 'slow motion after the freeze');
+    for (let i = 0; i < 60; i++) r.update(.1); assert.equal(r.timeScale(), 1); assert.equal(r.fx.busy, false);
+    r.draw(g); assert.equal(ops.filter(o => o[0] === 'save').length, ops.filter(o => o[0] === 'restore').length);
 });

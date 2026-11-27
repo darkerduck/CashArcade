@@ -175,6 +175,7 @@
 
     function consume() {
         for (const event of game.drain()) {
+            renderer.event?.(event, game);
             const effect = AuroraSound.effects[event.type];
             if (effect) sound.play(effect);
             if (event.type === 'pass') text('status', event.close ? '近距超車 · 氮氣補充' : '乾淨超車 · 氮氣補充');
@@ -193,7 +194,7 @@
         const dt = last === undefined ? 0 : Math.max(0, Math.min(.05, (now - last) / 1000));
         last = now;
         if (view === 'running') {
-            accumulator += dt;
+            accumulator += dt * (renderer.timeScale?.() ?? 1);
             const action = input.value();
             if (action.brake && !braking && game.speed > 19) sound.play('auroraBrake');
             braking = action.brake;
@@ -212,7 +213,7 @@
             }
             if (game.mode !== 'running') { view = game.mode; stop(); show(); }
         }
-        if (dirty || (view === 'running' && now - lastPaint >= (coarse.matches ? 30 : 15))) {
+        if (dirty || ((view === 'running' || renderer.busy) && now - lastPaint >= (coarse.matches ? 30 : 15))) {
             renderer.draw(game, { theme, reduced: reduced.matches }); globalThis.CashArcadeNeon?.apply(canvas,{theme,strength:1});
             dirty = false; lastPaint = now;
         }

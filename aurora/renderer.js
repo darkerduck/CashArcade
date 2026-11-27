@@ -26,19 +26,44 @@
     }
     class Renderer {
         constructor(canvas) {
+            this.canvas = canvas;
             this.ctx = canvas.getContext('2d', { alpha: false });
             this.sky = document.createElement('canvas');
             this.sky.width = W; this.sky.height = H;
+            this.ratio = 1; this.last = 0; this.kick = 0; this.wasBoosting = false;
+            this.fx = globalThis.CashArcadeFX?.createFx({ maxParticles: 220, maxShake: 11 }) ?? null;
             const rainRandom = rng(964);
             this.rain = Array.from({ length: 69 }, () => ({
                 x: rainRandom() * W, y: rainRandom() * H, v: 95 + rainRandom() * 165, h: 7 + rainRandom() * 19
             }));
         }
+        get busy() { return Boolean(this.fx?.busy) || this.kick > 0; }
+        timeScale() { return this.fx?.timeScale() ?? 1; }
+        // Arcade feedback for engine events; the player car sits at the bottom centre of the view.
+        event(event, game) {
+            const fx = this.fx; if (!fx) return;
+            const sector = sectors[game.level.sector], cx = W / 2, cy = 360;
+            if (event.type === 'hit') {
+                fx.hitStop(.07); fx.shake(.7); fx.flash('#ff5f7e', .26, .3);
+                fx.burst(cx, cy - 20, { color: '#ffc47a', count: 22, speed: 360, life: .55, angle: -Math.PI / 2, spread: 2.6, gravity: 500 });
+                fx.burst(cx, cy - 20, { kind: 'shard', color: '#ffe0b9', count: 8, speed: 260, life: .7, gravity: 600 });
+                fx.popup(cx, cy - 70, 'CRASH', { color: '#ff7a92', size: 20 });
+            }
+            if (event.type === 'pass') {
+                fx.popup(cx + (event.close ? 0 : 40), cy - 92, event.close ? 'CLOSE CALL!' : 'PASS', { color: event.close ? '#ffe27a' : '#a9f4ff', size: event.close ? 18 : 14 });
+                if (event.close) { fx.shake(.12); fx.burst(cx, cy - 40, { kind: 'ring', color: sector.light, size: 120, life: .4 }); }
+            }
+            if (event.type === 'cell') { fx.popup(cx, cy - 92, 'NITRO +', { color: '#81ffdf', size: 16 }); fx.burst(cx, cy - 50, { color: '#81ffdf', count: 14, speed: 240, life: .45 }); }
+            if (event.type === 'boost') { this.kick = 1; fx.flash('#9bdeff', .12, .2); fx.shake(.18); }
+            if (event.type === 'won') { fx.banner('FINISH', game.level.name ?? '', { color: '#98fff4', duration: 1.6 }); fx.flash('#ffffff', .2, .4); }
+        }
         background(sector, light) {
-            const key = sector + ':' + light;
+            const key = sector + ':' + light + ':' + this.ratio;
             if (key === this.key) return;
             this.key = key;
+            this.sky.width = Math.round(W * this.ratio); this.sky.height = Math.round(H * this.ratio);
             const ctx = this.sky.getContext('2d'), colors = sectors[sector], random = rng(2289 + sector);
+            ctx.setTransform?.(this.ratio, 0, 0, this.ratio, 0, 0);
             const sky = ctx.createLinearGradient(0, 0, 0, 220);
             sky.addColorStop(0, light ? '#526993' : '#080d24');
             sky.addColorStop(.56, light ? '#9c9dc7' : '#24244a');
@@ -268,8 +293,21 @@
                 }
             }
         }
+        // Speed streaks along both screen edges grow with speed even without nitro.
+        speedLines(ctx, game) {
+            const amount = Math.max(0, (game.speed - 30) / 45);
+            if (amount <= 0) return;
+            ctx.beginPath();
+            for (let i = 0; i < 22; i++) {
+                const s = i % 2 ? -1 : 1, f = (game.distance * .041 + i * .2713) % 1, lane = .62 + (i % 5) * .09;
+                const x = W / 2 + s * W * lane * (.35 + f * .75), y = HORIZON + 40 + f * (H - HORIZON);
+                ctx.moveTo(x, y); ctx.lineTo(x + s * (14 + f * 60) * amount, y + (6 + f * 26) * amount);
+            }
+            ctx.lineWidth = 1.2; ctx.strokeStyle = fog('#d8f2ff', Math.min(.45, amount * .35)); ctx.stroke();
+        }
         atmosphere(ctx, game, reduced) {
             if (reduced) return;
+            this.speedLines(ctx, game);
             const covered = game.inTunnel;
             if (!covered) {
                 const { rain } = sectors[game.level.sector];
@@ -294,21 +332,37 @@
         }
         draw(game, { theme = 'dark', reduced = false } = {}) {
             const ctx = this.ctx, light = theme === 'light', sector = sectors[game.level.sector];
+            const now = globalThis.performance?.now?.() ?? 0, dt = this.last ? Math.min(.1, Math.max(0, (now - this.last) / 1000)) : 0; this.last = now;
+            this.fx?.setReduced(reduced); this.fx?.update(dt);
+            if (game.boosting && !this.wasBoosting && !this.fx) this.kick = 1;
+            this.wasBoosting = game.boosting;
+            this.kick = Math.max(0, this.kick - dt * 1.6);
+            this.ratio = globalThis.CashArcadeFX?.fitCanvas(this.canvas, W, H) ?? 1;
+            ctx.setTransform?.(this.ratio, 0, 0, this.ratio, 0, 0);
             this.background(game.level.sector, light);
-            ctx.drawImage(this.sky, 0, 0);
+            ctx.drawImage(this.sky, 0, 0, W, H);
+            ctx.save(); this.fx?.apply(ctx);
+            // Nitro punches the camera forward toward the vanishing point, then eases back.
+            const push = reduced ? 0 : Math.sin(Math.min(1, this.kick) * Math.PI) * .045 + (game.boosting ? .02 : 0);
+            if (push) { ctx.translate(W / 2, HORIZON); ctx.scale(1 + push, 1 + push); ctx.translate(-W / 2, -HORIZON); }
             const base = roadAt(game.level, game.distance);
             this.road(ctx, game, base, light);
             this.furniture(ctx, game, base);
             this.tunnels(ctx, game, base, reduced);
             this.scenery(ctx, game, base, reduced);
             const p = this.project(game, base, game.distance);
-            this.vehicle(ctx, p.x + game.x * p.zoom, p.y, p.zoom * 1.08, 'car', sector.accent, {
+            // High speed adds a fine engine vibration to the player car.
+            const rumble = reduced ? 0 : Math.max(0, game.speed - 30) * .03 * Math.sin(game.time * 63);
+            this.vehicle(ctx, p.x + game.x * p.zoom, p.y + rumble, p.zoom * 1.08, 'car', sector.accent, {
                 player: true, nitro: game.boosting, brake: game.braking
             });
             this.atmosphere(ctx, game, reduced);
             const shade = ctx.createRadialGradient(W / 2, H * .57, 200, W / 2, H * .57, 448);
             shade.addColorStop(0, '#06091300'); shade.addColorStop(1, '#06091380');
-            ctx.fillStyle = shade; ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = shade; ctx.fillRect(-30, -30, W + 60, H + 60);
+            this.fx?.draw(ctx, W, H);
+            ctx.restore();
+            if (!light) globalThis.CashArcadeFX?.crt(ctx, W, H, .05);
         }
     }
     function withWindows(ctx, x, y, w, h, random, colors) {

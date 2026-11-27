@@ -15,10 +15,11 @@
     return () => { n += 0x6D2B79F5; let t = n; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   }
   function hash(s) { let n = 2166136261; for (const c of String(s)) n = Math.imul(n ^ c.charCodeAt(0), 16777619); return n >>> 0; }
-  function canvas() {
-    if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(W, H);
-    const c = document.createElement('canvas'); c.width = W; c.height = H; return c;
+  function canvas(scale = 1) {
+    if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(W * scale, H * scale);
+    const c = document.createElement('canvas'); c.width = W * scale; c.height = H * scale; return c;
   }
+  const ZOOM = 1.75, CACHE_SCALE = 2;
   function rounded(ctx, x, y, w, h, r) {
     r = Math.min(r, w / 2, h / 2);
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
@@ -101,7 +102,35 @@
       this.trails = new Array(480); this.trailCursor = 0; this.lastTires = null;
       this.lastTime = 0; this.elapsed = 0; this.particles = [];
       this.rain = Array.from({ length: 78 }, (_, i) => { const r = random(i * 961 + 77); return { x: r() * W, y: r() * H, speed: 30 + r() * 42, len: 5 + r() * 11 }; });
+      // World effects (sparks, popups) follow the camera; screen effects (shake, flash, cards) do not.
+      const FX = root.CashArcadeFX;
+      this.worldFx = FX ? FX.createFx({ maxParticles: 260 }) : null;
+      this.screenFx = FX ? FX.createFx({ maxParticles: 40, maxShake: 12 }) : null;
+      this.cam = null; this.kick = 0; this.realLast = 0;
       this.resize();
+    }
+    get busy() { return Boolean(this.worldFx && this.worldFx.busy) || Boolean(this.screenFx && this.screenFx.busy); }
+    timeScale() { return this.screenFx ? this.screenFx.timeScale() : 1; }
+    event(e, game) {
+      const wf = this.worldFx, sf = this.screenFx; if (!wf || !sf) return;
+      const x = Number(e.x) || 0, y = Number(e.y) || 0, accent = (this.pal && this.pal.accent) || '#5ce4ff';
+      if (e.type === 'collision') {
+        const hit = clamp((Number(e.damage) || 4) / 18, .15, .8);
+        wf.burst(x, y, { color: '#ffc06b', count: 10 + Math.round(hit * 14), speed: 260, life: .4, size: 1.8 });
+        sf.shake(hit); sf.flash('#ff5f7e', .08 + hit * .14, .2); if (hit > .4) sf.hitStop(.05);
+      }
+      if (e.type === 'boost') { this.kick = 1; sf.flash('#68ecff', .1, .18); wf.burst(x, y, { kind: 'ring', color: '#68ecff', size: 60, life: .35 }); }
+      if (e.type === 'drift' && game && game.combo > 1) wf.popup(x, y - 26, 'DRIFT ×' + game.combo, { color: '#ffe27a', size: 11, rise: 26 });
+      if (e.type === 'offroad') wf.burst(x, y, { kind: 'smoke', color: '#a89f82', count: 6, speed: 60, life: .6, size: 3 });
+      if (e.type === 'checkpoint') wf.burst(x, y, { kind: 'ring', color: accent, size: 46, life: .35 });
+      if (e.type === 'lap') sf.banner(e.best ? 'BEST LAP' : 'LAP ' + String(e.laps).padStart(2, '0'), Number.isFinite(e.lapTime) ? e.lapTime.toFixed(2) + ' s' : '', { color: e.best ? '#ffe27a' : accent, duration: 1.1 });
+      if (e.type === 'explosion') {
+        sf.hitStop(.12); sf.slowMotion(.8, .3); sf.shake(1); sf.flash('#ff8844', .4, .45);
+        wf.burst(x, y, { color: '#ff8844', count: 40, speed: 380, life: .9, size: 2.4 });
+        wf.burst(x, y, { kind: 'shard', color: '#e5fff7', count: 14, speed: 260, life: 1 });
+        wf.burst(x, y, { kind: 'ring', color: '#ffb45e', size: 140, life: .6 });
+      }
+      if (e.type === 'finish' && game) sf.banner(game.won ? 'P1 · WINNER' : 'FINISH', 'P' + game.rank, { color: game.won ? '#ffe27a' : accent, duration: 1.6 });
     }
 
     resize(width, height) {
@@ -124,8 +153,10 @@
       this.half = (track.width || 110) / 2;
       this.outer = side(points, this.half); this.inner = side(points, -this.half);
       this.trails.fill(null); this.trailCursor = 0; this.lastTires = null; this.particles.length = 0;
-      this.cache = canvas();
+      // The cache is drawn at twice the world size so the zoomed camera stays sharp.
+      this.cache = canvas(CACHE_SCALE);
       const ctx = this.cache.getContext('2d'), p = this.pal;
+      if (ctx.setTransform) ctx.setTransform(CACHE_SCALE, 0, 0, CACHE_SCALE, 0, 0);
       ctx.clearRect(0, 0, W, H);
       this.drawCity(ctx, track, p);
       this.drawRoad(ctx, track, p);
@@ -290,7 +321,16 @@
       let dt = clamp(now - this.lastTime, 0, .07);
       if (now < this.lastTime) { this.trails.fill(null); this.lastTires = null; this.particles.length = 0; dt = 0; }
       this.lastTime = now; this.elapsed += dt;
-      ctx.setTransform(this.width / W, 0, 0, this.height / H, 0, 0);
+      // Real-time clock for effects so hit-stop can freeze the race without freezing its own timer.
+      const wall = root.performance && root.performance.now ? root.performance.now() : 0;
+      const real = this.realLast ? clamp((wall - this.realLast) / 1000, 0, .1) : 0; this.realLast = wall;
+      for (const fx of [this.worldFx, this.screenFx]) if (fx) { fx.setReduced(reduced); fx.update(real); }
+      this.kick = Math.max(0, this.kick - real * 2.5);
+      const sx = this.width / W, sy = this.height / H, cam = this.camera(game, reduced, real), zoom = cam.zoom;
+      const shake = this.screenFx ? this.screenFx.offset() : { x: 0, y: 0 };
+      ctx.setTransform(sx, 0, 0, sy, 0, 0);
+      ctx.fillStyle = this.pal.light ? '#cfe0ea' : '#04070f'; ctx.fillRect(0, 0, W, H);
+      ctx.setTransform(sx * zoom, 0, 0, sy * zoom, this.width / 2 - cam.x * zoom * sx + shake.x * sx, this.height / 2 - cam.y * zoom * sy + shake.y * sy);
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.drawImage(this.cache, 0, 0, W, H);
       this.drawSigns(ctx, reduced ? 0 : now);
       this.updateTrails(game, dt, reduced);
@@ -303,12 +343,58 @@
       }
       if (game.car) this.drawCar(ctx, game, reduced);
       this.drawTunnel(ctx);
-      if (!reduced) this.drawAtmosphere(ctx, now);
+      if (this.worldFx) this.worldFx.draw(ctx, W, H);
+      ctx.setTransform(sx, 0, 0, sy, 0, 0);
+      if (!reduced) { this.drawAtmosphere(ctx, now); this.speedLines(ctx, game); }
+      if (zoom > 1) this.minimap(ctx, game);
+      if (this.screenFx) this.screenFx.draw(ctx, W, H);
       // A light vignette keeps the eye inside the playable circuit.
       const v = ctx.createRadialGradient(W / 2, H / 2, 240, W / 2, H / 2, 645);
       v.addColorStop(0, 'rgba(2,7,15,0)'); v.addColorStop(1, this.pal.light ? 'rgba(43,73,93,.08)' : 'rgba(0,4,14,.3)');
       ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
       ctx.globalAlpha = 1;
+      if (!this.pal.light && root.CashArcadeFX) root.CashArcadeFX.crt(ctx, W, H, .045);
+    }
+
+    // Smoothed chase camera with look-ahead along the car's velocity, clamped to the world. Reduced motion shows the whole track.
+    camera(game, reduced, dt) {
+      const car = game.car;
+      if (reduced || !car) { this.cam = null; return { x: W / 2, y: H / 2, zoom: 1 }; }
+      const zoom = ZOOM - Math.sin(Math.min(1, this.kick) * Math.PI) * .12;
+      const vx = Number(car.vx) || 0, vy = Number(car.vy) || 0, look = .28, cap = 120;
+      let tx = car.x + clamp(vx * look, -cap, cap), ty = car.y + clamp(vy * look, -cap, cap);
+      const hw = W / (2 * zoom), hh = H / (2 * zoom);
+      tx = clamp(tx, hw, W - hw); ty = clamp(ty, hh, H - hh);
+      if (!this.cam || game.state === 'ready' || Math.hypot(tx - this.cam.x, ty - this.cam.y) > 400) this.cam = { x: tx, y: ty };
+      else { const k = 1 - Math.exp(-dt * 6); this.cam.x += (tx - this.cam.x) * k; this.cam.y += (ty - this.cam.y) * k; }
+      return { x: this.cam.x, y: this.cam.y, zoom };
+    }
+
+    speedLines(ctx, game) {
+      const car = game.car; if (!car) return;
+      const boosting = typeof game.boost === 'number' && game.boost > 0 && !game.drifting && !game.offroad;
+      const amount = clamp(((Number(car.speed) || 0) - 260) / 160, 0, 1) * .6 + (boosting ? .5 : 0);
+      if (amount <= .05) return;
+      const a = Number(car.angle) || 0, dx = -Math.cos(a), dy = -Math.sin(a);
+      ctx.save(); ctx.strokeStyle = color('#d8f6ff', Math.min(.35, amount * .3)); ctx.lineWidth = 1.2; ctx.beginPath();
+      for (let i = 0; i < 26; i++) {
+        const r = random(i * 131 + 7), f = (this.elapsed * (1.6 + r() * 1.2) + r()) % 1;
+        const x = r() * W + dx * f * 300, y = r() * H + dy * f * 300, len = 30 + r() * 50 * amount;
+        if (Math.hypot(x - W / 2, y - H / 2) < 140) continue;
+        ctx.moveTo(x, y); ctx.lineTo(x + dx * len, y + dy * len);
+      }
+      ctx.stroke(); ctx.restore();
+    }
+
+    minimap(ctx, game) {
+      const pts = game.track.points, m = 150 / W, ox = W - 170, oy = 16, p = this.pal;
+      ctx.save();
+      ctx.fillStyle = p.light ? 'rgba(230,241,247,.72)' : 'rgba(3,8,18,.62)'; rounded(ctx, ox - 8, oy - 8, 166, H * m + 16, 8); ctx.fill();
+      ctx.strokeStyle = color(p.accent, .7); ctx.lineWidth = 2.2; ctx.beginPath();
+      pts.forEach((q, i) => i ? ctx.lineTo(ox + q.x * m, oy + q.y * m) : ctx.moveTo(ox + q.x * m, oy + q.y * m)); ctx.closePath(); ctx.stroke();
+      for (const [i, rival] of (game.rivals || []).entries()) if (rival.car) { ctx.fillStyle = i ? '#ffb45e' : '#ba88ff'; ctx.beginPath(); ctx.arc(ox + rival.car.x * m, oy + rival.car.y * m, 3, 0, TAU); ctx.fill(); }
+      if (game.car) { ctx.fillStyle = '#f0ffff'; ctx.beginPath(); ctx.arc(ox + game.car.x * m, oy + game.car.y * m, 3.6, 0, TAU); ctx.fill(); }
+      ctx.restore();
     }
 
     drawSigns(ctx, t) {

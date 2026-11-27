@@ -67,3 +67,17 @@ test('reduced-motion nudge stays still and tilt has a visible playfield warning'
     assert.ok(calls.some(c => c[0] === 'fillText' && c[1] === 'TILT'));
     renderer.reset(); assert.equal(renderer.shake, 0);
 });
+test('arcade FX: bumpers squash, overload freezes then slows play, and HiDPI rendering stays balanced', () => {
+    const calls = [];
+    const make = () => { const ctx = new Proxy({}, { get: (t, k) => k in t ? t[k] : (...a) => { for (const n of a) if (typeof n === 'number') assert.ok(Number.isFinite(n), String(k)); calls.push(k); if (String(k).startsWith('create')) return { addColorStop() {} }; }, set: (t, k, v) => { t[k] = v; return true; } }); return { width: 600, height: 920, getContext: () => ctx }; };
+    const scope = { ReactorPinball: API, document: { createElement: make }, matchMedia: () => ({ matches: false }), devicePixelRatio: 2 };
+    vm.createContext(scope); vm.runInContext(readFileSync(new URL('../arcade-fx.js', import.meta.url), 'utf8'), scope); vm.runInContext(source, scope);
+    const canvas = make(), r = new scope.ReactorPinballRenderer.Renderer(canvas), g = new API.Game(); g.start();
+    r.consume([{ type: 'bumper', index: 1, x: 200, y: 200 }, { type: 'score', points: 1800, x: 200, y: 200 }]);
+    assert.equal(r.punch.get(1), 1); assert.equal(r.fx.stats().popups, 1);
+    r.draw(g, 1 / 60); assert.equal(canvas.width, 1200); assert.equal(canvas.height, 1840); assert.ok(calls.includes('scale'));
+    r.consume([{ type: 'overload', x: 291, y: 300, balls: 3 }]); assert.equal(r.timeScale(), 0); assert.equal(r.fx.stats().banner, 'OVERLOAD');
+    for (let i = 0; i < 3; i++) r.draw(g, .1); assert.ok(r.timeScale() > 0 && r.timeScale() < 1);
+    for (let i = 0; i < 40; i++) r.draw(g, .1); assert.equal(r.timeScale(), 1); assert.equal(r.busy, false); assert.equal(r.punch.size, 0);
+    assert.equal(calls.filter(k => k === 'save').length, calls.filter(k => k === 'restore').length);
+});

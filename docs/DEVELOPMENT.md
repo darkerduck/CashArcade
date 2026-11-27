@@ -125,7 +125,7 @@ globalThis.CashArcadeNeon?.apply(canvas, { theme, strength: 1 });
 
 ## 街機手感模組（arcade-fx）
 
-`arcade-fx.js` 提供 `globalThis.CashArcadeFX`，目前用於碎星獵手、霓虹突圍、重力快遞、光路拼接、電路迷城：
+`arcade-fx.js` 提供 `globalThis.CashArcadeFX`，目前用於碎星獵手、霓虹突圍、重力快遞、光路拼接、電路迷城、霓虹飛行、霓虹打磚塊、光泡連鎖、霓虹強襲、極光疾馳、雙軌節奏、霓虹甩尾、反應爐彈珠台與 COGFRONT（3D 貪吃蛇與霓虹天盾不使用）：
 
 - `fitCanvas(canvas, w, h, maxDpr = 2)`：依 devicePixelRatio 設定實際像素並回傳倍率；renderer 以 `setTransform(ratio, …)` 用邏輯座標作畫，Retina 不再模糊。
 - `createFx({ reduced })`：以秒推進，與幀率無關。
@@ -137,6 +137,9 @@ globalThis.CashArcadeNeon?.apply(canvas, { theme, strength: 1 });
 - `crt(ctx, w, h, strength)`：淡掃描線與暗角，只在深色主題使用。
 - 沒有 DOM 或 Canvas 時，以上全部安全退化，renderer 的 Node 測試不需載入此檔。
 - 呼叫順序：renderer 先用 FX 畫完，`neon-glow.js` 再對整個畫面做光暈。
+- 雙軌節奏只用粒子、閃光與飄字，不呼叫 `hitStop`／`slowMotion`：譜面跟著音訊時鐘走，凍結模擬會讓判定與音樂脫節。
+- 霓虹甩尾用兩個實例：`worldFx` 跟著追車鏡頭畫火花與飄字，`screenFx` 在螢幕座標畫震動、閃光與圈數字卡；減少動態效果時鏡頭改回整條賽道。
+- 會在遊戲結束後繼續播放特效的頁面，以 renderer 的 `busy` 決定是否還要重畫。
 
 節奏調整（第一批）：
 - 碎星獵手：群組從 0.3 秒開始，在原時長約 55% 內部署完；第 1、2 關增加群組；預警 0.8 秒。

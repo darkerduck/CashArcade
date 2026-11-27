@@ -14,9 +14,15 @@
             this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.preview = preview;
             this.motion = matchMedia('(prefers-reduced-motion: reduce)');
             this.backdrop = document.createElement('canvas'); this.backdrop.width = W; this.backdrop.height = H;
-            this.backdropTheme = null; this.ratio = 0; this.reset();
+            this.backdropTheme = null; this.ratio = 0;
+            this.fx = globalThis.CashArcadeFX?.createFx({ maxParticles: 220, maxShake: 12 }) ?? null;
+            this.reset();
         }
-        reset() { this.particles = []; this.rings = []; this.flapAge = 1; this.clock = 0; }
+        reset() { this.particles = []; this.rings = []; this.flapAge = 1; this.clock = 0; this.trail = []; this.lit = new WeakMap(); this.boost = 0; this.fx?.clear(); }
+        // Real-time effects clock (shake, hit-stop, popups) runs even while the simulation is frozen.
+        tick(delta) { this.fx?.setReduced(this.reduced); this.fx?.update(delta); this.boost = Math.max(0, this.boost - delta); }
+        timeScale() { return this.fx?.timeScale() ?? 1; }
+        get busy() { return Boolean(this.fx?.busy); }
         get reduced() { return this.motion.matches; }
         advance(delta) {
             this.clock += delta; this.flapAge += delta;
@@ -34,12 +40,32 @@
             }
             this.particles = this.particles.slice(-64);
         }
-        flap(y) { this.flapAge = 0; this.burst(BIRD_X - 19, y + 7, 5, 'feather'); }
-        pass(x, y) {
+        flap(y) {
+            this.flapAge = 0; this.burst(BIRD_X - 19, y + 7, 5, 'feather');
+            this.fx?.burst(BIRD_X - 14, y + 10, { color: '#7ff6ff', count: 4, speed: 140, angle: Math.PI * .75, spread: 1.1, life: .28, size: 1.6 });
+        }
+        pass(x, y, { gate, score, perfect = false } = {}) {
             if (!this.reduced) { this.rings.push({ x, y, life: .65, max: .65 }); this.rings = this.rings.slice(-6); }
             this.burst(x, y, 14, 'pass');
+            if (gate) this.lit.set(gate, this.clock);
+            const fx = this.fx; if (!fx) return;
+            fx.burst(x, y, { kind: 'ring', color: perfect ? '#ffe27a' : '#7ff6ff', size: perfect ? 70 : 46, life: .45 });
+            fx.popup(BIRD_X + 34, y - 26, perfect ? 'PERFECT' : '+1', { color: perfect ? '#ffe27a' : '#a1fff1', size: perfect ? 17 : 15 });
+            if (perfect) { fx.burst(x, y, { color: '#ffe27a', count: 14, speed: 260, life: .5, size: 2 }); fx.flash('#ffe9a8', .06, .12); }
+            if (score && score % 10 === 0) { fx.shake(.25); fx.popup(W / 2, 92, `${score} GATES`, { color: '#ff9ad5', size: 24, life: 1.1, rise: 20 }); }
         }
-        lose(y) { this.burst(BIRD_X, y, 20, 'hit'); }
+        speedUp(multiplier) {
+            this.boost = .9;
+            this.fx?.popup(W / 2, 64, `SPEED ×${multiplier.toFixed(1)}`, { color: '#7ff6ff', size: 20, life: 1.1, rise: 18 });
+        }
+        lose(y) {
+            this.burst(BIRD_X, y, 20, 'hit');
+            const fx = this.fx; if (!fx) return;
+            fx.hitStop(.09); fx.shake(.75); fx.flash('#ff5f7e', .32, .26);
+            fx.burst(BIRD_X, y, { color: '#ffb36b', count: 22, speed: 340, life: .6, size: 2.2 });
+            fx.burst(BIRD_X, y, { kind: 'shard', color: '#7ff6ff', count: 10, speed: 220, life: .8, gravity: 420 });
+            fx.burst(BIRD_X, y, { kind: 'ring', color: '#ff5f7e', size: 90, life: .5 });
+        }
         gradient(ctx, x1, y1, x2, y2, colors) {
             const g = ctx.createLinearGradient(x1, y1, x2, y2);
             colors.forEach((color, i) => g.addColorStop(i / (colors.length - 1), color)); return g;
@@ -113,7 +139,7 @@
             }
             c.restore();
         }
-        pillar(x, top, bottom, isTop, p, time) {
+        pillar(x, top, bottom, isTop, p, time, lit = 0) {
             const c=this.ctx, cap=isTop?bottom-20:top, innerTop=isTop?top:top+20, innerBottom=isTop?bottom-20:bottom;
             c.fillStyle=this.gradient(c,x,0,x+GATE_W,0,[p.shadow,p.panel,p.metal]); c.fillRect(x,top,GATE_W,bottom-top);
             this.line(c,[[x+.8,top],[x+.8,bottom]],p.edge,1.5);
@@ -127,7 +153,7 @@
                 this.line(c,[[x+8,y+8],[x+18,y+14]],p.rim,.7);
                 for(const dx of [12,64])this.ellipse(c,x+dx,y+28,1.5,1.5,p.edge);
             }
-            c.fillStyle=p.core; c.globalAlpha=.65; c.fillRect(x+31,innerTop,3,innerBottom-innerTop); c.fillRect(x+42,innerTop,3,innerBottom-innerTop);
+            c.fillStyle=lit>0?p.spark:p.core; c.globalAlpha=.65+lit*.35; c.fillRect(x+31,innerTop,3,innerBottom-innerTop); c.fillRect(x+42,innerTop,3,innerBottom-innerTop);
             c.globalAlpha=1;
             const scroll=this.reduced?0:time*32%34;
             for(let y=innerTop-34+scroll;y<innerBottom;y+=34)this.line(c,[[x+35,y],[x+38,y+4],[x+41,y]],p.rim,1.2);
@@ -136,8 +162,8 @@
             this.polygon(c,[[x-8,cap+4],[x-4,cap],[x+GATE_W+4,cap],[x+GATE_W+8,cap+4],[x+GATE_W+8,cap+16],[x+GATE_W+4,cap+20],[x-4,cap+20],[x-8,cap+16]],
                 this.gradient(c,0,cap,0,cap+20,[p.edge,p.metal,p.shadow]),p.rim,1.2);
             const edgeY=isTop?cap+18:cap+2;
-            c.save(); c.shadowColor=p.core; c.shadowBlur=this.reduced?0:8;
-            this.line(c,[[x-3,edgeY],[x+GATE_W+3,edgeY]],p.rim,2.2); c.restore();
+            c.save(); c.shadowColor=p.core; c.shadowBlur=this.reduced?0:8+lit*14;
+            this.line(c,[[x-3,edgeY],[x+GATE_W+3,edgeY]],lit>0?'#ffffff':p.rim,2.2+lit*2); c.restore();
             for(let i=0;i<4;i++) {
                 const dx=x+8+i*17;
                 this.polygon(c,[[dx+4,cap+6],[dx+7,cap+6],[dx+2,cap+14],[dx-1,cap+14]],'#f6ce77');
@@ -146,9 +172,10 @@
         }
         gate(g,light,time) {
             if(g.x>W+8||g.x+GATE_W<-8)return;
-            const p=palettes[light?'light':'dark'];
-            this.pillar(g.x,0,g.gapTop,true,p,time);
-            this.pillar(g.x,g.gapBottom,GROUND,false,p,time);
+            const p=palettes[light?'light':'dark'], at=this.lit.get(g);
+            const lit=at===undefined||this.reduced?0:Math.max(0,1-(this.clock-at)/.5);
+            this.pillar(g.x,0,g.gapTop,true,p,time,lit);
+            this.pillar(g.x,g.gapBottom,GROUND,false,p,time,lit);
         }
         ground(light,time,speed) {
             const c=this.ctx,p=palettes[light?'light':'dark'];
@@ -226,7 +253,31 @@
             for(const s of this.particles) {
                 c.globalAlpha=Math.max(0,s.life/s.max);
                 if(s.kind==='feather') {c.save();c.translate(s.x,s.y);c.rotate(s.life*4);this.ellipse(c,0,0,s.size*2,s.size*.55,light?'#348ea8':'#8cdfea');c.restore();}
-                else {c.fillStyle=s.kind==='hit'?'#f4bf76':p.spark;c.fillRect(s.x,s.y,s.size,s.size);}
+                else {c.lineCap='round';this.line(c,[[s.x,s.y],[s.x-s.vx*.06,s.y-s.vy*.06]],s.kind==='hit'?'#f4bf76':p.spark,s.size);}
+            }
+            c.restore();
+        }
+        // Speed streaks thicken with gate speed and flare briefly after each speed-up.
+        speedLines(light,time,speed) {
+            if(this.reduced)return;
+            const c=this.ctx,amount=Math.min(1,(speed-150)/140)+this.boost*.8;
+            if(amount<=0)return;
+            c.save();c.globalAlpha=Math.min(.5,amount*.28)*(light?.6:1);c.lineCap='round';
+            for(let i=0;i<14;i++){
+                const len=40+(i%5)*22, x=W-((time*speed*(2.2+(i%3)*.5)+i*197)%(W+len*2))+len, y=30+(i*67.7)%440;
+                this.line(c,[[x,y],[x+len,y]],light?'#2b6c80':'#bdfbff',1+(i%3)*.4);
+            }
+            c.restore();
+        }
+        // Short cyan afterimages behind the bird read as forward motion.
+        afterimages(player,speed,state,light) {
+            if(this.reduced)return;
+            if(state==='running'){this.trail.push({y:player.y,t:this.clock});}
+            this.trail=this.trail.filter(s=>this.clock-s.t<.14).slice(-8);
+            const c=this.ctx;c.save();
+            for(const s of this.trail){
+                const age=(this.clock-s.t)/.14;c.globalAlpha=(1-age)*(light?.18:.3);
+                this.ellipse(c,BIRD_X-4-age*speed*.22,s.y+2,17,13,light?'#2b8ea0':'#55f3e6');
             }
             c.restore();
         }
@@ -234,8 +285,11 @@
             const ratio=Math.min(2,Math.max(1,window.devicePixelRatio||1));
             if(ratio!==this.ratio) {this.canvas.width=W*ratio;this.canvas.height=H*ratio;this.ratio=ratio;}
             const c=this.ctx;c.setTransform(ratio,0,0,ratio,0,0);c.clearRect(0,0,W,H);
-            this.background(light,time,speed);gates.forEach(g=>this.gate(g,light,time));this.ground(light,time,speed);
-            this.effects(light);this.bird(c,BIRD_X,player.y,player.rotation,this.pose(),light);
+            c.save();this.fx?.apply(c);
+            this.background(light,time,speed);this.speedLines(light,time,speed);gates.forEach(g=>this.gate(g,light,time));this.ground(light,time,speed);
+            this.effects(light);this.afterimages(player,speed,state,light);this.bird(c,BIRD_X,player.y,player.rotation,this.pose(),light);
+            this.fx?.draw(c,W,H);c.restore();
+            if(!light)globalThis.CashArcadeFX?.crt(c,W,H,.05);
             if(this.preview&&state!=='running') {
                 const pc=this.preview.getContext('2d');this.preview.width=200*ratio;this.preview.height=140*ratio;
                 pc.setTransform(ratio,0,0,ratio,0,0);pc.clearRect(0,0,200,140);

@@ -12,8 +12,11 @@
             this.reduced = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
             this.motionQuery = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
             this.motionQuery?.addEventListener?.('change', e => { this.reduced = e.matches; this.reset(); });
+            this.fx = globalThis.CashArcadeFX?.createFx({ reduced: this.reduced, maxParticles: 300, maxShake: 10 }) ?? null;
+            this.muzzle = 0;
             this.resize();
         }
+        timeScale() { return this.fx?.timeScale() ?? 1; }
         resize() {
             const dpr = Math.min(2, globalThis.devicePixelRatio || 1);
             if (this.canvas.width !== W * dpr || this.canvas.height !== H * dpr) {
@@ -21,7 +24,31 @@
             }
             this.dpr = dpr;
         }
-        reset() { this.particles = []; this.rings = []; this.labels = []; this.wrecks = []; this.shake = 0; this.pulse = 0; this.time = 0; }
+        reset() { this.particles = []; this.rings = []; this.labels = []; this.wrecks = []; this.shake = 0; this.pulse = 0; this.time = 0; this.muzzle = 0; this.fx?.clear(); }
+        // Score popups, sparks, hit-stop and stage cards on top of the original rings and debris.
+        punch(e) {
+            const fx = this.fx, p = palettes.dark; if (!fx) return;
+            if (e.type === 'shoot') this.muzzle = 1;
+            if (e.type === 'explode') {
+                const big = e.size > 25;
+                fx.burst(e.x, e.y, { color: big ? p.violet : p.cyan, count: big ? 16 : 9, speed: big ? 300 : 220, life: .45 });
+                fx.burst(e.x, e.y, { kind: 'shard', color: p.shot, count: big ? 6 : 3, speed: 180, life: .55 });
+                if (e.points) fx.popup(e.x, e.y - 14, '+' + e.points, { color: big ? p.gold : p.shot, size: big ? 17 : 14 });
+                if (big) { fx.hitStop(.035); fx.shake(.16); }
+            }
+            if (e.type === 'part') { fx.hitStop(.07); fx.shake(.4); fx.flash(p.gold, .12, .18); }
+            if (e.type === 'hurt') { fx.hitStop(.07); fx.shake(.55); fx.flash(p.danger, .3, .3); }
+            if (e.type === 'bomb') { fx.shake(.6); fx.flash(p.cyan, .25, .3); }
+            if (e.type === 'boss') { fx.banner('WARNING', e.name, { color: p.danger, duration: 1.6 }); fx.shake(.3); }
+            if (e.type === 'bossDown') {
+                fx.hitStop(.2); fx.slowMotion(1.1, .3); fx.shake(1); fx.flash('#ffffff', .45, .45);
+                fx.burst(e.x, e.y, { kind: 'ring', color: p.violet, size: 260, life: .9 });
+                fx.banner('TARGET DESTROYED', '', { color: p.gold, duration: 1.5 });
+            }
+            if (e.type === 'stageClear') fx.banner('STAGE CLEAR', '', { color: p.cyan, duration: 1.3 });
+            if (e.type === 'won') fx.banner('MISSION COMPLETE', '', { color: p.gold, duration: 2 });
+            if (e.type === 'pickup') fx.burst(e.x, e.y, { kind: 'ring', color: p.gold, size: 60, life: .4 });
+        }
         wreck(x, y, side, core = false) {
             if (!this.reduced && this.wrecks.length < 12) this.wrecks.push({ x, y, side, core, life: 2.2, angle: 0, vy: 25 });
         }
@@ -39,6 +66,7 @@
         }
         consume(events) {
             for (const e of events) {
+                this.punch(e);
                 if (e.type === 'explode') this.burst(e.x, e.y, e.size, e.size > 25 ? 'violet' : 'cyan');
                 if (e.type === 'part') { this.wreck(e.x, e.y, e.side || 1); this.burst(e.x, e.y, 50, 'gold', true); this.label('裝甲擊破 +500', e.x, e.y, 'gold'); }
                 if (e.type === 'bossDown') {
@@ -50,13 +78,14 @@
                 if (e.type === 'hurt') this.burst(e.x, e.y, 40, 'danger', true);
                 if (e.type === 'pickup') { this.burst(e.x, e.y, 15, 'gold'); this.label(NeonAssault.ITEMS[e.item] + '強化', e.x, e.y - 30, 'gold'); }
                 if (e.type === 'phase') this.label(e.phase === 'rage' ? '核心過載' : '核心暴露', W / 2, 255, 'danger');
-                if (e.type === 'boss') this.label('WARNING / ' + e.name, W / 2, H * .46, 'danger', 2.8);
+                if (e.type === 'boss' && !this.fx) this.label('WARNING / ' + e.name, W / 2, H * .46, 'danger', 2.8);
             }
             this.rings = this.rings.slice(-32); this.labels = this.labels.slice(-8);
         }
         label(text, x, y, color, life = 1.7) { this.labels.push({ text, x, y, color, life, max: life }); }
         update(dt) {
             this.time += dt; this.shake = Math.max(0, this.shake - dt); this.pulse = Math.max(0, this.pulse - dt);
+            this.muzzle = Math.max(0, this.muzzle - dt * 12); this.fx?.setReduced(this.reduced); this.fx?.update(dt);
             for (const p of this.particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= Math.exp(-dt * 1.5); p.vy += 36 * dt; p.angle += p.spin * dt; p.life -= dt; }
             for (const r of this.rings) { r.r += r.speed * dt; r.life -= dt; }
             for (const l of this.labels) { if (!this.reduced) l.y -= dt * 13; l.life -= dt; }
@@ -139,22 +168,35 @@
             this.line([[-20, 11], [-10, 2], [-6, 12]], p.violet, 1.5);
             this.line([[20, 11], [10, 2], [6, 12]], p.violet, 1.5);
             this.circle(0, 0, 3.5, p.ink, 1, p.ink);
+            if (this.muzzle > 0 && !this.reduced) { c.globalAlpha = this.muzzle; this.glow(p.shot, 12); this.line([[-5, -32], [0, -44 - this.muzzle * 6], [5, -32]], p.shot, 1, true, p.ink); c.globalAlpha = 1; }
             c.restore();
         }
         enemy(e) {
             const c = this.ctx, p = this.palette, color = e.flash > 0 ? p.ink : e.type === 'gunship' ? p.gold : e.type === 'fighter' ? p.violet : p.danger;
-            c.save(); c.translate(e.x, e.y); this.glow(color, 6);
+            const age = Number.isFinite(e.age) ? e.age : 1, live = !this.reduced;
+            // Enemies bank into their sway, warp in at spawn and burn flickering thrusters.
+            const bank = live ? Math.cos(age * 1.7) * 1.7 * (e.sway || 25) * -.004 : 0, warp = live ? Math.min(1, age / .28) : 1;
+            c.save(); c.translate(e.x, e.y); c.rotate(bank);
+            if (warp < 1) { const k = 1 - (1 - warp) ** 3; c.scale(.4 + k * .6, .4 + k * .6); c.globalAlpha = k; this.circle(0, 0, 30 * (1.6 - warp), color, 1.5); }
+            if (live) {
+                const flicker = 6 + Math.sin(this.time * 41 + e.x) * 3, rows = e.type === 'gunship' ? [-24, 24] : [0];
+                for (const x of rows) this.line([[x - 4, -18], [x, -18 - flicker - (e.type === 'gunship' ? 6 : 0)], [x + 4, -18]], p.danger, 1, true, p.gold);
+            }
+            this.glow(color, 6 + (e.flash > 0 ? 10 : 0));
             if (e.type === 'gunship') {
                 this.line([[-30, -20], [-12, -28], [12, -28], [30, -20], [34, 20], [21, 29], [12, 13], [-12, 13], [-21, 29], [-34, 20]], color, 1.8, true, p.panel);
                 this.line([[-18, -14], [18, -14], [18, 4], [-18, 4]], color, 1, true);
                 this.circle(0, -6, 7, color, 2, p.deep);
+                if (live) { const spin = this.time * 3; this.line([[0, -6], [Math.cos(spin) * 7, -6 + Math.sin(spin) * 7]], p.ink, 1.5); }
                 this.line([[-24, 10], [-24, 25]], p.danger, 4); this.line([[24, 10], [24, 25]], p.danger, 4);
             } else if (e.type === 'fighter') {
                 this.line([[0, 23], [8, 5], [25, -4], [18, -18], [8, -8], [0, -14], [-8, -8], [-18, -18], [-25, -4], [-8, 5]], color, 1.6, true, p.panel);
                 this.line([[0, -8], [0, 13]], p.danger, 3);
+                if (live) { c.globalAlpha *= .5 + .5 * Math.sin(this.time * 9 + e.x); this.circle(-18, -12, 2.5, color, 1, color); this.circle(18, -12, 2.5, color, 1, color); }
             } else {
                 this.line([[0, 19], [19, -12], [7, -6], [0, -17], [-7, -6], [-19, -12]], color, 1.6, true, p.panel);
                 this.circle(0, 0, 4, color, 1, color);
+                if (live) { c.save(); c.rotate(this.time * 4); this.line([[-9, 0], [9, 0]], color, 1); this.line([[0, -9], [0, 9]], color, 1); c.restore(); }
             }
             c.shadowBlur = 0;
             if (e.hp < e.maxHp && e.type === 'gunship') { c.fillStyle = p.grid; c.fillRect(-25, -38, 50, 3); c.fillStyle = color; c.fillRect(-25, -38, 50 * Math.max(0, e.hp / e.maxHp), 3); }
@@ -218,6 +260,7 @@
             this.background(game.level);
             c.save();
             if (!this.reduced && this.shake > 0) c.translate(Math.sin(this.time * 131) * this.shake * 9, Math.cos(this.time * 117) * this.shake * 8);
+            this.fx?.apply(c);
             for (const e of game.enemies) this.enemy(e);
             this.boss(game.boss, game.level);
             for (const s of game.shots) {
@@ -252,7 +295,7 @@
             for (const particle of this.particles) {
                 c.save(); c.translate(particle.x, particle.y); c.rotate(particle.angle); c.globalAlpha = particle.life / particle.max;
                 if (particle.debris) this.line([[-particle.size, -4], [particle.size, -8], [particle.size * .7, 6], [-particle.size, 9]], p[particle.color], 1, true, p.panel);
-                else { c.fillStyle = p[particle.color]; c.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size); }
+                else { c.rotate(-particle.angle); this.line([[0, 0], [-particle.vx * .05, -particle.vy * .05]], p[particle.color], Math.max(1, particle.size * .55)); }
                 c.restore();
             }
             for (const r of this.rings) { c.globalAlpha = r.life / r.max * .8; this.circle(r.x, r.y, r.r, p[r.color], 2); }
@@ -262,6 +305,7 @@
                 this.circle(b.x, b.y, b.r, p.danger, 2, p.gold);
                 c.fillStyle = this.light ? '#fff' : '#fff1d8'; c.fillRect(b.x - 1.5, b.y - 1.5, 3, 3);
             }
+            this.fx?.draw(c, W, H);
             c.restore();
             if (!this.reduced && this.pulse > 0) { c.globalAlpha = Math.min(.10, this.pulse * .4); c.fillStyle = p.cyan; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
             for (const l of this.labels) { c.globalAlpha = Math.min(1, l.life * 2); this.text(l.text, Math.max(100, Math.min(W - 100, l.x)), l.y, 15, p[l.color]); }
@@ -273,6 +317,7 @@
                 c.fillStyle = p.deep; c.fillRect(32, 49, W - 64, 7); c.fillStyle = b.rage ? p.danger : p.violet; c.fillRect(32, 49, (W - 64) * hp / total, 7);
                 this.text(game.config.boss + ' / ' + ({ armor: '擊破裝甲', core: '核心暴露', rage: '核心過載' }[b.phase]), W / 2, 76, 12, p.ink);
             }
+            if (!this.light) globalThis.CashArcadeFX?.crt(c, W, H, .05);
         }
     }
     globalThis.NeonAssaultRenderer = Renderer;

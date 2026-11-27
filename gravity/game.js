@@ -7,7 +7,7 @@
     const music = CashArcadeMusic.create({ score: CashArcadeExpansionScores.gravity, storagePrefix: 'casharcade-gravity-music',
         toggleButton: $('music-toggle'), volumeInput: $('music-volume'), volumeLabel: $('music-volume-value'), trackLabel: $('music-track'), audioOutput: sound.musicOutput, initialLevel: settings.selected + 1 });
     const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
-    let theme = 'dark', previous = 0, lastRender = 0, lastHud = 0, renderKey = '', reported = false, activePointer = null;
+    let theme = 'dark', previous = 0, lastRender = 0, lostAt = 0, lastHud = 0, renderKey = '', reported = false, activePointer = null;
     try { theme = localStorage.getItem('casharcade-theme') === 'light' ? 'light' : 'dark'; } catch { /* Local theme remains usable. */ }
     document.documentElement.dataset.theme = theme;
     function save() { if (!storage.save(settings)) $('storage-note').textContent = '瀏覽器無法儲存；本頁仍可免費遊玩，關閉後可能失去紀錄。'; }
@@ -105,10 +105,13 @@
     function frame(now) {
         const dt = previous ? Math.min((now - previous) / 1000, .05) : 0; previous = now; game.update(dt);
         for (const event of game.drain()) { sound.play(effects[event.type] || 'confirm'); renderer.event(event, game.time); if (event.type === 'shard') $('live').textContent = '取得能量碎片 ' + game.collected.length + ' / 3，短暫加速。'; }
-        if (['delivered', 'lost'].includes(game.state) && !reported) finished();
+        // Let the crash beat (burst, flash, shake) play for 0.7 s before the result card covers it.
+        if (game.state === 'lost' && !reported && !lostAt) lostAt = now;
+        if (game.state !== 'lost') lostAt = 0;
+        if (!reported && (game.state === 'delivered' || (game.state === 'lost' && now - lostAt >= 700))) finished();
         const reducedMotion = settings.reducedMotion || motionQuery.matches;
         const nextKey = [game.levelIndex, game.state, theme, reducedMotion, innerWidth, innerHeight, Boolean(document.fullscreenElement)].join(':');
-        if ((game.state === 'running' && now - lastRender >= 1000 / 30) || nextKey !== renderKey) { renderer.render(game, { theme, reducedMotion }); globalThis.CashArcadeNeon?.apply(renderer.canvas,{theme,strength:1.2}); lastRender = now; renderKey = nextKey; }
+        if (game.state === 'running' || renderer.busy || (lostAt && !reported) || nextKey !== renderKey) { renderer.render(game, { theme, reducedMotion, dt }); globalThis.CashArcadeNeon?.apply(renderer.canvas,{theme,strength:1.2}); lastRender = now; renderKey = nextKey; }
         if (now - lastHud >= 80) { sync(); lastHud = now; }
         requestAnimationFrame(frame);
     }

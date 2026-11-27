@@ -262,7 +262,8 @@
         const dt = lastTime === undefined ? 0 : Math.min(0.05, Math.max(0, (now - lastTime) / 1000));
         lastTime = now;
         if (active()) {
-            accumulator += dt;
+            // Hit-stop and slow motion from the shared FX layer scale simulation time only.
+            accumulator += dt * (renderer.timeScale?.() ?? 1);
             const actions = input.value();
             while (accumulator >= STEP && game.mode === 'running') {
                 game.update(STEP, actions);

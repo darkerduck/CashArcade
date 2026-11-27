@@ -112,7 +112,7 @@ class Game {
         this.chain++; this.bestChain = Math.max(this.bestChain,this.chain); this.clearing = loops.flat();
         this.loops += loops.length; this.tiles += this.clearing.length;
         this.score += this.clearing.length * this.clearing.length * 25 * this.chain;
-        this.level = 1 + Math.floor(this.loops / 4); this.clearTime = .5;
+        this.level = 1 + Math.floor(this.loops / 4); this.clearTime = .3;
         this.emit('clear',{chain:this.chain,count:this.clearing.length});
     }
     collapse() {
@@ -131,7 +131,7 @@ class Game {
         dt = Math.min(dt,.05); this.time += dt;
         if (this.clearTime > 0) { this.clearTime -= dt; if (this.clearTime <= 0) this.collapse(); return; }
         if (!this.piece) return;
-        const interval = soft ? .045 : Math.max(.13,.85 - (this.level - 1) * .055);
+        const interval = soft ? .045 : Math.max(.13,.7 - (this.level - 1) * .05);
         this.clock += dt;
         if (this.clock >= interval) { this.clock %= interval; this.move(0,1,soft); }
         if (this.grounded()) { this.lockTime += dt; if (this.lockTime >= LOCK_DELAY) this.lock(); }

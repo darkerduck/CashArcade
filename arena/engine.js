@@ -62,13 +62,13 @@
         damage(target, amount) {
             if(target.dead || this.state !== 'running') return;
             target.hp-=amount;
-            if(target.hp>0){this.emit('hit',{x:target.x,y:target.y,boss:target.kind==='boss'});return;}
+            if(target.hp>0){this.emit('hit',{x:target.x,y:target.y,boss:target.kind==='boss',id:target.id});return;}
             target.dead=true;
             if(target.kind==='pillar') {
                 this.queueBlast(target,(125+this.upgrades.radius*25),105*this.stats.blastMultiplier);
             } else {
-                this.score+=target.kind==='boss' ? this.wave*1000 : types[target.kind].score;
-                this.emit('kill',{x:target.x,y:target.y,kind:target.kind});
+                const points=target.kind==='boss' ? this.wave*1000 : types[target.kind].score;this.score+=points;
+                this.emit('kill',{x:target.x,y:target.y,kind:target.kind,points});
                 if(target.kind==='boss') {
                     this.enemies.forEach(e=>e.dead=true);this.bullets=[];this.beams=[];this.warnings=[];this.explosions=[];
                     this.emit('bossDown',{x:target.x,y:target.y});this.complete();return;
@@ -104,10 +104,10 @@
             for(let tries=0;tries<12;tries++){
                 const edge=Math.floor(this.random()*4),v=55+this.random()*610,x=edge===0?28:edge===1?692:v,y=edge===2?28:edge===3?692:v;
                 if(distance({x,y},this.player)<230)continue;
-                this.warnings.push({x,y,kind,time:1.15});this.emit('warning',{x,y});return;
+                this.warnings.push({x,y,kind,time:.7});this.emit('warning',{x,y});return;
             }
             const p=this.player,x=p.x<360?692:28,y=p.y<360?665:55;
-            this.warnings.push({x,y,kind,time:1.15});
+            this.warnings.push({x,y,kind,time:.7});
         }
         shoot(e,angle,count=1,spread=.22,speed=165) {
             for(let i=0;i<count&&this.bullets.length<240;i++){
@@ -190,7 +190,7 @@
                 while(this.spawned<due){const kinds=this.config.enemies;this.warn(kinds[this.spawned%kinds.length]);this.spawned++;}
             }
             for(const w of this.warnings){w.time-=dt;if(w.time<=0){
-                if(distance(w,p)<95){w.time=1.15;const opposite={x:720-w.x,y:720-w.y};w.x=opposite.x;w.y=opposite.y;}
+                if(distance(w,p)<95){w.time=.7;const opposite={x:720-w.x,y:720-w.y};w.x=opposite.x;w.y=opposite.y;}
                 else {this.addEnemy(w.kind,w.x,w.y);w.done=true;}
             }}this.warnings=this.warnings.filter(w=>!w.done);
             for(const e of this.enemies){if(e.dead)continue;this.enemyUpdate(e,dt);if(distance(e,p)<e.r+p.r)this.hurt();}

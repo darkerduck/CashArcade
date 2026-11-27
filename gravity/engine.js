@@ -7,10 +7,23 @@
     const shard = (x, side) => ({ x, y: side === 'top' ? 80 : side === 'bottom' ? 520 : side });
     const platform = (x, y, w = 230, amplitude = 45, period = 4, phase = 0) => ({ x, y, w, h: 18, amplitude, period, phase });
     const laser = (x, side, phase = 0, period = 2.8, on = 1.2) => ({ x, y: side === 'top' ? CEILING : 335, w: 10, h: 205, phase, period, on, warning: .38 });
-    const level = (id, name, zone, tip, length, speed, spikes, shards, platforms = [], lasers = [], route = []) => ({
-        id, name, zone, tip, length, speed, spikes, shards, platforms, lasers, route,
-        goal: Math.round(((length - 200) / speed - .25) * 100) / 100,
-    });
+    // Pull each route toward the start so the first hazard arrives in ~1.3 s instead of ~2.7 s.
+    // The whole course shifts by `lead` px; laser and platform phases advance by the same time,
+    // so every hazard is in exactly the state it had when the player reached it before.
+    const level = (id, name, zone, tip, length, speed, spikes, shards, platforms = [], lasers = [], route = []) => {
+        const first = Math.min(...[...spikes, ...shards, ...platforms, ...lasers].map(item => item.x));
+        const lead = clamp(Math.floor(first - 380), 0, 300), ahead = lead / speed;
+        const shift = item => ({ ...item, x: item.x - lead });
+        length -= lead;
+        return {
+            id, name, zone, tip, length, speed, lead,
+            spikes: spikes.map(shift), shards: shards.map(shift),
+            platforms: platforms.map(item => ({ ...shift(item), phase: item.phase + ahead * Math.PI * 2 / item.period })),
+            lasers: lasers.map(item => ({ ...shift(item), phase: item.phase + ahead })),
+            route: route.map(x => x - lead),
+            goal: Math.round(((length - 200) / speed - .25) * 100) / 100,
+        };
+    };
     // Every route has a deterministic replay in tests/gravity-engine.test.mjs.
     // The x landmarks document a playable line, not an automated in-game pilot.
     const LEVELS = [
